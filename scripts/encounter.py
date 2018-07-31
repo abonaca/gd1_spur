@@ -566,7 +566,8 @@ def wfit_plane(x, r, p=None):
 # Orbital intersections
 
 def compile_classicals():
-    """"""
+    """Create an input table with 6D positions of the classical dwarfs
+    Input data: Gaia DR2 1804.09381, table c4"""
     
     gc_frame = coord.Galactocentric(galcen_distance=8*u.kpc, z_sun=0*u.pc)
     frame_dict0 = gc_frame.__dict__
@@ -600,7 +601,8 @@ def compile_classicals():
     tout.write('../data/positions_classical.fits', overwrite=True)
     
 def compile_globulars():
-    """"""
+    """Create an input table with 6D positions of the globular clusters
+    Input data: Gaia DR2 1804.09381, table c3"""
     
     gc_frame = coord.Galactocentric(galcen_distance=8*u.kpc, z_sun=0*u.pc)
     frame_dict0 = gc_frame.__dict__
@@ -684,9 +686,6 @@ def orbit_cross():
     # plot relative distances as a function of time
     plt.close()
     plt.figure(figsize=(9,5))
-    
-    plt.plot(t, np.abs(gap_orbit.xyz[2]), 'r-', alpha=0.2, label='Disk', lw=3)
-    #plt.plot(t, np.sqrt(gap_orbit.xyz[0]**2 + gap_orbit.xyz[1]**2), 'r-', alpha=0.2)
 
     # show classicals
     tcls = Table.read('../data/positions_classical.fits')
@@ -700,7 +699,7 @@ def orbit_cross():
         else:
             label = ''
         rel_distance = np.linalg.norm(gap_orbit.xyz - satellite_orbit.xyz[:,:,e], axis=0)*gap_orbit.xyz[0].unit
-        plt.plot(t, rel_distance, 'k-', alpha=0.2, label=label, lw=3)
+        plt.plot(t, rel_distance, '-', color=mpl.cm.Reds(0.9), alpha=0.5, label=label, lw=3)
     
     # show ultrafaints
     tufd = Table.read('../data/positions_ufd.fits')
@@ -714,7 +713,7 @@ def orbit_cross():
         else:
             label = ''
         rel_distance = np.linalg.norm(gap_orbit.xyz - satellite_orbit.xyz[:,:,e], axis=0)*gap_orbit.xyz[0].unit
-        plt.plot(t, rel_distance, 'b-', alpha=0.2, label=label, lw=3)
+        plt.plot(t, rel_distance, '-', color=mpl.cm.Reds(0.7), alpha=0.5, label=label, lw=3)
     
     # show globulars
     tgc = Table.read('../data/positions_globular.fits')
@@ -728,8 +727,11 @@ def orbit_cross():
         else:
             label = ''
         rel_distance = np.linalg.norm(gap_orbit.xyz - satellite_orbit.xyz[:,:,e], axis=0)*gap_orbit.xyz[0].unit
-        plt.plot(t, rel_distance, 'm-', alpha=0.2, label=label, lw=3)
-    
+        plt.plot(t, rel_distance, '-', color=mpl.cm.Reds(0.5), alpha=0.5, label=label, lw=3)
+
+    plt.plot(t, np.abs(gap_orbit.xyz[2]), '-', color=mpl.cm.Reds(0.3), alpha=0.5, label='Disk', lw=3, zorder=0)
+    #plt.plot(t, np.sqrt(gap_orbit.xyz[0]**2 + gap_orbit.xyz[1]**2), 'r-', alpha=0.2)
+
     plt.ylim(0.1,200)
     plt.gca().set_yscale('log')
     
