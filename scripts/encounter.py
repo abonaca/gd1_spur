@@ -579,7 +579,7 @@ def compile_classicals():
     
     t = Table.read('../data/gdr2_satellites_c4.txt', format='ascii')
     
-    x = np.array([t['X'], t['Y'], t['Z']])*u.kpc
+    x = np.array([t['X']-8, t['Y'], t['Z']])*u.kpc
     v = np.array([t['U'], t['V'], t['W']])*u.km/u.s
     
     for i in range(3):
@@ -614,7 +614,7 @@ def compile_globulars():
     
     t = Table.read('../data/gdr2_satellites_c3.txt', format='ascii')
     
-    x = np.array([t['X'], t['Y'], t['Z']])*u.kpc
+    x = np.array([t['X']-8, t['Y'], t['Z']])*u.kpc
     v = np.array([t['U'], t['V'], t['W']])*u.km/u.s
     
     for i in range(3):
