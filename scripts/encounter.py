@@ -11,7 +11,10 @@ from astropy.table import Table
 import astropy.units as u
 import astropy.coordinates as coord
 from astropy.constants import G
+
 import gala.coordinates as gc
+import gala.dynamics as gd
+import gala.potential as gp
 
 import scipy.optimize
 
@@ -230,7 +233,7 @@ def sky(seed=425, th=150):
     
     np.random.seed(seed)
     observer = {'z_sun': 27.*u.pc, 'galcen_distance': 8.3*u.kpc, 'roll': 60*u.deg, 'galcen_coord': coord.SkyCoord(ra=300*u.deg, dec=-90*u.deg, frame='icrs')}
-    vobs = {'vcirc': 0*u.km/u.s, 'vlsr': [0, 0, 0]*u.km/u.s}
+    vobs = {'vcirc': 220*u.km/u.s, 'vlsr': [0, 0, 0]*u.km/u.s}
     wangle = 180*u.deg
     
     xphi = np.linspace(-0.3*np.pi,0.3*np.pi, Nstar)
@@ -347,7 +350,7 @@ def obs_scaling(seed=425, th=150, param='M'):
     
     np.random.seed(seed)
     observer = {'z_sun': 27.*u.pc, 'galcen_distance': 8.3*u.kpc, 'roll': 60*u.deg, 'galcen_coord': coord.SkyCoord(ra=300*u.deg, dec=-90*u.deg, frame='icrs')}
-    vobs = {'vcirc': 0*u.km/u.s, 'vlsr': [0, 0, 0]*u.km/u.s}
+    vobs = {'vcirc': 220*u.km/u.s, 'vlsr': [0, 0, 0]*u.km/u.s}
     wangle = 180*u.deg
     
     xphi = np.linspace(-0.3*np.pi,0.3*np.pi, Nstar)
@@ -439,6 +442,8 @@ def obs_scaling(seed=425, th=150, param='M'):
         plist = np.array([90, 110, 130, 150])*u.deg
     elif param=='V':
         plist = np.array([175, 190, 205, 220])*u.km/u.s
+    elif param=='T':
+        plist = np.array([0.425, 0.45,0.475, 0.5])*u.Gyr
         
     for e, p in enumerate(plist[:]):
         if param=='M':
@@ -449,6 +454,8 @@ def obs_scaling(seed=425, th=150, param='M'):
             theta = coord.Angle(p)
         elif param=='V':
             V = p
+        elif param=='T':
+            T = p
         
         # scaled stream
         par_perturb = np.array([M.si.value, 0., 0., 0.])
@@ -553,3 +560,89 @@ def wfit_plane(x, r, p=None):
     lsq = np.inner(x, np.inner(Q, x))
     
     return lsq
+
+
+########################
+# Orbital intersections
+
+def compile_ufds():
+    """Create an input table with 6D positions of the ultra-faint dwarf galaxies
+    Input data: Simon 1804.10230, tables 1 & 3"""
+    
+    t1 = Table.read('../data/simon2018_1.txt', format='ascii')
+    t2 = Table.read('../data/simon2018_2.txt', format='ascii')
+
+    data = {'name': t1['Dwarf'], 'ra': t2['ra'], 'dec': t2['dec'], 'distance': t2['distance'], 'pmra': t1['pmra'], 'pmdec': t1['pmdec'], 'vr': t2['vhel']}
+    
+    tout = Table(data=data, names=('name', 'ra', 'dec', 'distance', 'pmra', 'pmdec', 'vr'))
+    tout.pprint()
+    tout.write('../data/positions_ufd.fits', overwrite=True)
+
+def orbit_cross():
+    """Check if satellites crossed GD-1"""
+    
+    # potential
+    ham = gp.Hamiltonian(gp.MilkyWayPotential(nucleus=dict(m=0), halo=dict(c=0.95, m=7E11), bulge=dict(m=4E9), disk=dict(m=5.5e10)))
+    gc_frame = coord.Galactocentric(galcen_distance=8*u.kpc, z_sun=0*u.pc)
+    
+    # orbital solution
+    pos = np.load('/home/ana/projects/GD1-DR2/data/gd1_orbit.npy')
+    phi1, phi2, d, pm1, pm2, vr = pos
+
+    c = gc.GD1(phi1=phi1*u.deg, phi2=phi2*u.deg, distance=d*u.kpc, 
+            pm_phi1_cosphi2=pm1*u.mas/u.yr,
+            pm_phi2=pm2*u.mas/u.yr,
+            radial_velocity=vr*u.km/u.s)
+    w0 = gd.PhaseSpacePosition(c.transform_to(gc_frame).cartesian)
+    
+    dt = 0.5 * u.Myr
+    n_steps = 250
+    fit_orbit = ham.integrate_orbit(w0, dt=dt, n_steps=120)
+
+    # find gap 6D location at present
+    gap_phi0 = -40*u.deg
+    model_gd1 = fit_orbit.to_coord_frame(gc.GD1, galactocentric_frame=gc_frame)
+    gap_i = np.abs(model_gd1.phi1.wrap_at(180*u.deg) - gap_phi0).argmin()
+    gap_w0 = fit_orbit[gap_i]
+    
+    # gap orbit
+    t1 = 0*u.Myr
+    t2 = -10*u.Gyr
+    dt = -0.5
+    t = np.arange(t1.to(u.Myr).value, t2.to(u.Myr).value+dt, dt)
+    gap_orbit = ham.integrate_orbit(gap_w0, dt=dt, t1=t1, t2=t2)
+    
+    # satellite orbit
+    ra, dec, d, pmra, pmdec, vr = 39.9971*u.deg, -34.4492*u.deg, 140*u.kpc, 0.376*u.mas/u.yr, -0.413*u.mas/u.yr, 53*u.km/u.s
+    cs = coord.ICRS(ra=ra, dec=dec, distance=d, pm_ra_cosdec=pmra, pm_dec=pmdec, radial_velocity=vr)
+    ws = gd.PhaseSpacePosition(cs.transform_to(gc_frame).cartesian)
+    satellite_orbit = ham.integrate_orbit(ws, dt=dt, t1=t1, t2=t2)
+
+    rel_distance = np.linalg.norm(gap_orbit.xyz - satellite_orbit.xyz, axis=0)*gap_orbit.xyz[0].unit
+
+    # plot gap orbit
+    plt.close()
+    plt.figure(figsize=(10,5))
+    
+    plt.plot(t, rel_distance, 'k-', alpha=0.2)
+    
+    plt.plot(t, np.abs(gap_orbit.xyz[2]), 'r-', alpha=0.2)
+    plt.plot(t, np.sqrt(gap_orbit.xyz[0]**2 + gap_orbit.xyz[1]**2), 'r-', alpha=0.2)
+    
+    # show ultrafaints
+    tufd = Table.read('../data/positions_ufd.fits')
+    ra, dec, d, pmra, pmdec, vr = tufd['ra'], tufd['dec'], tufd['distance'], tufd['pmra'], tufd['pmdec'], tufd['vr']
+    cs = coord.ICRS(ra=ra*u.deg, dec=dec*u.deg, distance=d*u.kpc, pm_ra_cosdec=pmra*u.mas/u.yr, pm_dec=pmdec*u.mas/u.yr, radial_velocity=vr*u.km/u.s)
+    ws = gd.PhaseSpacePosition(cs.transform_to(gc_frame).cartesian)
+    satellite_orbit = ham.integrate_orbit(ws, dt=dt, t1=t1, t2=t2)
+    for e in range(len(tufd)):
+        rel_distance = np.linalg.norm(gap_orbit.xyz - satellite_orbit.xyz[:,:,e], axis=0)*gap_orbit.xyz[0].unit
+        plt.plot(t, rel_distance, 'b-', alpha=0.2)
+    
+    plt.xlabel('Time [Myr]')
+    plt.ylabel('Relative distance [kpc]')
+    plt.ylim(0.1,200)
+    plt.gca().set_yscale('log')
+    
+    plt.tight_layout()
+    plt.savefig('../plots/satellite_distances.png')
