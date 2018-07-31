@@ -565,6 +565,74 @@ def wfit_plane(x, r, p=None):
 ########################
 # Orbital intersections
 
+def compile_classicals():
+    """"""
+    
+    gc_frame = coord.Galactocentric(galcen_distance=8*u.kpc, z_sun=0*u.pc)
+    frame_dict0 = gc_frame.__dict__
+    old_keys = frame_dict0.keys()
+    
+    frame_dict = {}
+    for k in ['galcen_distance', 'roll', 'galcen_v_sun', 'galcen_coord', 'z_sun']:
+        frame_dict[k] = frame_dict0['_{}'.format(k)]
+    
+    t = Table.read('../data/gdr2_satellites_c4.txt', format='ascii')
+    
+    x = np.array([t['X'], t['Y'], t['Z']])*u.kpc
+    v = np.array([t['U'], t['V'], t['W']])*u.km/u.s
+    
+    for i in range(3):
+        v[i] = v[i] + gc_frame.galcen_v_sun.d_xyz[i]
+    
+    xgal = coord.Galactocentric(x, **frame_dict)
+    xeq = xgal.transform_to(coord.ICRS)
+    veq_ = gc.vgal_to_hel(xeq, v, galactocentric_frame=gc_frame)
+    veq = [None] * 3
+    veq[0] = veq_[0].to(u.mas/u.yr)
+    veq[1] = veq_[1].to(u.mas/u.yr)
+    veq[2] = veq_[2].to(u.km/u.s)
+    
+    # store observables
+    data = {'name': t['Name'], 'ra': xeq.ra, 'dec': xeq.dec, 'distance': xeq.distance, 'pmra': veq[0], 'pmdec': veq[1], 'vr': veq[2]}
+    
+    tout = Table(data=data, names=('name', 'ra', 'dec', 'distance', 'pmra', 'pmdec', 'vr'))
+    tout.pprint()
+    tout.write('../data/positions_classical.fits', overwrite=True)
+    
+def compile_globulars():
+    """"""
+    
+    gc_frame = coord.Galactocentric(galcen_distance=8*u.kpc, z_sun=0*u.pc)
+    frame_dict0 = gc_frame.__dict__
+    old_keys = frame_dict0.keys()
+    
+    frame_dict = {}
+    for k in ['galcen_distance', 'roll', 'galcen_v_sun', 'galcen_coord', 'z_sun']:
+        frame_dict[k] = frame_dict0['_{}'.format(k)]
+    
+    t = Table.read('../data/gdr2_satellites_c3.txt', format='ascii')
+    
+    x = np.array([t['X'], t['Y'], t['Z']])*u.kpc
+    v = np.array([t['U'], t['V'], t['W']])*u.km/u.s
+    
+    for i in range(3):
+        v[i] = v[i] + gc_frame.galcen_v_sun.d_xyz[i]
+    
+    xgal = coord.Galactocentric(x, **frame_dict)
+    xeq = xgal.transform_to(coord.ICRS)
+    veq_ = gc.vgal_to_hel(xeq, v, galactocentric_frame=gc_frame)
+    veq = [None] * 3
+    veq[0] = veq_[0].to(u.mas/u.yr)
+    veq[1] = veq_[1].to(u.mas/u.yr)
+    veq[2] = veq_[2].to(u.km/u.s)
+    
+    # store observables
+    data = {'name': t['Name'], 'ra': xeq.ra, 'dec': xeq.dec, 'distance': xeq.distance, 'pmra': veq[0], 'pmdec': veq[1], 'vr': veq[2]}
+    
+    tout = Table(data=data, names=('name', 'ra', 'dec', 'distance', 'pmra', 'pmdec', 'vr'))
+    tout.pprint()
+    tout.write('../data/positions_globular.fits', overwrite=True)
+
 def compile_ufds():
     """Create an input table with 6D positions of the ultra-faint dwarf galaxies
     Input data: Simon 1804.10230, tables 1 & 3"""
@@ -572,7 +640,7 @@ def compile_ufds():
     t1 = Table.read('../data/simon2018_1.txt', format='ascii')
     t2 = Table.read('../data/simon2018_2.txt', format='ascii')
 
-    data = {'name': t1['Dwarf'], 'ra': t2['ra'], 'dec': t2['dec'], 'distance': t2['distance'], 'pmra': t1['pmra'], 'pmdec': t1['pmdec'], 'vr': t2['vhel']}
+    data = {'name': t1['Dwarf'], 'ra': t2['ra']*u.deg, 'dec': t2['dec']*u.deg, 'distance': t2['distance']*u.kpc, 'pmra': t1['pmra']*u.mas/u.yr, 'pmdec': t1['pmdec']*u.mas/u.yr, 'vr': t2['vhel']*u.km/u.s}
     
     tout = Table(data=data, names=('name', 'ra', 'dec', 'distance', 'pmra', 'pmdec', 'vr'))
     tout.pprint()
@@ -607,42 +675,68 @@ def orbit_cross():
     
     # gap orbit
     t1 = 0*u.Myr
-    t2 = -10*u.Gyr
+    t2 = -1*u.Gyr
     dt = -0.5
     t = np.arange(t1.to(u.Myr).value, t2.to(u.Myr).value+dt, dt)
     gap_orbit = ham.integrate_orbit(gap_w0, dt=dt, t1=t1, t2=t2)
     
-    # satellite orbit
-    ra, dec, d, pmra, pmdec, vr = 39.9971*u.deg, -34.4492*u.deg, 140*u.kpc, 0.376*u.mas/u.yr, -0.413*u.mas/u.yr, 53*u.km/u.s
+    
+    # plot relative distances as a function of time
+    plt.close()
+    plt.figure(figsize=(9,5))
+    
+    plt.plot(t, np.abs(gap_orbit.xyz[2]), 'r-', alpha=0.2, label='Disk', lw=3)
+    #plt.plot(t, np.sqrt(gap_orbit.xyz[0]**2 + gap_orbit.xyz[1]**2), 'r-', alpha=0.2)
+
+    # show classicals
+    tcls = Table.read('../data/positions_classical.fits')
+    ra, dec, d, pmra, pmdec, vr = tcls['ra'], tcls['dec'], tcls['distance'], tcls['pmra'], tcls['pmdec'], tcls['vr']
     cs = coord.ICRS(ra=ra, dec=dec, distance=d, pm_ra_cosdec=pmra, pm_dec=pmdec, radial_velocity=vr)
     ws = gd.PhaseSpacePosition(cs.transform_to(gc_frame).cartesian)
     satellite_orbit = ham.integrate_orbit(ws, dt=dt, t1=t1, t2=t2)
-
-    rel_distance = np.linalg.norm(gap_orbit.xyz - satellite_orbit.xyz, axis=0)*gap_orbit.xyz[0].unit
-
-    # plot gap orbit
-    plt.close()
-    plt.figure(figsize=(10,5))
-    
-    plt.plot(t, rel_distance, 'k-', alpha=0.2)
-    
-    plt.plot(t, np.abs(gap_orbit.xyz[2]), 'r-', alpha=0.2)
-    plt.plot(t, np.sqrt(gap_orbit.xyz[0]**2 + gap_orbit.xyz[1]**2), 'r-', alpha=0.2)
+    for e in range(len(tcls)):
+        if e==0:
+            label = 'Classical\ndwarfs'
+        else:
+            label = ''
+        rel_distance = np.linalg.norm(gap_orbit.xyz - satellite_orbit.xyz[:,:,e], axis=0)*gap_orbit.xyz[0].unit
+        plt.plot(t, rel_distance, 'k-', alpha=0.2, label=label, lw=3)
     
     # show ultrafaints
     tufd = Table.read('../data/positions_ufd.fits')
     ra, dec, d, pmra, pmdec, vr = tufd['ra'], tufd['dec'], tufd['distance'], tufd['pmra'], tufd['pmdec'], tufd['vr']
-    cs = coord.ICRS(ra=ra*u.deg, dec=dec*u.deg, distance=d*u.kpc, pm_ra_cosdec=pmra*u.mas/u.yr, pm_dec=pmdec*u.mas/u.yr, radial_velocity=vr*u.km/u.s)
+    cs = coord.ICRS(ra=ra, dec=dec, distance=d, pm_ra_cosdec=pmra, pm_dec=pmdec, radial_velocity=vr)
     ws = gd.PhaseSpacePosition(cs.transform_to(gc_frame).cartesian)
     satellite_orbit = ham.integrate_orbit(ws, dt=dt, t1=t1, t2=t2)
     for e in range(len(tufd)):
+        if e==0:
+            label = 'Ultra-faint\ndwarfs'
+        else:
+            label = ''
         rel_distance = np.linalg.norm(gap_orbit.xyz - satellite_orbit.xyz[:,:,e], axis=0)*gap_orbit.xyz[0].unit
-        plt.plot(t, rel_distance, 'b-', alpha=0.2)
+        plt.plot(t, rel_distance, 'b-', alpha=0.2, label=label, lw=3)
     
-    plt.xlabel('Time [Myr]')
-    plt.ylabel('Relative distance [kpc]')
+    # show globulars
+    tgc = Table.read('../data/positions_globular.fits')
+    ra, dec, d, pmra, pmdec, vr = tgc['ra'], tgc['dec'], tgc['distance'], tgc['pmra'], tgc['pmdec'], tgc['vr']
+    cs = coord.ICRS(ra=ra, dec=dec, distance=d, pm_ra_cosdec=pmra, pm_dec=pmdec, radial_velocity=vr)
+    ws = gd.PhaseSpacePosition(cs.transform_to(gc_frame).cartesian)
+    satellite_orbit = ham.integrate_orbit(ws, dt=dt, t1=t1, t2=t2)
+    for e in range(len(tgc)):
+        if e==0:
+            label = 'Globular\nclusters'
+        else:
+            label = ''
+        rel_distance = np.linalg.norm(gap_orbit.xyz - satellite_orbit.xyz[:,:,e], axis=0)*gap_orbit.xyz[0].unit
+        plt.plot(t, rel_distance, 'm-', alpha=0.2, label=label, lw=3)
+    
     plt.ylim(0.1,200)
     plt.gca().set_yscale('log')
     
+    plt.legend(loc=2, fontsize='small', markerscale=2)
+    plt.xlabel('Time [Myr]')
+    plt.ylabel('Relative distance [kpc]')
+    
     plt.tight_layout()
     plt.savefig('../plots/satellite_distances.png')
+    plt.savefig('../paper/satellite_distances.pdf')
