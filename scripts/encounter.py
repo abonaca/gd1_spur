@@ -5,12 +5,13 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 #from mpl_toolkits.mplot3d import Axes3D
-#from matplotlib.backends.backend_pdf import PdfPages
+from matplotlib.backends.backend_pdf import PdfPages
 
 from astropy.table import Table
 import astropy.units as u
 import astropy.coordinates as coord
 from astropy.constants import G
+from astropy.io import fits
 
 import gala.coordinates as gc
 import gala.dynamics as gd
@@ -208,13 +209,16 @@ def sky(seed=425, th=150):
     
     # impact parameters
     M = 1e8*u.Msun
-    B = 19.85*u.kpc
+    M = 3e7*u.Msun
+    B = 19.95*u.kpc
     V = 220*u.km/u.s
+    V = 190*u.km/u.s
     phi = coord.Angle(0*u.deg)
     theta = coord.Angle(th*u.deg)
     Tenc = 0.01*u.Gyr
     T = 0.5*u.Gyr
     dt = 0.1*u.Myr
+    #dt = 1*u.Myr
     rs = 0*u.pc
     
     # potential parameters
@@ -236,7 +240,14 @@ def sky(seed=425, th=150):
     vobs = {'vcirc': 220*u.km/u.s, 'vlsr': [0, 0, 0]*u.km/u.s}
     wangle = 180*u.deg
     
-    xphi = np.linspace(-0.3*np.pi,0.3*np.pi, Nstar)
+    #xphi = np.linspace(-0.3*np.pi,0.3*np.pi, Nstar)
+    #xphi = np.linspace(-0.28*np.pi,0.35*np.pi, Nstar)
+    
+    xphi0 = np.linspace(-0.1*np.pi, 0.1*np.pi, 2000)
+    xphi1 = np.linspace(-0.28*np.pi, -0.1*np.pi, 500)
+    xphi2 = np.linspace(0.1*np.pi, 0.35*np.pi, 500)
+    xphi = np.concatenate([xphi1, xphi0, xphi2])
+    
     xr = 20*u.kpc + np.random.randn(Nstar)*0.02*u.kpc
     x = np.sin(xphi) * xr
     y = np.cos(xphi) * xr
@@ -244,6 +255,8 @@ def sky(seed=425, th=150):
     vx = -np.cos(xphi) * Vh
     vy = np.sin(xphi) * Vh
     vz = vx * 0
+    # closest to impact
+    ienc = np.argmin(np.abs(x))
     
     # generate stream model
     potential_perturb = 1
@@ -287,16 +300,30 @@ def sky(seed=425, th=150):
     xi0, eta0 = myutils.rotate_angles(xeq0.ra, xeq0.dec, R)
     xi0 = coord.Angle(xi0*u.deg)
     
+    # place gap at xi~0
+    xioff = xi0[ienc]
+    xi -= xioff
+    xi0 -= xioff
+    
     vlabel = ['$\mu_{\\alpha_\star}$ [mas yr$^{-1}$]','$\mu_{\delta}$ [mas yr$^{-1}$]', '$V_r$ [km s$^{-1}$]']
     ylims = [[-0.5, 0.5], [-0.5, 0.5], [-25,25]]
     color = '0.35'
-    ms = 8
+    ms = 4
     
     # plotting
     plt.close()
-    fig, ax = plt.subplots(4,1,figsize=(12,10), sharex=True)
+    fig, ax = plt.subplots(5,1,figsize=(12,12), sharex=True)
     
     plt.sca(ax[0])
+    g = Table(fits.getdata('/home/ana/projects/GD1-DR2/output/gd1_members.fits'))
+    plt.scatter(g['phi1']+45, g['phi2'], s=g['pmem']*2, c=g['pmem'], cmap=mpl.cm.binary, vmin=0.5, vmax=1.1)
+    
+    plt.xlim(-45,50)
+    plt.ylim(-10,10)
+    plt.gca().set_aspect('equal')
+    plt.ylabel('$\phi_1$ [deg]')
+    
+    plt.sca(ax[1])
     plt.plot(xi.wrap_at(wangle), eta, 'o', mec='none', color=color, ms=ms)
     
     plt.ylabel('$\phi_1$ [deg]')
@@ -305,7 +332,7 @@ def sky(seed=425, th=150):
     
     xeqs = [xeq.ra, xeq.dec, xeq.distance.to(u.kpc)]
     for i in range(3):
-        plt.sca(ax[i+1])
+        plt.sca(ax[i+2])
         
         # interpolate expected kinematics from an unperturbed stream
         vexp = np.interp(xi.wrap_at(wangle), xi0.wrap_at(wangle), veq0[i].value) * veq0[i].unit
@@ -318,6 +345,7 @@ def sky(seed=425, th=150):
     
     plt.tight_layout()
     plt.savefig('../plots/spur_morphology_sky.png')
+    plt.savefig('../paper/spur_morphology_sky.pdf')
 
 
 def obs_scaling(seed=425, th=150, param='M'):
@@ -562,6 +590,552 @@ def wfit_plane(x, r, p=None):
     return lsq
 
 
+###########
+# Scalings
+
+def scale_fixed_M2B(seed=425, th=150, fmass=1, fb=1, rfig=False):
+    """Contrast stream morphology post encounter, while keeping the ratio of perturber's mass to its impact parameter fixed"""
+    
+    # impact parameters
+    M = 1e8*u.Msun
+    B0 = 19.85*u.kpc
+    V = 220*u.km/u.s
+    phi = coord.Angle(0*u.deg)
+    theta = coord.Angle(th*u.deg)
+    Tenc = 0.01*u.Gyr
+    T = 0.5*u.Gyr
+    dt = 0.1*u.Myr
+    rs = 0*u.pc
+    
+    # potential parameters
+    potential = 3
+    Vh = 220*u.km/u.s
+    q = 1*u.Unit(1)
+    rhalo = 20*u.pc
+    par_pot = np.array([Vh.si.value, q.value, rhalo.si.value])
+    
+    # setup tube
+    Nstar = 3000
+    wx = 30*u.kpc
+    wy = 0*u.pc
+    wz = 0*u.pc
+    sx = 0*u.km/u.s
+    
+    np.random.seed(seed)
+    observer = {'z_sun': 27.*u.pc, 'galcen_distance': 8.3*u.kpc, 'roll': 60*u.deg, 'galcen_coord': coord.SkyCoord(ra=300*u.deg, dec=-90*u.deg, frame='icrs')}
+    vobs = {'vcirc': 220*u.km/u.s, 'vlsr': [0, 0, 0]*u.km/u.s}
+    wangle = 180*u.deg
+    
+    xphi = np.linspace(-0.3*np.pi,0.3*np.pi, Nstar)
+    Bs = 20*u.kpc
+    xr = Bs + np.random.randn(Nstar)*0.0*u.kpc
+    x = np.sin(xphi) * xr
+    y = np.cos(xphi) * xr
+    z = x * 0
+    vx = -np.cos(xphi) * Vh
+    vy = np.sin(xphi) * Vh
+    vz = vx * 0
+    
+    # generate stream model
+    potential_perturb = 1
+    par_perturb = np.array([M.si.value, 0., 0., 0.])
+    x1, x2, x3, v1, v2, v3 = interact.interact(par_perturb, B0.si.value, phi.rad, V.si.value, theta.rad, Tenc.si.value, T.si.value, dt.si.value, par_pot, potential, potential_perturb, x.si.value, y.si.value, z.si.value, vx.si.value, vy.si.value, vz.si.value)
+    stream = {}
+    stream['x'] = (np.array([x1, x2, x3])*u.m).to(u.pc)
+    stream['v'] = (np.array([v1, v2, v3])*u.m/u.s).to(u.km/u.s)
+    
+    # sky coordinates
+    xgal = coord.Galactocentric(stream['x'], **observer)
+    xeq = xgal.transform_to(coord.ICRS)
+    veq_ = gc.vgal_to_hel(xeq, stream['v'], **vobs)
+    veq = [None] * 3
+    veq[0] = veq_[0].to(u.mas/u.yr)
+    veq[1] = veq_[1].to(u.mas/u.yr)
+    veq[2] = veq_[2].to(u.km/u.s)
+    
+    # rotate to native coordinate system
+    R = find_greatcircle(xeq.ra.deg[::10], xeq.dec.deg[::10])
+    xi, eta = myutils.rotate_angles(xeq.ra, xeq.dec, R)
+    xi = coord.Angle(xi*u.deg)
+    
+    # unperturbed stream
+    par_perturb = np.array([0*M.si.value, 0., 0., 0.])
+    x1, x2, x3, v1, v2, v3 = interact.interact(par_perturb, B0.si.value, phi.rad, V.si.value, theta.rad, Tenc.si.value, T.si.value, dt.si.value, par_pot, potential, potential_perturb, x.si.value, y.si.value, z.si.value, vx.si.value, vy.si.value, vz.si.value)
+    stream0 = {}
+    stream0['x'] = (np.array([x1, x2, x3])*u.m).to(u.pc)
+    stream0['v'] = (np.array([v1, v2, v3])*u.m/u.s).to(u.km/u.s)
+    
+    # sky coordinates
+    xgal0 = coord.Galactocentric(stream0['x'], **observer)
+    xeq0 = xgal0.transform_to(coord.ICRS)
+    veq0_ = gc.vgal_to_hel(xeq0, stream0['v'], **vobs)
+    veq0 = [None] * 3
+    veq0[0] = veq0_[0].to(u.mas/u.yr)
+    veq0[1] = veq0_[1].to(u.mas/u.yr)
+    veq0[2] = veq0_[2].to(u.km/u.s)
+    
+    # rotate to native coordinate system
+    xi0, eta0 = myutils.rotate_angles(xeq0.ra, xeq0.dec, R)
+    xi0 = coord.Angle(xi0*u.deg)
+    
+    farray = np.array([0.3, 0.5, 1, 2, 3])
+    
+    rasterized = False
+    if rfig:
+        rasterized = True
+    
+    plt.close()
+    fig, ax = plt.subplots(4,1,figsize=(12,12), sharex=True)
+    
+    for e, f in enumerate(farray):
+        fsqrt = np.sqrt(f)
+        par_perturb = np.array([f*fmass*M.si.value, 0., 0., 0.])
+        #B = B0
+        
+        dB = (B0 - Bs)*fb
+        B = dB/f + Bs
+        
+        #fi = np.abs(V*T/(dB/f)).decompose()
+        fi = np.abs(dB/(f*V)).to(u.Myr)
+        #print(fi)
+        
+        x1, x2, x3, v1, v2, v3 = interact.interact(par_perturb, B.si.value, phi.rad, V.si.value, theta.rad, Tenc.si.value, T.si.value, dt.si.value, par_pot, potential, potential_perturb, x.si.value, y.si.value, z.si.value, vx.si.value, vy.si.value, vz.si.value)
+        stream = {}
+        stream['x'] = (np.array([x1, x2, x3])*u.m).to(u.pc)
+        stream['v'] = (np.array([v1, v2, v3])*u.m/u.s).to(u.km/u.s)
+        
+        # sky coordinates
+        xgal = coord.Galactocentric(stream['x'], **observer)
+        xeq = xgal.transform_to(coord.ICRS)
+        veq_ = gc.vgal_to_hel(xeq, stream['v'], **vobs)
+        veq = [None] * 3
+        veq[0] = veq_[0].to(u.mas/u.yr)
+        veq[1] = veq_[1].to(u.mas/u.yr)
+        veq[2] = veq_[2].to(u.km/u.s)
+        
+        # rotate to native coordinate system
+        xi, eta = myutils.rotate_angles(xeq.ra, xeq.dec, R)
+        xi = coord.Angle(xi*u.deg)
+        
+        color = '{:f}'.format(0.65 - 0.65*(e+1)/(np.size(farray)) + 0.35)
+        ms = 1.5*(e+2)
+        zorder = np.size(farray)-e
+        label = 'f={:g}, $t_{{imp}}$={:.1f}'.format(f, fi)
+        #print(e, p, color)
+        
+        plt.sca(ax[0])
+        plt.plot(xi.wrap_at(wangle), eta, 'o', mec='none', color=color, ms=ms, zorder=zorder, label=label, rasterized=rasterized)
+        
+        for i in range(3):
+            plt.sca(ax[i+1])
+            vexp = np.interp(xi.wrap_at(wangle), xi0.wrap_at(wangle), veq0[i].value) * veq0[i].unit
+            plt.plot(xi.wrap_at(wangle), veq[i]-vexp, 'o', mec='none', color=color, ms=ms, zorder=zorder, rasterized=rasterized)
+    
+    # label axes
+    plt.sca(ax[0])
+    plt.ylabel('$\phi_1$ [deg]')
+    plt.ylim(-10,10)
+    plt.xlim(65,135)
+    #plt.gca().set_aspect('equal')
+    plt.legend(fontsize='x-small', loc=2)
+    plt.title('f M, f B | M = {:g} | B = {:g} | $\\theta$ = {:.0f}'.format(fmass*M, dB.to(u.pc), theta), fontsize='medium')
+    
+    vlabel = ['$\mu_{\\alpha_\star}$ [mas yr$^{-1}$]','$\mu_{\delta}$ [mas yr$^{-1}$]', '$V_r$ [km s$^{-1}$]']
+    ylims = [[-0.5, 0.5], [-0.5, 0.5], [-25,25]]
+    ylims = [[-1,1], [-1,1], [-50,50]]
+    for i in range(3):
+        plt.sca(ax[i+1])
+        plt.ylabel('$\Delta$ {}'.format(vlabel[i]))
+        plt.ylim(*ylims[i])
+
+    plt.xlabel('$\phi_2$ [deg]')
+    
+    plt.tight_layout()
+    
+    if rfig:
+        return fig
+    else:
+        plt.savefig('../plots/scale_MB_th{:03d}_{:.1f}_{:.1f}.png'.format(th, fmass, fb))
+
+def vary_mass(verbose=False, th=90, seed=329):
+    """"""
+    
+    farray = np.linspace(0.3, 3, 10)
+    farray = np.logspace(np.log10(0.3), np.log10(3), 10)
+    
+    pp = PdfPages('../plots/scale_MB_th{:03d}_vM.pdf'.format(th))
+    
+    for f in farray:
+        if verbose: print(f)
+        fig = scale_fixed_M2B(seed=seed, th=th, fmass=f, rfig=True)
+        pp.savefig(fig)
+    
+    pp.close()
+
+def vary_distance(verbose=False, th=90, seed=329):
+    """"""
+    
+    farray = np.linspace(0.3, 3, 10)
+    farray = np.logspace(np.log10(0.3), np.log10(3), 10)
+    
+    pp = PdfPages('../plots/scale_MB_th{:03d}_vB.pdf'.format(th))
+    
+    for f in farray:
+        if verbose: print(f)
+        fig = scale_fixed_M2B(seed=seed, th=th, fb=f, rfig=True)
+        pp.savefig(fig)
+    
+    pp.close()
+
+
+def scale_fixed_M2V(seed=425, th=150, fmass=1, fb=1, fv=1, rfig=False):
+    """Contrast stream morphology post encounter, while keeping the ratio of perturber's mass to its impact parameter fixed"""
+    
+    # impact parameters
+    M = 1e8*u.Msun
+    B0 = 19.85*u.kpc
+    V0 = 220*u.km/u.s
+    phi = coord.Angle(0*u.deg)
+    theta = coord.Angle(th*u.deg)
+    Tenc = 0.01*u.Gyr
+    T = 0.5*u.Gyr
+    dt = 0.1*u.Myr
+    rs = 0*u.pc
+    
+    # potential parameters
+    potential = 3
+    Vh = 220*u.km/u.s
+    q = 1*u.Unit(1)
+    rhalo = 20*u.pc
+    par_pot = np.array([Vh.si.value, q.value, rhalo.si.value])
+    
+    # setup tube
+    Nstar = 3000
+    wx = 30*u.kpc
+    wy = 0*u.pc
+    wz = 0*u.pc
+    sx = 0*u.km/u.s
+    
+    np.random.seed(seed)
+    observer = {'z_sun': 27.*u.pc, 'galcen_distance': 8.3*u.kpc, 'roll': 60*u.deg, 'galcen_coord': coord.SkyCoord(ra=300*u.deg, dec=-90*u.deg, frame='icrs')}
+    vobs = {'vcirc': 220*u.km/u.s, 'vlsr': [0, 0, 0]*u.km/u.s}
+    wangle = 180*u.deg
+    
+    xphi = np.linspace(-0.3*np.pi,0.3*np.pi, Nstar)
+    Bs = 20*u.kpc
+    xr = Bs + np.random.randn(Nstar)*0.0*u.kpc
+    x = np.sin(xphi) * xr
+    y = np.cos(xphi) * xr
+    z = x * 0
+    vx = -np.cos(xphi) * Vh
+    vy = np.sin(xphi) * Vh
+    vz = vx * 0
+    
+    # generate stream model
+    potential_perturb = 1
+    par_perturb = np.array([M.si.value, 0., 0., 0.])
+    x1, x2, x3, v1, v2, v3 = interact.interact(par_perturb, B0.si.value, phi.rad, V0.si.value, theta.rad, Tenc.si.value, T.si.value, dt.si.value, par_pot, potential, potential_perturb, x.si.value, y.si.value, z.si.value, vx.si.value, vy.si.value, vz.si.value)
+    stream = {}
+    stream['x'] = (np.array([x1, x2, x3])*u.m).to(u.pc)
+    stream['v'] = (np.array([v1, v2, v3])*u.m/u.s).to(u.km/u.s)
+    
+    # sky coordinates
+    xgal = coord.Galactocentric(stream['x'], **observer)
+    xeq = xgal.transform_to(coord.ICRS)
+    veq_ = gc.vgal_to_hel(xeq, stream['v'], **vobs)
+    veq = [None] * 3
+    veq[0] = veq_[0].to(u.mas/u.yr)
+    veq[1] = veq_[1].to(u.mas/u.yr)
+    veq[2] = veq_[2].to(u.km/u.s)
+    
+    # rotate to native coordinate system
+    R = find_greatcircle(xeq.ra.deg[::10], xeq.dec.deg[::10])
+    xi, eta = myutils.rotate_angles(xeq.ra, xeq.dec, R)
+    xi = coord.Angle(xi*u.deg)
+    
+    # unperturbed stream
+    par_perturb = np.array([0*M.si.value, 0., 0., 0.])
+    x1, x2, x3, v1, v2, v3 = interact.interact(par_perturb, B0.si.value, phi.rad, V0.si.value, theta.rad, Tenc.si.value, T.si.value, dt.si.value, par_pot, potential, potential_perturb, x.si.value, y.si.value, z.si.value, vx.si.value, vy.si.value, vz.si.value)
+    stream0 = {}
+    stream0['x'] = (np.array([x1, x2, x3])*u.m).to(u.pc)
+    stream0['v'] = (np.array([v1, v2, v3])*u.m/u.s).to(u.km/u.s)
+    
+    # sky coordinates
+    xgal0 = coord.Galactocentric(stream0['x'], **observer)
+    xeq0 = xgal0.transform_to(coord.ICRS)
+    veq0_ = gc.vgal_to_hel(xeq0, stream0['v'], **vobs)
+    veq0 = [None] * 3
+    veq0[0] = veq0_[0].to(u.mas/u.yr)
+    veq0[1] = veq0_[1].to(u.mas/u.yr)
+    veq0[2] = veq0_[2].to(u.km/u.s)
+    
+    # rotate to native coordinate system
+    xi0, eta0 = myutils.rotate_angles(xeq0.ra, xeq0.dec, R)
+    xi0 = coord.Angle(xi0*u.deg)
+    
+    farray = np.array([0.3, 0.5, 1, 2, 3])
+    
+    rasterized = False
+    if rfig:
+        rasterized = True
+    
+    plt.close()
+    fig, ax = plt.subplots(4,1,figsize=(12,12), sharex=True)
+    
+    for e, f in enumerate(farray):
+        fsqrt = np.sqrt(f)
+        par_perturb = np.array([f*fmass*M.si.value, 0., 0., 0.])
+        #B = B0
+        
+        dB = (B0 - Bs)*fb
+        B = dB + Bs
+        
+        V = fv*V0/fsqrt
+        
+        #fi = np.abs(V*T/(dB/f)).decompose()
+        fi = np.abs(dB/V).to(u.Myr)
+        #print(fi)
+        
+        x1, x2, x3, v1, v2, v3 = interact.interact(par_perturb, B.si.value, phi.rad, V.si.value, theta.rad, Tenc.si.value, T.si.value, dt.si.value, par_pot, potential, potential_perturb, x.si.value, y.si.value, z.si.value, vx.si.value, vy.si.value, vz.si.value)
+        stream = {}
+        stream['x'] = (np.array([x1, x2, x3])*u.m).to(u.pc)
+        stream['v'] = (np.array([v1, v2, v3])*u.m/u.s).to(u.km/u.s)
+        
+        # sky coordinates
+        xgal = coord.Galactocentric(stream['x'], **observer)
+        xeq = xgal.transform_to(coord.ICRS)
+        veq_ = gc.vgal_to_hel(xeq, stream['v'], **vobs)
+        veq = [None] * 3
+        veq[0] = veq_[0].to(u.mas/u.yr)
+        veq[1] = veq_[1].to(u.mas/u.yr)
+        veq[2] = veq_[2].to(u.km/u.s)
+        
+        # rotate to native coordinate system
+        xi, eta = myutils.rotate_angles(xeq.ra, xeq.dec, R)
+        xi = coord.Angle(xi*u.deg)
+        
+        color = '{:f}'.format(0.65 - 0.65*(e+1)/(np.size(farray)) + 0.35)
+        ms = 1.5*(e+2)
+        zorder = np.size(farray)-e
+        label = 'f={:g}, $t_{{imp}}$={:.1f}'.format(f, fi)
+        #print(e, p, color)
+        
+        plt.sca(ax[0])
+        plt.plot(xi.wrap_at(wangle), eta, 'o', mec='none', color=color, ms=ms, zorder=zorder, label=label, rasterized=rasterized)
+        
+        for i in range(3):
+            plt.sca(ax[i+1])
+            vexp = np.interp(xi.wrap_at(wangle), xi0.wrap_at(wangle), veq0[i].value) * veq0[i].unit
+            plt.plot(xi.wrap_at(wangle), veq[i]-vexp, 'o', mec='none', color=color, ms=ms, zorder=zorder, rasterized=rasterized)
+    
+    # label axes
+    plt.sca(ax[0])
+    plt.ylabel('$\phi_1$ [deg]')
+    plt.ylim(-10,10)
+    plt.xlim(65,135)
+    #plt.gca().set_aspect('equal')
+    plt.legend(fontsize='x-small', loc=2)
+    plt.title('f M, f V | M = {:g} | V = {:g} | $\\theta$ = {:.0f}'.format(fmass*M, V.to(u.km/u.s), theta), fontsize='medium')
+    
+    vlabel = ['$\mu_{\\alpha_\star}$ [mas yr$^{-1}$]','$\mu_{\delta}$ [mas yr$^{-1}$]', '$V_r$ [km s$^{-1}$]']
+    ylims = [[-0.5, 0.5], [-0.5, 0.5], [-25,25]]
+    ylims = [[-1,1], [-1,1], [-50,50]]
+    for i in range(3):
+        plt.sca(ax[i+1])
+        plt.ylabel('$\Delta$ {}'.format(vlabel[i]))
+        plt.ylim(*ylims[i])
+
+    plt.xlabel('$\phi_2$ [deg]')
+    
+    plt.tight_layout()
+    
+    if rfig:
+        return fig
+    else:
+        plt.savefig('../plots/scale_MV_th{:03d}_{:.1f}_{:.1f}.png'.format(th, fmass, fv))
+
+def vary_speed(verbose=False, th=90, seed=329):
+    """"""
+    
+    farray = np.linspace(0.3, 3, 10)
+    farray = np.logspace(np.log10(0.3), np.log10(3), 10)
+    
+    pp = PdfPages('../plots/scale_MV_th{:03d}_vV.pdf'.format(th))
+    
+    for f in farray:
+        if verbose: print(f)
+        fig = scale_fixed_M2V(seed=seed, th=th, fv=f, rfig=True)
+        pp.savefig(fig)
+    
+    pp.close()
+
+def scale_fixed_V2B(seed=425, th=150, fmass=1, fb=1, fv=1, rfig=False):
+    """Contrast stream morphology post encounter, while keeping the ratio of perturber's mass to its impact parameter fixed"""
+    
+    # impact parameters
+    M = 1e8*u.Msun
+    B0 = 19.85*u.kpc
+    V0 = 220*u.km/u.s
+    phi = coord.Angle(0*u.deg)
+    theta = coord.Angle(th*u.deg)
+    Tenc = 0.01*u.Gyr
+    T = 0.5*u.Gyr
+    dt = 0.1*u.Myr
+    rs = 0*u.pc
+    
+    # potential parameters
+    potential = 3
+    Vh = 220*u.km/u.s
+    q = 1*u.Unit(1)
+    rhalo = 20*u.pc
+    par_pot = np.array([Vh.si.value, q.value, rhalo.si.value])
+    
+    # setup tube
+    Nstar = 3000
+    wx = 30*u.kpc
+    wy = 0*u.pc
+    wz = 0*u.pc
+    sx = 0*u.km/u.s
+    
+    np.random.seed(seed)
+    observer = {'z_sun': 27.*u.pc, 'galcen_distance': 8.3*u.kpc, 'roll': 60*u.deg, 'galcen_coord': coord.SkyCoord(ra=300*u.deg, dec=-90*u.deg, frame='icrs')}
+    vobs = {'vcirc': 220*u.km/u.s, 'vlsr': [0, 0, 0]*u.km/u.s}
+    wangle = 180*u.deg
+    
+    xphi = np.linspace(-0.3*np.pi,0.3*np.pi, Nstar)
+    Bs = 20*u.kpc
+    xr = Bs + np.random.randn(Nstar)*0.0*u.kpc
+    x = np.sin(xphi) * xr
+    y = np.cos(xphi) * xr
+    z = x * 0
+    vx = -np.cos(xphi) * Vh
+    vy = np.sin(xphi) * Vh
+    vz = vx * 0
+    
+    # generate stream model
+    potential_perturb = 1
+    par_perturb = np.array([M.si.value, 0., 0., 0.])
+    x1, x2, x3, v1, v2, v3 = interact.interact(par_perturb, B0.si.value, phi.rad, V0.si.value, theta.rad, Tenc.si.value, T.si.value, dt.si.value, par_pot, potential, potential_perturb, x.si.value, y.si.value, z.si.value, vx.si.value, vy.si.value, vz.si.value)
+    stream = {}
+    stream['x'] = (np.array([x1, x2, x3])*u.m).to(u.pc)
+    stream['v'] = (np.array([v1, v2, v3])*u.m/u.s).to(u.km/u.s)
+    
+    # sky coordinates
+    xgal = coord.Galactocentric(stream['x'], **observer)
+    xeq = xgal.transform_to(coord.ICRS)
+    veq_ = gc.vgal_to_hel(xeq, stream['v'], **vobs)
+    veq = [None] * 3
+    veq[0] = veq_[0].to(u.mas/u.yr)
+    veq[1] = veq_[1].to(u.mas/u.yr)
+    veq[2] = veq_[2].to(u.km/u.s)
+    
+    # rotate to native coordinate system
+    R = find_greatcircle(xeq.ra.deg[::10], xeq.dec.deg[::10])
+    xi, eta = myutils.rotate_angles(xeq.ra, xeq.dec, R)
+    xi = coord.Angle(xi*u.deg)
+    
+    # unperturbed stream
+    par_perturb = np.array([0*M.si.value, 0., 0., 0.])
+    x1, x2, x3, v1, v2, v3 = interact.interact(par_perturb, B0.si.value, phi.rad, V0.si.value, theta.rad, Tenc.si.value, T.si.value, dt.si.value, par_pot, potential, potential_perturb, x.si.value, y.si.value, z.si.value, vx.si.value, vy.si.value, vz.si.value)
+    stream0 = {}
+    stream0['x'] = (np.array([x1, x2, x3])*u.m).to(u.pc)
+    stream0['v'] = (np.array([v1, v2, v3])*u.m/u.s).to(u.km/u.s)
+    
+    # sky coordinates
+    xgal0 = coord.Galactocentric(stream0['x'], **observer)
+    xeq0 = xgal0.transform_to(coord.ICRS)
+    veq0_ = gc.vgal_to_hel(xeq0, stream0['v'], **vobs)
+    veq0 = [None] * 3
+    veq0[0] = veq0_[0].to(u.mas/u.yr)
+    veq0[1] = veq0_[1].to(u.mas/u.yr)
+    veq0[2] = veq0_[2].to(u.km/u.s)
+    
+    # rotate to native coordinate system
+    xi0, eta0 = myutils.rotate_angles(xeq0.ra, xeq0.dec, R)
+    xi0 = coord.Angle(xi0*u.deg)
+    
+    farray = np.array([0.3, 0.5, 1, 2, 3])
+    
+    rasterized = False
+    if rfig:
+        rasterized = True
+    
+    plt.close()
+    fig, ax = plt.subplots(4,1,figsize=(12,12), sharex=True)
+    
+    for e, f in enumerate(farray):
+        fsqrt = np.sqrt(f)
+        par_perturb = np.array([fmass*M.si.value, 0., 0., 0.])
+        #B = B0
+        
+        dB = (B0 - Bs)*fb
+        B = dB*f + Bs
+        
+        V = fv*V0/fsqrt
+        
+        #fi = np.abs(V*T/(dB/f)).decompose()
+        fi = np.abs(dB/V).to(u.Myr)
+        #print(fi)
+        
+        x1, x2, x3, v1, v2, v3 = interact.interact(par_perturb, B.si.value, phi.rad, V.si.value, theta.rad, Tenc.si.value, T.si.value, dt.si.value, par_pot, potential, potential_perturb, x.si.value, y.si.value, z.si.value, vx.si.value, vy.si.value, vz.si.value)
+        stream = {}
+        stream['x'] = (np.array([x1, x2, x3])*u.m).to(u.pc)
+        stream['v'] = (np.array([v1, v2, v3])*u.m/u.s).to(u.km/u.s)
+        
+        # sky coordinates
+        xgal = coord.Galactocentric(stream['x'], **observer)
+        xeq = xgal.transform_to(coord.ICRS)
+        veq_ = gc.vgal_to_hel(xeq, stream['v'], **vobs)
+        veq = [None] * 3
+        veq[0] = veq_[0].to(u.mas/u.yr)
+        veq[1] = veq_[1].to(u.mas/u.yr)
+        veq[2] = veq_[2].to(u.km/u.s)
+        
+        # rotate to native coordinate system
+        xi, eta = myutils.rotate_angles(xeq.ra, xeq.dec, R)
+        xi = coord.Angle(xi*u.deg)
+        
+        color = '{:f}'.format(0.65 - 0.65*(e+1)/(np.size(farray)) + 0.35)
+        ms = 1.5*(e+2)
+        zorder = np.size(farray)-e
+        label = 'f={:g}, $t_{{imp}}$={:.1f}'.format(f, fi)
+        #print(e, p, color)
+        
+        plt.sca(ax[0])
+        plt.plot(xi.wrap_at(wangle), eta, 'o', mec='none', color=color, ms=ms, zorder=zorder, label=label, rasterized=rasterized)
+        
+        for i in range(3):
+            plt.sca(ax[i+1])
+            vexp = np.interp(xi.wrap_at(wangle), xi0.wrap_at(wangle), veq0[i].value) * veq0[i].unit
+            plt.plot(xi.wrap_at(wangle), veq[i]-vexp, 'o', mec='none', color=color, ms=ms, zorder=zorder, rasterized=rasterized)
+    
+    # label axes
+    plt.sca(ax[0])
+    plt.ylabel('$\phi_1$ [deg]')
+    plt.ylim(-10,10)
+    plt.xlim(65,135)
+    #plt.gca().set_aspect('equal')
+    plt.legend(fontsize='x-small', loc=2)
+    plt.title('f M, f B | M = {:g} | B = {:g} | $\\theta$ = {:.0f}'.format(fmass*M, dB.to(u.pc), theta), fontsize='medium')
+    
+    vlabel = ['$\mu_{\\alpha_\star}$ [mas yr$^{-1}$]','$\mu_{\delta}$ [mas yr$^{-1}$]', '$V_r$ [km s$^{-1}$]']
+    ylims = [[-0.5, 0.5], [-0.5, 0.5], [-25,25]]
+    ylims = [[-1,1], [-1,1], [-50,50]]
+    for i in range(3):
+        plt.sca(ax[i+1])
+        plt.ylabel('$\Delta$ {}'.format(vlabel[i]))
+        plt.ylim(*ylims[i])
+
+    plt.xlabel('$\phi_2$ [deg]')
+    
+    plt.tight_layout()
+    
+    if rfig:
+        return fig
+    else:
+        plt.savefig('../plots/scale_VB_th{:03d}_{:.1f}_{:.1f}.png'.format(th, fv, fb))
+
+
 ########################
 # Orbital intersections
 
@@ -686,6 +1260,8 @@ def orbit_cross():
     # plot relative distances as a function of time
     plt.close()
     plt.figure(figsize=(9,5))
+    
+    lw = 3
 
     # show classicals
     tcls = Table.read('../data/positions_classical.fits')
@@ -699,7 +1275,7 @@ def orbit_cross():
         else:
             label = ''
         rel_distance = np.linalg.norm(gap_orbit.xyz - satellite_orbit.xyz[:,:,e], axis=0)*gap_orbit.xyz[0].unit
-        plt.plot(t, rel_distance, '-', color=mpl.cm.Reds(0.9), alpha=0.5, label=label, lw=3)
+        plt.plot(t, rel_distance, '-', color=mpl.cm.Reds(0.9), alpha=0.5, label=label, lw=lw)
     
     # show ultrafaints
     tufd = Table.read('../data/positions_ufd.fits')
@@ -713,7 +1289,7 @@ def orbit_cross():
         else:
             label = ''
         rel_distance = np.linalg.norm(gap_orbit.xyz - satellite_orbit.xyz[:,:,e], axis=0)*gap_orbit.xyz[0].unit
-        plt.plot(t, rel_distance, '-', color=mpl.cm.Reds(0.7), alpha=0.5, label=label, lw=3)
+        plt.plot(t, rel_distance, '-', color=mpl.cm.Reds(0.7), alpha=0.5, label=label, lw=lw)
     
     # show globulars
     tgc = Table.read('../data/positions_globular.fits')
@@ -727,9 +1303,9 @@ def orbit_cross():
         else:
             label = ''
         rel_distance = np.linalg.norm(gap_orbit.xyz - satellite_orbit.xyz[:,:,e], axis=0)*gap_orbit.xyz[0].unit
-        plt.plot(t, rel_distance, '-', color=mpl.cm.Reds(0.5), alpha=0.5, label=label, lw=3)
+        plt.plot(t, rel_distance, '-', color=mpl.cm.Reds(0.5), alpha=0.5, label=label, lw=lw)
 
-    plt.plot(t, np.abs(gap_orbit.xyz[2]), '-', color=mpl.cm.Reds(0.3), alpha=0.5, label='Disk', lw=3, zorder=0)
+    plt.plot(t, np.abs(gap_orbit.xyz[2]), '-', color=mpl.cm.Reds(0.3), alpha=0.5, label='Disk', lw=lw, zorder=0)
     #plt.plot(t, np.sqrt(gap_orbit.xyz[0]**2 + gap_orbit.xyz[1]**2), 'r-', alpha=0.2)
 
     plt.ylim(0.1,200)
