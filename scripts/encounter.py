@@ -604,7 +604,7 @@ def scale_fixed_M2B(seed=425, th=150, fmass=1, fb=1, rfig=False):
     theta = coord.Angle(th*u.deg)
     Tenc = 0.01*u.Gyr
     T = 0.5*u.Gyr
-    dt = 0.1*u.Myr
+    dt = 0.05*u.Myr
     rs = 0*u.pc
     
     # potential parameters
@@ -693,10 +693,10 @@ def scale_fixed_M2B(seed=425, th=150, fmass=1, fb=1, rfig=False):
         #B = B0
         
         dB = (B0 - Bs)*fb
-        B = dB/f + Bs
+        B = dB*f + Bs
         
         #fi = np.abs(V*T/(dB/f)).decompose()
-        fi = np.abs(dB/(f*V)).to(u.Myr)
+        fi = np.abs(dB*f/V).to(u.Myr)
         #print(fi)
         
         x1, x2, x3, v1, v2, v3 = interact.interact(par_perturb, B.si.value, phi.rad, V.si.value, theta.rad, Tenc.si.value, T.si.value, dt.si.value, par_pot, potential, potential_perturb, x.si.value, y.si.value, z.si.value, vx.si.value, vy.si.value, vz.si.value)
@@ -796,10 +796,10 @@ def scale_fixed_M2V(seed=425, th=150, fmass=1, fb=1, fv=1, rfig=False):
     B0 = 19.85*u.kpc
     V0 = 220*u.km/u.s
     phi = coord.Angle(0*u.deg)
-    theta = coord.Angle(th*u.deg)
+    theta0 = coord.Angle(th*u.deg)
     Tenc = 0.01*u.Gyr
     T = 0.5*u.Gyr
-    dt = 0.1*u.Myr
+    dt = 0.05*u.Myr
     rs = 0*u.pc
     
     # potential parameters
@@ -834,7 +834,7 @@ def scale_fixed_M2V(seed=425, th=150, fmass=1, fb=1, fv=1, rfig=False):
     # generate stream model
     potential_perturb = 1
     par_perturb = np.array([M.si.value, 0., 0., 0.])
-    x1, x2, x3, v1, v2, v3 = interact.interact(par_perturb, B0.si.value, phi.rad, V0.si.value, theta.rad, Tenc.si.value, T.si.value, dt.si.value, par_pot, potential, potential_perturb, x.si.value, y.si.value, z.si.value, vx.si.value, vy.si.value, vz.si.value)
+    x1, x2, x3, v1, v2, v3 = interact.interact(par_perturb, B0.si.value, phi.rad, V0.si.value, theta0.rad, Tenc.si.value, T.si.value, dt.si.value, par_pot, potential, potential_perturb, x.si.value, y.si.value, z.si.value, vx.si.value, vy.si.value, vz.si.value)
     stream = {}
     stream['x'] = (np.array([x1, x2, x3])*u.m).to(u.pc)
     stream['v'] = (np.array([v1, v2, v3])*u.m/u.s).to(u.km/u.s)
@@ -855,7 +855,7 @@ def scale_fixed_M2V(seed=425, th=150, fmass=1, fb=1, fv=1, rfig=False):
     
     # unperturbed stream
     par_perturb = np.array([0*M.si.value, 0., 0., 0.])
-    x1, x2, x3, v1, v2, v3 = interact.interact(par_perturb, B0.si.value, phi.rad, V0.si.value, theta.rad, Tenc.si.value, T.si.value, dt.si.value, par_pot, potential, potential_perturb, x.si.value, y.si.value, z.si.value, vx.si.value, vy.si.value, vz.si.value)
+    x1, x2, x3, v1, v2, v3 = interact.interact(par_perturb, B0.si.value, phi.rad, V0.si.value, theta0.rad, Tenc.si.value, T.si.value, dt.si.value, par_pot, potential, potential_perturb, x.si.value, y.si.value, z.si.value, vx.si.value, vy.si.value, vz.si.value)
     stream0 = {}
     stream0['x'] = (np.array([x1, x2, x3])*u.m).to(u.pc)
     stream0['v'] = (np.array([v1, v2, v3])*u.m/u.s).to(u.km/u.s)
@@ -874,13 +874,15 @@ def scale_fixed_M2V(seed=425, th=150, fmass=1, fb=1, fv=1, rfig=False):
     xi0 = coord.Angle(xi0*u.deg)
     
     farray = np.array([0.3, 0.5, 1, 2, 3])
+    #farray = np.array([0.5, 1, 2])
+    #farray = np.array([0.5, 1])
     
     rasterized = False
     if rfig:
         rasterized = True
     
     plt.close()
-    fig, ax = plt.subplots(4,1,figsize=(12,12), sharex=True)
+    fig, ax = plt.subplots(1,1,figsize=(12,12), sharex=True, squeeze=False)
     
     for e, f in enumerate(farray):
         fsqrt = np.sqrt(f)
@@ -890,10 +892,17 @@ def scale_fixed_M2V(seed=425, th=150, fmass=1, fb=1, fv=1, rfig=False):
         dB = (B0 - Bs)*fb
         B = dB + Bs
         
-        V = fv*V0/fsqrt
+        vpar = Vh + np.cos(theta0.rad)*V0
+        vperp = np.sin(theta0.rad)*V0
+        
+        vpar_scaled = vpar*f
+        vperp_scaled = vperp*f
+        
+        V = np.sqrt((vpar_scaled-Vh)**2 + vperp_scaled**2)
+        theta = coord.Angle(np.arctan2(vperp_scaled, vpar_scaled-Vh))
         
         #fi = np.abs(V*T/(dB/f)).decompose()
-        fi = np.abs(dB/V).to(u.Myr)
+        fi = np.abs(dB/(vperp_scaled)).to(u.Myr)
         #print(fi)
         
         x1, x2, x3, v1, v2, v3 = interact.interact(par_perturb, B.si.value, phi.rad, V.si.value, theta.rad, Tenc.si.value, T.si.value, dt.si.value, par_pot, potential, potential_perturb, x.si.value, y.si.value, z.si.value, vx.si.value, vy.si.value, vz.si.value)
@@ -920,30 +929,30 @@ def scale_fixed_M2V(seed=425, th=150, fmass=1, fb=1, fv=1, rfig=False):
         label = 'f={:g}, $t_{{imp}}$={:.1f}'.format(f, fi)
         #print(e, p, color)
         
-        plt.sca(ax[0])
+        plt.sca(ax[0][0])
         plt.plot(xi.wrap_at(wangle), eta, 'o', mec='none', color=color, ms=ms, zorder=zorder, label=label, rasterized=rasterized)
         
-        for i in range(3):
-            plt.sca(ax[i+1])
-            vexp = np.interp(xi.wrap_at(wangle), xi0.wrap_at(wangle), veq0[i].value) * veq0[i].unit
-            plt.plot(xi.wrap_at(wangle), veq[i]-vexp, 'o', mec='none', color=color, ms=ms, zorder=zorder, rasterized=rasterized)
+        #for i in range(3):
+            #plt.sca(ax[i+1])
+            #vexp = np.interp(xi.wrap_at(wangle), xi0.wrap_at(wangle), veq0[i].value) * veq0[i].unit
+            #plt.plot(xi.wrap_at(wangle), veq[i]-vexp, 'o', mec='none', color=color, ms=ms, zorder=zorder, rasterized=rasterized)
     
     # label axes
-    plt.sca(ax[0])
+    plt.sca(ax[0][0])
     plt.ylabel('$\phi_1$ [deg]')
     plt.ylim(-10,10)
     plt.xlim(65,135)
     #plt.gca().set_aspect('equal')
     plt.legend(fontsize='x-small', loc=2)
-    plt.title('f M, f V | M = {:g} | V = {:g} | $\\theta$ = {:.0f}'.format(fmass*M, V.to(u.km/u.s), theta), fontsize='medium')
+    plt.title('f M, f V | M = {:g} | V = {:g} | $\\theta$ = {:.0f}'.format(fmass*M, V.to(u.km/u.s), theta.to(u.deg)), fontsize='medium')
     
-    vlabel = ['$\mu_{\\alpha_\star}$ [mas yr$^{-1}$]','$\mu_{\delta}$ [mas yr$^{-1}$]', '$V_r$ [km s$^{-1}$]']
-    ylims = [[-0.5, 0.5], [-0.5, 0.5], [-25,25]]
-    ylims = [[-1,1], [-1,1], [-50,50]]
-    for i in range(3):
-        plt.sca(ax[i+1])
-        plt.ylabel('$\Delta$ {}'.format(vlabel[i]))
-        plt.ylim(*ylims[i])
+    #vlabel = ['$\mu_{\\alpha_\star}$ [mas yr$^{-1}$]','$\mu_{\delta}$ [mas yr$^{-1}$]', '$V_r$ [km s$^{-1}$]']
+    #ylims = [[-0.5, 0.5], [-0.5, 0.5], [-25,25]]
+    #ylims = [[-1,1], [-1,1], [-50,50]]
+    #for i in range(3):
+        #plt.sca(ax[i+1])
+        #plt.ylabel('$\Delta$ {}'.format(vlabel[i]))
+        #plt.ylim(*ylims[i])
 
     plt.xlabel('$\phi_2$ [deg]')
     
@@ -968,6 +977,7 @@ def vary_speed(verbose=False, th=90, seed=329):
         pp.savefig(fig)
     
     pp.close()
+
 
 def scale_fixed_V2B(seed=425, th=150, fmass=1, fb=1, fv=1, rfig=False):
     """Contrast stream morphology post encounter, while keeping the ratio of perturber's mass to its impact parameter fixed"""
