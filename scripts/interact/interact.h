@@ -38,6 +38,7 @@ extern double Mcli, Mclf, Rcl, dt;
 
 // Physical constants
 #define G 6.67e-11		// Gravitational constant
+// #define G 4.498502151575286e-12		// Gravitational constant in kpc^3 Msun^-1 Myr^-2
 #define yr 3.15569e7		// yr in seconds
 #define kpc 3.08567758e19	// kpc in m
 #define kms 1e3			// km/s in m/s

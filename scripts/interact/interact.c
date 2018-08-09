@@ -70,6 +70,90 @@ int interact(double *par_perturb, double B, double phi, double V, double theta, 
 //     printf("%e %e %e\n", x0[0], x0[1], x0[2]);
 //     printf("%e %e %e\n", v0[0], v0[1], v0[2]);
     
+    ///////////////////////////////
+    // Find initial stream position
+    direction = -1.;
+    
+//     // Reinitiate the perturber
+//     t2t(x0, xp);
+//     t2t(v0, vp);
+    
+    ////////////////////////
+    // Initial leapfrog step
+//     for(k=0;k<3;k++)
+//         par_perturb[k+Napar_perturb-3] = xp[k];
+//     initpar(potential_perturb, par_perturb, apar_perturb);
+//     for(i=0;i<Napar_perturb;i++)
+//         apar_combined[i] = apar_perturb[i];
+    
+    // update stream points
+    for(i=0;i<Nstar;i++){
+        // choose a star
+        n2t(x, x1, x2, x3, i);
+        n2t(v, v1, v2, v3, i);
+        
+        dostep1(x, v, apar_pot, potential, dt, direction);
+        
+        t2n(x, x1, x2, x3, i);
+        t2n(v, v1, v2, v3, i);
+    }
+//     printf("0 %e %e\n", x[0], x[1]);
+
+    
+//     // update perturber
+//     dostep1(xp, vp, apar_pot, potential, dt, direction);
+    
+    /////////////////
+    // Leapfrog steps
+    for(j=1;j<Nenc;j++){
+//         for(k=0;k<3;k++)
+//             par_perturb[k+Napar_perturb-3] = xp[k];
+//         initpar(potential_perturb, par_perturb, apar_perturb);
+//         for(i=0;i<Napar_perturb;i++)
+//             apar_combined[i] = apar_perturb[i];
+        
+        // update stream points
+        for(i=0;i<Nstar;i++){
+            // choose a star
+            n2t(x, x1, x2, x3, i);
+            n2t(v, v1, v2, v3, i);
+            
+            dostep(x, v, apar_pot, potential, dt, direction);
+            
+            t2n(x, x1, x2, x3, i);
+            t2n(v, v1, v2, v3, i);
+            
+//             if (j>Nenc && j%1000==0){
+//                 fprintf(fp, "%d %d %f %f %f %f %f %f\n", j, i, x1[i], x2[i], x3[i], v1[i], v2[i], v3[i]);
+//                 fprintf(fp, "%d %d %f %f %f %f %f %f\n", j, i, x[0], x[1], x[2], v[0], v[1], v[2]);
+//             }
+        }
+//         printf("%d %e %e\n", j, x[0], x[1]);
+
+//         // update perturber
+//         dostep(xp, vp, apar_pot, potential, dt, direction);
+    }
+    
+    //////////////////////
+    // Final leapfrog step
+//     for(k=0;k<3;k++)
+//         par_perturb[k+Napar_perturb-3] = xp[k];
+//     initpar(potential_perturb, par_perturb, apar_perturb);
+//     for(i=0;i<Napar_perturb;i++)
+//         apar_combined[i] = apar_perturb[i];
+    
+    // update stream points
+    for(i=0;i<Nstar;i++){
+        // choose a star
+        n2t(x, x1, x2, x3, i);
+        n2t(v, v1, v2, v3, i);
+        
+        dostep1(x, v, apar_pot, potential, dt, direction);
+        
+        t2n(x, x1, x2, x3, i);
+        t2n(v, v1, v2, v3, i);
+    }
+    
     ///////////////////
     // Perturb the tube
     direction = 1.;
@@ -751,7 +835,9 @@ void force(double *x, double *a, double *par, int potential)
         
 		for(i=0;i<3;i++)
 			a[i]=aux*(x[i]-par[i+1]);
-		
+
+//         printf("%e\n", a[0]);
+
 	}else if(potential==2){
         // Hernquist spheroid
         // par = [Mtot, a, x, y, z]
@@ -760,7 +846,7 @@ void force(double *x, double *a, double *par, int potential)
 		
         for(i=0;i<3;i++)
             a[i]=aux*(x[i]-par[i+2]);
-    
+        
     }else if(potential==3){
 		// Logarithmic potential
 		// par = [Vc^2, q, q^2, rhalo^2]
