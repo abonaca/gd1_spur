@@ -204,22 +204,40 @@ def vel_difference(seed=425, th=120):
     plt.tight_layout()
 
 
-def sky(seed=425, th=150):
+def sky(seed=425, th=150, old=False):
     """Project results of an encounter in a log potential on the sky"""
     
     # impact parameters
     M = 1e8*u.Msun
-    M = 3e7*u.Msun
-    B = 19.95*u.kpc
+    #M = 3e7*u.Msun
+    B = 19.85*u.kpc
     V = 220*u.km/u.s
-    V = 190*u.km/u.s
+    #V = 190*u.km/u.s
     phi = coord.Angle(0*u.deg)
     theta = coord.Angle(th*u.deg)
-    Tenc = 2*u.Gyr
+    Tenc = 0.05*u.Gyr
     T = 0.5*u.Gyr
     dt = 0.1*u.Myr
     #dt = 1*u.Myr
     rs = 0*u.pc
+    
+    old_label = ''
+    
+    if old:
+        old_label = '_old'
+        
+        # impact parameters
+        M = 5e7*u.Msun
+        B = 19.8*u.kpc
+        V = 210*u.km/u.s
+        phi = coord.Angle(0*u.deg)
+        th = 150
+        theta = coord.Angle(th*u.deg)
+        Tenc = 0.05*u.Gyr
+        T = 2*u.Gyr
+        dt = 0.1*u.Myr
+        #dt = 1*u.Myr
+        rs = 0*u.pc
     
     # potential parameters
     potential = 3
@@ -344,7 +362,7 @@ def sky(seed=425, th=150):
     plt.xlabel('$\phi_2$ [deg]')
     
     plt.tight_layout()
-    plt.savefig('../plots/spur_morphology_sky_2.png')
+    plt.savefig('../plots/spur_morphology_sky{}.png'.format(old_label))
     #plt.savefig('../paper/spur_morphology_sky.pdf')
 
 
@@ -644,6 +662,7 @@ def generate_variations(seed=425, th=150):
     ienc = np.argmin(np.abs(x))
     
     farray = np.array([0.1, 0.3, 0.5, 1, 2, 3, 10])
+    farray = np.array([0.3,0.5,0.8,0.9,1,1.1,1.2,2,3])
     
     for e, f in enumerate(farray):
         # unperturbed stream
@@ -694,7 +713,7 @@ def generate_variations(seed=425, th=150):
         xi = coord.Angle(xi*u.deg)
         xi -= xioff
         
-        outdict = {'x': stream['x'], 'v': stream['v'], 'xi': xi, 'eta': eta, 'observer': observer, 'vobs': vobs, 'R': R, 'xi0': xioff}
+        outdict = {'x': stream['x'], 'v': stream['v'], 'xi': xi, 'eta': eta, 'observer': observer, 'vobs': vobs, 'R': R, 'xi0': xioff, 'x0': stream0['x'], 'v0': stream0['v']}
         pickle.dump(outdict, open('../data/variations/vary_th{:03d}_T_{:.1f}.pkl'.format(th, f), 'wb'))
     
     # unperturbed stream
@@ -746,7 +765,7 @@ def generate_variations(seed=425, th=150):
         xi = coord.Angle(xi*u.deg)
         xi -= xioff
         
-        outdict = {'x': stream['x'], 'v': stream['v'], 'xi': xi, 'eta': eta, 'observer': observer, 'vobs': vobs, 'R': R, 'xi0': xioff}
+        outdict = {'x': stream['x'], 'v': stream['v'], 'xi': xi, 'eta': eta, 'observer': observer, 'vobs': vobs, 'R': R, 'xi0': xioff, 'x0': stream0['x'], 'v0': stream0['v']}
         pickle.dump(outdict, open('../data/variations/vary_th{:03d}_M_{:.1f}.pkl'.format(th, f), 'wb'))
     
     for e, f in enumerate(farray):
@@ -773,7 +792,7 @@ def generate_variations(seed=425, th=150):
         xi = coord.Angle(xi*u.deg)
         xi -= xioff
         
-        outdict = {'x': stream['x'], 'v': stream['v'], 'xi': xi, 'eta': eta, 'observer': observer, 'vobs': vobs, 'R': R, 'xi0': xioff}
+        outdict = {'x': stream['x'], 'v': stream['v'], 'xi': xi, 'eta': eta, 'observer': observer, 'vobs': vobs, 'R': R, 'xi0': xioff, 'x0': stream0['x'], 'v0': stream0['v']}
         pickle.dump(outdict, open('../data/variations/vary_th{:03d}_B_{:.1f}.pkl'.format(th, f), 'wb'))
     
     theta0 = theta
@@ -786,7 +805,7 @@ def generate_variations(seed=425, th=150):
         
         vpar = Vh + np.cos(theta0.rad)*V0
         vperp = np.sin(theta0.rad)*V0
-        vpar_scaled = vpar
+        vpar_scaled = vpar*f
         vperp_scaled = vperp*f
         
         V = np.sqrt((vpar_scaled-Vh)**2 + vperp_scaled**2)
@@ -811,7 +830,7 @@ def generate_variations(seed=425, th=150):
         xi = coord.Angle(xi*u.deg)
         xi -= xioff
         
-        outdict = {'x': stream['x'], 'v': stream['v'], 'xi': xi, 'eta': eta, 'observer': observer, 'vobs': vobs, 'R': R, 'xi0': xioff}
+        outdict = {'x': stream['x'], 'v': stream['v'], 'xi': xi, 'eta': eta, 'observer': observer, 'vobs': vobs, 'R': R, 'xi0': xioff, 'x0': stream0['x'], 'v0': stream0['v']}
         pickle.dump(outdict, open('../data/variations/vary_th{:03d}_V_{:.1f}.pkl'.format(th, f), 'wb'))
 
 def plot_variations(th=150):
@@ -820,12 +839,13 @@ def plot_variations(th=150):
     plt.close()
     fig, ax = plt.subplots(2,2,figsize=(14,8), sharex=True, sharey=True)
     
-    farray = np.array([0.5, 1, 2])
+    farray = np.array([0.8, 1, 1.2])
     #farray = np.array([0.3,0.5, 1, 2,3])
     Nf = np.size(farray)
     labels = ['M', 'T', 'B', 'V']
     cmaps = [mpl.cm.Oranges, mpl.cm.Greens, mpl.cm.Blues, mpl.cm.Purples]
     lg_scale = ['0.5 ', '', '2 ']
+    lg_scale = ['0.8 ', '', '1.2 ']
     #lg_scale = ['0.3 ', '0.5 ', '', '2 ', '3 ']
     lg_text = ['M', 'T', 'B', 'V$_\perp$']
     
@@ -864,7 +884,171 @@ def plot_variations(th=150):
     plt.xlabel('$\phi_1$ [deg]')
     
     plt.tight_layout()
-    plt.savefig('../plots/variations_th{:03d}.png'.format(th))
+    plt.savefig('../plots/variations_diff_th{:03d}.png'.format(th))
+
+def plot_vvariations(th=150, vind=0):
+    """"""
+    
+    plt.close()
+    fig, ax = plt.subplots(2,2,figsize=(14,8), sharex=True, sharey=True)
+    
+    farray = np.array([0.5, 1, 2])
+    farray = np.array([0.8, 1, 1.2])
+    #farray = np.array([0.3,0.5, 1, 2,3])
+    Nf = np.size(farray)
+    labels = ['M', 'T', 'B', 'V']
+    cmaps = [mpl.cm.Oranges, mpl.cm.Greens, mpl.cm.Blues, mpl.cm.Purples]
+    lg_scale = ['0.5 ', '', '2 ']
+    lg_scale = ['0.8 ', '', '1.2 ']
+    #lg_scale = ['0.3 ', '0.5 ', '', '2 ', '3 ']
+    lg_text = ['M', 'T', 'B', 'V$_\perp$']
+    
+    for i in range(4):
+        irow = np.int(i/2)
+        icol = i%2
+        plt.sca(ax[irow][icol])
+        
+        for e, f in enumerate(farray):
+            var = pickle.load(open('../data/variations/vary_th{:03d}_{:s}_{:.1f}.pkl'.format(th, labels[i], f), 'rb'))
+            label = '{}{}'.format(lg_scale[e], lg_text[i])
+            
+            if irow==0:
+                zorder = Nf - e
+                fcolor = (1 + e)/(Nf+1)
+            else:
+                zorder = e
+                fcolor = (Nf - e)/(Nf+1)
+            
+            # sky coordinates
+            xgal = coord.Galactocentric(var['x'], **var['observer'])
+            xeq = xgal.transform_to(coord.ICRS)
+            veq_ = gc.vgal_to_hel(xeq, var['v'], **var['vobs'])
+            veq = [None] * 3
+            veq[0] = veq_[0].to(u.mas/u.yr)
+            veq[1] = veq_[1].to(u.mas/u.yr)
+            veq[2] = veq_[2].to(u.km/u.s)
+            
+            # unperturbed stream
+            xgal0 = coord.Galactocentric(var['x0'], **var['observer'])
+            xeq0 = xgal0.transform_to(coord.ICRS)
+            veq0_ = gc.vgal_to_hel(xeq0, var['v0'], **var['vobs'])
+            veq0 = [None] * 3
+            veq0[0] = veq0_[0].to(u.mas/u.yr)
+            veq0[1] = veq0_[1].to(u.mas/u.yr)
+            veq0[2] = veq0_[2].to(u.km/u.s)
+            
+            xi0, eta0 = myutils.rotate_angles(xeq0.ra, xeq0.dec, var['R'])
+            xi0 = coord.Angle(xi0*u.deg) - var['xi0']
+            
+            # interpolate expected kinematics from an unperturbed stream
+            wangle = 180*u.deg
+            vexp = np.interp(var['xi'].wrap_at(wangle), xi0.wrap_at(wangle), veq0[vind].value) * veq0[vind].unit
+            plt.plot(var['xi'].wrap_at(wangle), veq[vind]-vexp, 'o', mec='none', color=cmaps[i](fcolor), label=label, zorder=zorder)
+            
+            #plt.plot(var['xi'].wrap_at(180*u.deg), veq[vind], 'o', mec='none', color=cmaps[i](fcolor), label=label, zorder=zorder)
+        
+        plt.legend(fontsize='small', handlelength=0.2)
+    
+    ylims = [[-0.5,0.5],[-0.5,0.5],[-30,20]]
+    ylabels = ['$\mu_{\\alpha_\star}$ [mas yr$^{-1}$]', '$\mu_\delta$ [mas yr$^{-1}$]', '$V_r$ [km s$^{-1}$]']
+    
+    plt.xlim(-45,45)
+    plt.ylim(ylims[vind][0],ylims[vind][1])
+    
+    plt.sca(ax[0][0])
+    plt.ylabel('$\Delta$ {}'.format(ylabels[vind]))
+    
+    plt.sca(ax[1][0])
+    plt.ylabel('$\Delta$ {}'.format(ylabels[vind]))
+    plt.xlabel('$\phi_1$ [deg]')
+    
+    plt.sca(ax[1][1])
+    plt.xlabel('$\phi_1$ [deg]')
+    
+    plt.tight_layout()
+    plt.savefig('../plots/variations_diff_th{:03d}_v{:1d}.png'.format(th, vind))
+
+def compare_effects(pairs=[0,3], th=150, diff=True):
+    """"""
+    
+    plt.close()
+    fig, ax = plt.subplots(1,4,figsize=(16,4), sharex=True)
+    
+    wangle = 180*u.deg
+    if diff:
+        farray = np.array([0.9, 1, 1.1])
+        lg_scale = ['0.9 ', '', '1.1 ']
+        diff_label = '_diff'
+    else:
+        farray = np.array([0.8, 1, 1.2])
+        lg_scale = ['0.8 ', '', '1.2 ']
+        diff_label = ''
+    Nf = np.size(farray)
+    labels = ['M', 'T', 'B', 'V']
+    lg_text = ['M', 'T', 'B', 'V$_\perp$']
+    cmaps = [mpl.cm.Oranges, mpl.cm.Greens, mpl.cm.Blues, mpl.cm.Purples]
+    
+    for i in pairs:
+        for e, f in enumerate(farray):
+            var = pickle.load(open('../data/variations/vary_th{:03d}_{:s}_{:.1f}.pkl'.format(th, labels[i], f), 'rb'))
+            label = '{}{}'.format(lg_scale[e], lg_text[i])
+            
+            if i==0:
+                zorder = Nf - e
+                fcolor = (1 + e)/(Nf+1)
+            else:
+                zorder = e
+                fcolor = (Nf - e)/(Nf+1)
+            
+            # sky coordinates
+            xgal = coord.Galactocentric(var['x'], **var['observer'])
+            xeq = xgal.transform_to(coord.ICRS)
+            veq_ = gc.vgal_to_hel(xeq, var['v'], **var['vobs'])
+            veq = [None] * 3
+            veq[0] = veq_[0].to(u.mas/u.yr)
+            veq[1] = veq_[1].to(u.mas/u.yr)
+            veq[2] = veq_[2].to(u.km/u.s)
+            
+            # unperturbed stream
+            xgal0 = coord.Galactocentric(var['x0'], **var['observer'])
+            xeq0 = xgal0.transform_to(coord.ICRS)
+            veq0_ = gc.vgal_to_hel(xeq0, var['v0'], **var['vobs'])
+            veq0 = [None] * 3
+            veq0[0] = veq0_[0].to(u.mas/u.yr)
+            veq0[1] = veq0_[1].to(u.mas/u.yr)
+            veq0[2] = veq0_[2].to(u.km/u.s)
+            
+            xi0, eta0 = myutils.rotate_angles(xeq0.ra, xeq0.dec, var['R'])
+            xi0 = coord.Angle(xi0*u.deg) - var['xi0']
+            
+            plt.sca(ax[0])
+            plt.plot(var['xi'].wrap_at(180*u.deg), var['eta'], 'o', mec='none', color=cmaps[i](fcolor), label=label, zorder=zorder)
+    
+            for vind in range(3):
+                plt.sca(ax[vind+1])
+                
+                # interpolate expected kinematics from an unperturbed stream
+                vexp = np.interp(var['xi'].wrap_at(wangle), xi0.wrap_at(wangle), veq0[vind].value) * veq0[vind].unit
+                plt.plot(var['xi'].wrap_at(wangle), veq[vind]-vexp, 'o', mec='none', color=cmaps[i](fcolor), label=label, zorder=zorder)
+            
+            
+    ylims = [[-2,5], [-0.5,0.5],[-0.5,0.5],[-30,20]]
+    ylabels = ['$\phi_2$ [deg]', '$\mu_{\\alpha_\star}$ [mas yr$^{-1}$]', '$\mu_\delta$ [mas yr$^{-1}$]', '$V_r$ [km s$^{-1}$]']
+
+    for i in range(4):
+        plt.sca(ax[i])
+        plt.xlim(-45,45)
+        plt.ylim(ylims[i][0],ylims[i][1])
+        
+        plt.xlabel('$\phi_1$ [deg]')
+        plt.ylabel('$\Delta$ {}'.format(ylabels[i]))
+    
+    plt.sca(ax[0])
+    plt.legend(fontsize='x-small', ncol=2, handlelength=0.2)
+    
+    plt.tight_layout()
+    plt.savefig('../plots/effects{}_{}{}.png'.format(diff_label, labels[pairs[0]], labels[pairs[1]]))
+
 
 def vary_time(seed=425, th=150, fmass=1, fb=1, rfig=False):
     """"""
