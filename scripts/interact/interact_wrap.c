@@ -7,13 +7,15 @@ static char module_docstring[] = "This module provides an interface for running 
 static char stream_docstring[] = "Calculate positions and velocities of a streakline stream, given the progenitor initial position and gravitational potential.";
 static char orbit_docstring[] = "Calculate orbit in a parameterized potential given the inital position and velocity.";
 static char encounter_docstring[] = "Calculate orbit of a perturber";
-static char interact_docstring[] = "Calculate reactions of a tube of stars on a perturber flyby";
+static char interact_docstring[] = "Calculate reactions of a tube of stars to a perturber flyby";
+static char general_interact_docstring[] = "Calculate reactions of a tube of stars to a generalized perturber flyby";
     
 /* Available functions */
 static PyObject *interact_stream(PyObject *self, PyObject *args);
 static PyObject *interact_orbit(PyObject *self, PyObject *args);
 static PyObject *interact_encounter(PyObject *self, PyObject *args);
 static PyObject *interact_interact(PyObject *self, PyObject *args);
+static PyObject *interact_general_interact(PyObject *self, PyObject *args);
 
 /* Module specification */
 static PyMethodDef module_methods[] = {
@@ -21,6 +23,7 @@ static PyMethodDef module_methods[] = {
 	{"orbit", interact_orbit, METH_VARARGS, orbit_docstring},
 	{"encounter", interact_encounter, METH_VARARGS, encounter_docstring},
 	{"interact", interact_interact, METH_VARARGS, interact_docstring},
+	{"general_interact", interact_general_interact, METH_VARARGS, general_interact_docstring},
 	{NULL, NULL, 0, NULL}
 };
 
@@ -37,6 +40,104 @@ PyMODINIT_FUNC initinteract(void)
 
 double *pyvector_to_Carrayptrs(PyArrayObject *arrayin);
 
+
+static PyObject *interact_general_interact(PyObject *self, PyObject *args)
+{
+    // Parse the input tuple
+    int potential, potential_perturb;
+    double Tenc, T, dt_;
+    PyObject *par_perturb_obj, *par_perturb_array, *x0_obj, *x0_array, *v0_obj, *v0_array, *par_pot_obj, *par_pot_array, *x1_obj, *x1_array, *x2_obj, *x2_array, *x3_obj, *x3_array, *v1_obj, *v1_array, *v2_obj, *v2_array, *v3_obj, *v3_array;
+
+    // reads in input parameters
+    if (!PyArg_ParseTuple(args, "OOOdddOiiOOOOOO", &par_perturb_obj, &x0_obj, &v0_obj, &Tenc, &T, &dt_, &par_pot_obj, &potential, &potential_perturb, &x1_obj, &x2_obj, &x3_obj, &v1_obj, &v2_obj, &v3_obj))
+        return NULL;
+
+    // Interpret the input parameters as numpy arrays
+    par_perturb_array = PyArray_FROM_OTF(par_perturb_obj, NPY_DOUBLE, NPY_IN_ARRAY);
+    x0_array = PyArray_FROM_OTF(x0_obj, NPY_DOUBLE, NPY_IN_ARRAY);
+    v0_array = PyArray_FROM_OTF(v0_obj, NPY_DOUBLE, NPY_IN_ARRAY);
+    par_pot_array = PyArray_FROM_OTF(par_pot_obj, NPY_DOUBLE, NPY_IN_ARRAY);
+    x1_array = PyArray_FROM_OTF(x1_obj, NPY_DOUBLE, NPY_IN_ARRAY);
+    x2_array = PyArray_FROM_OTF(x2_obj, NPY_DOUBLE, NPY_IN_ARRAY);
+    x3_array = PyArray_FROM_OTF(x3_obj, NPY_DOUBLE, NPY_IN_ARRAY);
+    v1_array = PyArray_FROM_OTF(v1_obj, NPY_DOUBLE, NPY_IN_ARRAY);
+    v2_array = PyArray_FROM_OTF(v2_obj, NPY_DOUBLE, NPY_IN_ARRAY);
+    v3_array = PyArray_FROM_OTF(v3_obj, NPY_DOUBLE, NPY_IN_ARRAY);
+
+    //If that didn't work, throw an exception
+    if (par_perturb_array == NULL) {
+        Py_XDECREF(par_perturb_array);
+        return NULL;
+    }
+    if (x0_array == NULL) {
+        Py_XDECREF(x0_array);
+        return NULL;
+    }
+    if (v0_array == NULL) {
+        Py_XDECREF(v0_array);
+        return NULL;
+    }
+    if (par_pot_array == NULL) {
+        Py_XDECREF(par_pot_array);
+        return NULL;
+    }
+    if (x1_array == NULL) {
+        Py_XDECREF(x1_array);
+        return NULL;
+    }
+    if (x2_array == NULL) {
+        Py_XDECREF(x2_array);
+        return NULL;
+    }
+    if (x3_array == NULL) {
+        Py_XDECREF(x3_array);
+        return NULL;
+    }
+    if (v1_array == NULL) {
+        Py_XDECREF(v1_array);
+        return NULL;
+    }
+    if (v2_array == NULL) {
+        Py_XDECREF(v2_array);
+        return NULL;
+    }
+    if (v3_array == NULL) {
+        Py_XDECREF(v3_array);
+        return NULL;
+    }
+
+    // How many stars are there?
+    int Nstar = (int)PyArray_DIM(x1_array, 0);
+
+    // Get pointers to the data as C-types
+    double *par_perturb, *x0, *v0, *par_pot, *x1, *x2, *x3, *v1, *v2, *v3;
+    par_perturb = (double*)PyArray_DATA(par_perturb_array);
+    x0 = (double*)PyArray_DATA(x0_array);
+    v0 = (double*)PyArray_DATA(v0_array);
+    par_pot = (double*)PyArray_DATA(par_pot_array);
+    x1 = (double*)PyArray_DATA(x1_array);
+    x2 = (double*)PyArray_DATA(x2_array);
+    x3 = (double*)PyArray_DATA(x3_array);
+    v1 = (double*)PyArray_DATA(v1_array);
+    v2 = (double*)PyArray_DATA(v2_array);
+    v3 = (double*)PyArray_DATA(v3_array);
+    
+	// Call the external C function to calculate the interaction
+	int err; 
+    err = general_interact(par_perturb, x0, v0, Tenc, T, dt_, par_pot, potential, potential_perturb, Nstar, x1, x2, x3, v1, v2, v3);
+    
+	// Check if error raised
+	if(err!=0) {
+		PyErr_SetString(PyExc_RuntimeError, "Error occured in the leapfrog integrator.");
+		return NULL;
+	}
+	
+	// Store return array
+	PyObject *out = Py_BuildValue("OOOOOO", x1_array, x2_array, x3_array, v1_array, v2_array, v3_array);
+	
+	// Return positions, velocities and energy as a function of time
+	return out;
+}
 
 static PyObject *interact_interact(PyObject *self, PyObject *args)
 {
