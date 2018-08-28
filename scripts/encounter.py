@@ -1194,7 +1194,8 @@ def fiducial_convolution():
     txt = plt.text(0.97,0.83, '(b)', transform=plt.gca().transAxes, ha='right', fontsize=17)
     
     plt.sca(ax[2])
-    plt.plot(xi.wrap_at(wangle), dv[0] + np.random.randn(Nstar)*0.37*u.mas/u.yr, '.', color=c, zorder=0, rasterized=rasterized)
+    #0.37
+    plt.plot(xi.wrap_at(wangle), dv[0] + np.random.randn(Nstar)*0.25*u.mas/u.yr, '.', color=c, zorder=0, rasterized=rasterized)
 
     txt = plt.text(0.03, 0.8, 'Gaia forecast', transform=plt.gca().transAxes)
     txt.set_bbox(dict(facecolor='w', alpha=0.85, ec='none'))
