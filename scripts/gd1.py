@@ -182,3 +182,160 @@ def stream_timpact():
     
     plt.tight_layout()
     plt.savefig('../plots/orbit_rewind.png', dpi=100)
+
+def save_members():
+    """Save a selection of GD-1 members"""
+    
+    g = Table.read('../data/gd1-with-masks.fits')
+    g = g[g['pm_mask'] & g['gi_cmd_mask']]
+    
+    g.write('../data/members.fits', overwrite=True)
+
+def encounter(bnorm=0.06*u.kpc, bx=0.06*u.kpc, vnorm=200*u.km/u.s, vx=200*u.km/u.s, M=1e7*u.Msun, t_impact=0.5*u.Gyr):
+    """Encounter of GD-1 with a massive perturber"""
+    
+    ########################
+    # Perturber at encounter
+    
+    pkl = pickle.load(open('../data/gap_present.pkl', 'rb'))
+    
+    c = coord.Galactocentric(x=pkl['x_gap'][0], y=pkl['x_gap'][1], z=pkl['x_gap'][2], v_x=pkl['v_gap'][0], v_y=pkl['v_gap'][1], v_z=pkl['v_gap'][2], **gc_frame_dict)
+    w0 = gd.PhaseSpacePosition(c.transform_to(gc_frame).cartesian)
+    
+    # best-fitting orbit
+    #t_impact = 0.5*u.Gyr
+    dt = 0.5*u.Myr
+    n_steps = np.int64(t_impact / dt)
+
+    # integrate back in time
+    fit_orbit = ham.integrate_orbit(w0, dt=-dt, n_steps=n_steps)
+    x = fit_orbit.pos.get_xyz()
+    v = fit_orbit.vel.get_d_xyz()
+    
+    # gap location at the time of impact
+    xgap = x[:,-1]
+    vgap = v[:,-1]
+    
+    i = np.array([1,0,0], dtype=float)
+    j = np.array([0,1,0], dtype=float)
+    k = np.array([0,0,1], dtype=float)
+    
+    # find positional plane
+    bi = np.cross(j, vgap)
+    bi = bi/np.linalg.norm(bi)
+    
+    bj = np.cross(vgap, bi)
+    bj = bj/np.linalg.norm(bj)
+    
+    # pick b
+    by = np.sqrt(bnorm**2 - bx**2)
+    b = bx*bi + by*bj
+    xsub = xgap + b
+    
+    # find velocity plane
+    vi = np.cross(vgap, b)
+    vi = vi/np.linalg.norm(vi)
+    
+    vj = np.cross(b, vi)
+    vj = vj/np.linalg.norm(vj)
+    
+    # pick v
+    vy = np.sqrt(vnorm**2 - vx**2)
+    vsub = vx*vi + vy*vj
+    
+    #####################
+    # Stream at encounter
+    
+    # load one orbital point
+    pos = np.load('../data/log_orbit.npy')
+    phi1, phi2, d, pm1, pm2, vr = pos
+
+    c = gc.GD1(phi1=phi1*u.deg, phi2=phi2*u.deg, distance=d*u.kpc, pm_phi1_cosphi2=pm1*u.mas/u.yr, pm_phi2=pm2*u.mas/u.yr, radial_velocity=vr*u.km/u.s)
+    w0 = gd.PhaseSpacePosition(c.transform_to(gc_frame).cartesian)
+    
+    # best-fitting orbit
+    #t_impact = 0.5*u.Gyr
+    dt = 0.5*u.Myr
+    n_steps = np.int64(t_impact / dt)
+
+    # integrate back in time
+    fit_orbit = ham.integrate_orbit(w0, dt=-dt, n_steps=n_steps)
+    x = fit_orbit.pos.get_xyz()
+    v = fit_orbit.vel.get_d_xyz()
+    xend = x[:,-1]
+    vend = v[:,-1]
+    
+    # fine-sampled orbit at the time of impact
+    c_impact = coord.Galactocentric(x=xend[0], y=xend[1], z=xend[2], v_x=vend[0], v_y=vend[1], v_z=vend[2], **gc_frame_dict)
+    w0_impact = gd.PhaseSpacePosition(c_impact.transform_to(gc_frame).cartesian)
+    
+    # best-fitting orbit
+    t = 56*u.Myr
+    n_steps = 1000
+    dt = t/n_steps
+
+    stream = ham.integrate_orbit(w0_impact, dt=dt, n_steps=n_steps)
+    xs = stream.pos.get_xyz()
+    vs = stream.vel.get_d_xyz()
+    
+    #################
+    # Encounter setup
+    
+    # impact parameters
+    
+    #B = 19.95*u.kpc
+    #B = 20.06*u.kpc
+    #V = 190*u.km/u.s
+    #phi = coord.Angle(0*u.deg)
+    #th = 155
+    #theta = coord.Angle(th*u.deg)
+    Tenc = 0.01*u.Gyr
+    T = 0.5*u.Gyr
+    dt = 0.05*u.Myr
+    rs = 0*u.pc
+    
+    # potential parameters
+    potential = 3
+    Vh = 225*u.km/u.s
+    q = 1*u.Unit(1)
+    rhalo = 0*u.pc
+    par_pot = np.array([Vh.si.value, q.value, rhalo.si.value])
+    
+    # generate stream model
+    potential_perturb = 1
+    par_perturb = np.array([M.si.value, 0., 0., 0.])
+    x1, x2, x3, v1, v2, v3 = interact.general_interact(par_perturb, xsub.si.value, vsub.si.value, Tenc.si.value, t_impact.si.value, dt.si.value, par_pot, potential, potential_perturb, xs[0].si.value, xs[1].si.value, xs[2].si.value, vs[0].si.value, vs[1].si.value, vs[2].si.value)
+    stream = {}
+    stream['x'] = (np.array([x1, x2, x3])*u.m).to(u.pc)
+    stream['v'] = (np.array([v1, v2, v3])*u.m/u.s).to(u.km/u.s)
+    
+    c = coord.Galactocentric(x=stream['x'][0], y=stream['x'][1], z=stream['x'][2], v_x=stream['v'][0], v_y=stream['v'][1], v_z=stream['v'][2], **gc_frame_dict)
+    cg = c.transform_to(gc.GD1)
+    
+    ###########
+    # GD-1 data
+    
+    g = Table.read('../data/members.fits')
+    
+    plt.close()
+    fig, ax = plt.subplots(2, 1, figsize=(12, 5.5), sharex=True, sharey=True)
+
+    plt.sca(ax[0])
+    plt.plot(g['phi1'], g['phi2'], 'ko', ms=2.5, alpha=0.7, mec='none')
+    
+    plt.ylabel('$\phi_2$ [deg]')
+    plt.gca().set_aspect('equal')
+
+    plt.sca(ax[1])
+    plt.plot(cg.phi1.wrap_at(180*u.deg), cg.phi2, 'k.')
+
+    #plt.legend(fontsize='small')
+    plt.xlabel('$\phi_1$ [deg]')
+    plt.ylabel('$\phi_2$ [deg]')
+    
+    plt.xlim(-85,5)
+    plt.ylim(-7,5)
+    plt.gca().set_aspect('equal')
+    
+    plt.tight_layout()
+    plt.savefig('../plots/gd1_encounter.png', dpi=100)
