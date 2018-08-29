@@ -71,7 +71,7 @@ def gd1_model():
     plt.tight_layout()
     plt.savefig('../plots/gd1_orbit.png', dpi=100)
 
-def impact_geometry():
+def impact_geometry(t_impact=0.5*u.Gyr):
     """"""
     pkl = pickle.load(open('../data/gap_present.pkl', 'rb'))
     
@@ -79,8 +79,7 @@ def impact_geometry():
     w0 = gd.PhaseSpacePosition(c.transform_to(gc_frame).cartesian)
     
     # best-fitting orbit
-    t_impact = 0.5*u.Gyr
-    dt = 0.5*u.Myr
+    dt = 0.05*u.Myr
     n_steps = np.int64(t_impact / dt)
 
     # integrate back in time
@@ -91,6 +90,7 @@ def impact_geometry():
     # gap location at the time of impact
     xgap = x[:,-1]
     vgap = v[:,-1]
+    print(xgap)
     
     i = np.array([1,0,0], dtype=float)
     j = np.array([0,1,0], dtype=float)
@@ -134,7 +134,7 @@ def stream_timpact():
     w0 = gd.PhaseSpacePosition(c.transform_to(gc_frame).cartesian)
     
     # best-fitting orbit
-    t_impact = 0.5*u.Gyr
+    t_impact = 0.2*u.Gyr
     dt = 0.5*u.Myr
     n_steps = np.int64(t_impact / dt)
 
@@ -191,19 +191,17 @@ def save_members():
     
     g.write('../data/members.fits', overwrite=True)
 
-def encounter(bnorm=0.06*u.kpc, bx=0.06*u.kpc, vnorm=200*u.km/u.s, vx=200*u.km/u.s, M=1e7*u.Msun, t_impact=0.5*u.Gyr):
+def encounter(bnorm=0.06*u.kpc, bx=0.06*u.kpc, vnorm=200*u.km/u.s, vx=200*u.km/u.s, M=1e7*u.Msun, t_impact=0.5*u.Gyr, verbose=False, fname='gd1_encounter', fig_return=False, fig_annotate=False):
     """Encounter of GD-1 with a massive perturber"""
     
     ########################
     # Perturber at encounter
     
     pkl = pickle.load(open('../data/gap_present.pkl', 'rb'))
-    
     c = coord.Galactocentric(x=pkl['x_gap'][0], y=pkl['x_gap'][1], z=pkl['x_gap'][2], v_x=pkl['v_gap'][0], v_y=pkl['v_gap'][1], v_z=pkl['v_gap'][2], **gc_frame_dict)
     w0 = gd.PhaseSpacePosition(c.transform_to(gc_frame).cartesian)
     
     # best-fitting orbit
-    #t_impact = 0.5*u.Gyr
     dt = 0.5*u.Myr
     n_steps = np.int64(t_impact / dt)
 
@@ -243,6 +241,10 @@ def encounter(bnorm=0.06*u.kpc, bx=0.06*u.kpc, vnorm=200*u.km/u.s, vx=200*u.km/u
     vy = np.sqrt(vnorm**2 - vx**2)
     vsub = vx*vi + vy*vj
     
+    if verbose:
+        print(xsub, np.linalg.norm(xsub))
+        print(vsub)
+    
     #####################
     # Stream at encounter
     
@@ -254,7 +256,6 @@ def encounter(bnorm=0.06*u.kpc, bx=0.06*u.kpc, vnorm=200*u.km/u.s, vx=200*u.km/u
     w0 = gd.PhaseSpacePosition(c.transform_to(gc_frame).cartesian)
     
     # best-fitting orbit
-    #t_impact = 0.5*u.Gyr
     dt = 0.5*u.Myr
     n_steps = np.int64(t_impact / dt)
 
@@ -282,13 +283,6 @@ def encounter(bnorm=0.06*u.kpc, bx=0.06*u.kpc, vnorm=200*u.km/u.s, vx=200*u.km/u
     # Encounter setup
     
     # impact parameters
-    
-    #B = 19.95*u.kpc
-    #B = 20.06*u.kpc
-    #V = 190*u.km/u.s
-    #phi = coord.Angle(0*u.deg)
-    #th = 155
-    #theta = coord.Angle(th*u.deg)
     Tenc = 0.01*u.Gyr
     T = 0.5*u.Gyr
     dt = 0.05*u.Myr
@@ -304,6 +298,10 @@ def encounter(bnorm=0.06*u.kpc, bx=0.06*u.kpc, vnorm=200*u.km/u.s, vx=200*u.km/u
     # generate stream model
     potential_perturb = 1
     par_perturb = np.array([M.si.value, 0., 0., 0.])
+    
+    #potential_perturb = 2
+    #a = 1.05*u.kpc * np.sqrt(M.to(u.Msun).value*1e-8)
+    #par_perturb = np.array([M.si.value, a.si.value, 0, 0, 0])
     x1, x2, x3, v1, v2, v3 = interact.general_interact(par_perturb, xsub.si.value, vsub.si.value, Tenc.si.value, t_impact.si.value, dt.si.value, par_pot, potential, potential_perturb, xs[0].si.value, xs[1].si.value, xs[2].si.value, vs[0].si.value, vs[1].si.value, vs[2].si.value)
     stream = {}
     stream['x'] = (np.array([x1, x2, x3])*u.m).to(u.pc)
@@ -317,19 +315,26 @@ def encounter(bnorm=0.06*u.kpc, bx=0.06*u.kpc, vnorm=200*u.km/u.s, vx=200*u.km/u
     
     g = Table.read('../data/members.fits')
     
+    rasterized = False
+    if fig_return:
+        rasterized = True
+    
     plt.close()
     fig, ax = plt.subplots(2, 1, figsize=(12, 5.5), sharex=True, sharey=True)
 
     plt.sca(ax[0])
-    plt.plot(g['phi1'], g['phi2'], 'ko', ms=2.5, alpha=0.7, mec='none')
+    plt.plot(g['phi1'], g['phi2'], 'ko', ms=2.5, alpha=0.7, mec='none', rasterized=rasterized)
     
     plt.ylabel('$\phi_2$ [deg]')
     plt.gca().set_aspect('equal')
 
     plt.sca(ax[1])
-    plt.plot(cg.phi1.wrap_at(180*u.deg), cg.phi2, 'k.')
+    plt.plot(cg.phi1.wrap_at(180*u.deg), cg.phi2, 'k.', rasterized=rasterized)
 
-    #plt.legend(fontsize='small')
+    if fig_annotate:
+        txt = plt.text(0.02, 0.9, 'M={:g}\nt={}\nb={:.0f} | bi={:.0f}\nv={:.0f} | vi={:.0f}\nvz={:.0f}\nr={:.0f}'.format(M, t_impact, bnorm.to(u.pc), bx.to(u.pc), vnorm, vx, vsub[2], np.linalg.norm(xsub)*xsub.unit), transform=plt.gca().transAxes, va='top', ha='left', fontsize='x-small', color='0.2')
+        txt.set_bbox(dict(facecolor='w', alpha=0.7, ec='none'))
+
     plt.xlabel('$\phi_1$ [deg]')
     plt.ylabel('$\phi_2$ [deg]')
     
@@ -338,4 +343,66 @@ def encounter(bnorm=0.06*u.kpc, bx=0.06*u.kpc, vnorm=200*u.km/u.s, vx=200*u.km/u
     plt.gca().set_aspect('equal')
     
     plt.tight_layout()
-    plt.savefig('../plots/gd1_encounter.png', dpi=100)
+    if fig_return:
+        return fig, cg
+    else:
+        plt.savefig('../plots/{}.png'.format(fname), dpi=100)
+        return cg
+
+def halo():
+    """A model of a GD-1 encounter with a halo object"""
+
+    bnorm = 0.03*u.kpc
+    bx = 0.03*u.kpc
+    vnorm = 225*u.km/u.s
+    vx = 225*u.km/u.s
+    M = 7e6*u.Msun
+    t_impact = 0.5*u.Gyr
+    
+    encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, t_impact=t_impact, fname='gd1_halo', fig_annotate=True, verbose=True)
+
+def disk():
+    """A model of GD-1 encounter with a disk object"""
+    
+    t_impact = 0.1821*u.Gyr
+    M = 1e7*u.Msun
+    bnorm = 30*u.pc
+    vnorm =225*u.km/u.s
+    
+    #for bx in np.linspace(-bnorm, bnorm, 10):
+        #for vx in np.linspace(-vnorm, vnorm, 10):
+            #print(bx, vx)
+            #encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, t_impact=t_impact, fname='gd1_disk_{:02.0f}_{:03.0f}'.format(bx.value, vx.value))
+
+    bx = 3.3*u.pc
+    vx = -225*u.km/u.s
+    encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, t_impact=t_impact, fname='gd1_disk_{:.1f}_{:.0f}'.format(bx.value, vx.value), verbose=True, fig_annotate=True)
+
+def disk_configurations(nimpact=1):
+    """Explore configurations of disk encounters"""
+    if nimpact==1:
+        t_impact = 0.1821*u.Gyr
+    elif nimpact==2:
+        t_impact = 0.418*u.Gyr
+    elif nimpact==3:
+        t_impact = 0.7129*u.Gyr
+    
+    M = 1e7*u.Msun
+    bnorm = 30*u.pc
+    vnorm =225*u.km/u.s
+    N = 6
+    
+    pp = PdfPages('../plots/gd1_disk_{}.pdf'.format(nimpact))
+    outdict = {'models':[], 'bx': [], 'vx': []}
+    for bx in np.linspace(-bnorm, bnorm, N):
+        for vx in np.linspace(-vnorm, vnorm, N):
+            print(bx, vx)
+            fig, cg = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, t_impact=t_impact, fig_return=True, fig_annotate=True)
+            pp.savefig(fig)
+            
+            outdict['models'] += [cg]
+            outdict['bx'] += [bx]
+            outdict['vx'] += [vx]
+    
+    pickle.dump(outdict, open('../data/gd1_disk_{}_coordinates.pkl'.format(nimpact), 'wb'))
+    pp.close()
