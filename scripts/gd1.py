@@ -191,7 +191,7 @@ def save_members():
     
     g.write('../data/members.fits', overwrite=True)
 
-def encounter(bnorm=0.06*u.kpc, bx=0.06*u.kpc, vnorm=200*u.km/u.s, vx=200*u.km/u.s, M=1e7*u.Msun, t_impact=0.5*u.Gyr, verbose=False, fname='gd1_encounter', fig_return=False, fig_annotate=False):
+def encounter(bnorm=0.06*u.kpc, bx=0.06*u.kpc, vnorm=200*u.km/u.s, vx=200*u.km/u.s, M=1e7*u.Msun, t_impact=0.5*u.Gyr, point_mass=True, N=1000, verbose=False, fname='gd1_encounter', fig_return=False, fig_annotate=False, model_return=False):
     """Encounter of GD-1 with a massive perturber"""
     
     ########################
@@ -272,7 +272,7 @@ def encounter(bnorm=0.06*u.kpc, bx=0.06*u.kpc, vnorm=200*u.km/u.s, vx=200*u.km/u
     
     # best-fitting orbit
     t = 56*u.Myr
-    n_steps = 1000
+    n_steps = N
     dt = t/n_steps
 
     stream = ham.integrate_orbit(w0_impact, dt=dt, n_steps=n_steps)
@@ -296,12 +296,17 @@ def encounter(bnorm=0.06*u.kpc, bx=0.06*u.kpc, vnorm=200*u.km/u.s, vx=200*u.km/u
     par_pot = np.array([Vh.si.value, q.value, rhalo.si.value])
     
     # generate stream model
-    potential_perturb = 1
-    par_perturb = np.array([M.si.value, 0., 0., 0.])
+    if point_mass:
+        potential_perturb = 1
+        par_perturb = np.array([M.si.value, 0., 0., 0.])
+    else:
+        potential_perturb = 2
+        a = 1.05*u.kpc * np.sqrt(M.to(u.Msun).value*1e-8)
+        par_perturb = np.array([M.si.value, a.si.value, 0, 0, 0])
+        #result = scipy.integrate.quad(lambda x: bnorm.to(u.pc).value*np.cos(x)**-2 * (a.to(u.pc).value + bnorm.to(u.pc).value*np.cos(x)**-1)**-2, -0.5*np.pi, 0.5*np.pi)
+        #m_ = M * 0.5 * a.to(u.pc).value * (2 / a.to(u.pc).value - result[0])
+        #print('{:e} {:e}'.format(M, m_))
     
-    #potential_perturb = 2
-    #a = 1.05*u.kpc * np.sqrt(M.to(u.Msun).value*1e-8)
-    #par_perturb = np.array([M.si.value, a.si.value, 0, 0, 0])
     x1, x2, x3, v1, v2, v3 = interact.general_interact(par_perturb, xsub.si.value, vsub.si.value, Tenc.si.value, t_impact.si.value, dt.si.value, par_pot, potential, potential_perturb, xs[0].si.value, xs[1].si.value, xs[2].si.value, vs[0].si.value, vs[1].si.value, vs[2].si.value)
     stream = {}
     stream['x'] = (np.array([x1, x2, x3])*u.m).to(u.pc)
@@ -347,7 +352,8 @@ def encounter(bnorm=0.06*u.kpc, bx=0.06*u.kpc, vnorm=200*u.km/u.s, vx=200*u.km/u
         return fig, cg
     else:
         plt.savefig('../plots/{}.png'.format(fname), dpi=100)
-        return cg
+        if model_return:
+            return cg
 
 def halo():
     """A model of a GD-1 encounter with a halo object"""
@@ -406,3 +412,63 @@ def disk_configurations(nimpact=1):
     
     pickle.dump(outdict, open('../data/gd1_disk_{}_coordinates.pkl'.format(nimpact), 'wb'))
     pp.close()
+
+
+# gap width
+def gap_profile(t_impact = 0.5*u.Gyr, N=2000):
+    """"""
+    
+    # model
+    bnorm = 0.03*u.kpc
+    bx = 0.03*u.kpc
+    vnorm = 225*u.km/u.s
+    vx = 225*u.km/u.s
+    M = 7e6*u.Msun
+    #t_impact = 0.5*u.Gyr
+    
+    cg = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, t_impact=t_impact, N=N, fname='gd1_{:03.0f}'.format(t_impact.to(u.Myr).value), model_return=True)
+    phi2_mask = np.abs(cg.phi2)<0.5*u.deg
+    
+    # data
+    g = Table.read('../data/members.fits')
+    phi2_mask_data = np.abs(g['phi2'])<0.5
+    phi2_mask_back = (g['phi2']<-0.75) & (g['phi2']>-1.75)
+    
+    bx = np.linspace(-60,-20,20)
+    bc = 0.5 * (bx[1:] + bx[:-1])
+    density = False
+    
+    h_data, be = np.histogram(g['phi1'][phi2_mask_data], bins=bx, density=density)
+    yerr = np.sqrt(h_data)
+    #h_back, be = np.histogram(g['phi1'][phi2_mask_back], bins=bx, density=density)
+    #h_data = h_data - h_back
+    #print(h_back)
+    #med = np.median(h_data)
+    #h_data = h_data / med
+    #yerr = yerr / med
+    
+    h_model, be = np.histogram(cg.phi1[phi2_mask].wrap_at(180*u.deg).value, bins=bx, density=density)
+    #h_model = h_model / np.median(h_model)
+    
+    plt.close()
+    plt.figure(figsize=(10,6))
+    
+    plt.plot(bc, h_data, 'ko', label='Data')
+    plt.errorbar(bc, h_data, yerr=yerr, fmt='none', color='k', label='')
+    plt.plot(bc, h_model, 'ko', ms=10, mec='none', alpha=0.5, label='Model')
+    
+    plt.legend(fontsize='small')
+    plt.xlabel('$\phi_1$ [deg]')
+    plt.ylabel('$\\tilde{N}$')
+    
+    plt.tight_layout()
+    plt.savefig('../plots/gap_profile_{:03.0f}.png'.format(t_impact.to(u.Myr).value))
+
+def gap_sizes():
+    """"""
+    
+    times = np.logspace(np.log10(5),np.log10(500),10)*u.Myr
+    
+    for t in times:
+        gap_profile(t_impact=t, N=2000)
+    
