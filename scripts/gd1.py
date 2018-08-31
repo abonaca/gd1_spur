@@ -276,9 +276,9 @@ def encounter(bnorm=0.06*u.kpc, bx=0.06*u.kpc, vnorm=200*u.km/u.s, vx=200*u.km/u
     n_steps = N
     dt = t/n_steps
 
-    stream = ham.integrate_orbit(w0_impact, dt=dt, n_steps=n_steps)
-    xs = stream.pos.get_xyz()
-    vs = stream.vel.get_d_xyz()
+    stream_init = ham.integrate_orbit(w0_impact, dt=dt, n_steps=n_steps)
+    xs = stream_init.pos.get_xyz()
+    vs = stream_init.vel.get_d_xyz()
     
     #################
     # Encounter setup
@@ -350,11 +350,11 @@ def encounter(bnorm=0.06*u.kpc, bx=0.06*u.kpc, vnorm=200*u.km/u.s, vx=200*u.km/u
     
     plt.tight_layout()
     if fig_return:
-        return fig, cg
+        return fig, cg, stream_init.energy()
     else:
         plt.savefig('../plots/{}.png'.format(fname), dpi=100)
         if model_return:
-            return cg
+            return cg, stream_init.energy()
 
 def halo():
     """A model of a GD-1 encounter with a halo object"""
@@ -366,7 +366,9 @@ def halo():
     M = 7e6*u.Msun
     t_impact = 0.5*u.Gyr
     
-    encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, t_impact=t_impact, fname='gd1_halo', fig_annotate=True, verbose=True)
+    cg, e = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, t_impact=t_impact, fname='gd1_halo', fig_annotate=True, verbose=True, model_return=True)
+    outdict = {'model': cg, 'energy': e}
+    pickle.dump(outdict, open('../data/gd1_halo_coordinates.pkl', 'wb'))
 
 def disk():
     """A model of GD-1 encounter with a disk object"""
@@ -400,14 +402,15 @@ def disk_configurations(nimpact=1):
     N = 6
     
     pp = PdfPages('../plots/gd1_disk_{}.pdf'.format(nimpact))
-    outdict = {'models':[], 'bx': [], 'vx': []}
+    outdict = {'models':[], 'energy':[], 'bx': [], 'vx': []}
     for bx in np.linspace(-bnorm, bnorm, N):
         for vx in np.linspace(-vnorm, vnorm, N):
             print(bx, vx)
-            fig, cg = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, t_impact=t_impact, fig_return=True, fig_annotate=True)
+            fig, cg, e = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, t_impact=t_impact, fig_return=True, fig_annotate=True)
             pp.savefig(fig)
             
             outdict['models'] += [cg]
+            outdict['energy'] += [e]
             outdict['bx'] += [bx]
             outdict['vx'] += [vx]
     
@@ -576,7 +579,29 @@ def disk_encounter(nimpact=1, bnorm=30*u.pc, vnorm=225*u.km/u.s, M=1e7*u.Msun, p
     plt.savefig('../plots/gd1_gmc_{}.png'.format(nimpact))
 
 # gap width
-def gap_profile(t_impact = 0.5*u.Gyr, N=2000):
+def stream_track():
+    """Show stream track"""
+    g = Table.read('../data/members.fits')
+    
+    p = np.load('/home/ana/projects/GD1-DR2/output/polytrack.npy')
+    poly = np.poly1d(p)
+    x = np.linspace(-100,20,100)
+    y = poly(x)
+    
+    plt.close()
+    plt.figure(figsize=(12,4))
+    
+    plt.plot(g['phi1'], g['phi2'], 'k.', ms=1)
+    plt.plot(x, y-0.5, 'r-', zorder=0)
+    plt.plot(x, y+0.5, 'r-', zorder=0)
+    
+    plt.xlim(-80,5)
+    plt.ylim(-10,5)
+    plt.gca().set_aspect('equal')
+    
+    plt.tight_layout()
+
+def gap_profile(t_impact=0.5*u.Gyr, N=2000):
     """"""
     
     # model
@@ -586,40 +611,57 @@ def gap_profile(t_impact = 0.5*u.Gyr, N=2000):
     vx = 225*u.km/u.s
     M = 7e6*u.Msun
     #t_impact = 0.5*u.Gyr
+    p = np.load('/home/ana/projects/GD1-DR2/output/polytrack.npy')
+    poly = np.poly1d(p)
     
     cg = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, t_impact=t_impact, N=N, fname='gd1_{:03.0f}'.format(t_impact.to(u.Myr).value), model_return=True)
-    phi2_mask = np.abs(cg.phi2)<0.5*u.deg
+    phi2_mask = np.abs(cg.phi2.value - poly(cg.phi1.wrap_at(180*u.deg).value))<0.5
     
     # data
     g = Table.read('../data/members.fits')
-    phi2_mask_data = np.abs(g['phi2'])<0.5
-    phi2_mask_back = (g['phi2']<-0.75) & (g['phi2']>-1.75)
+    phi2_mask_data = np.abs(g['phi2'] - poly(g['phi1']))<0.5
     
-    bx = np.linspace(-60,-20,20)
+    bx = np.linspace(-60,-20,30)
     bc = 0.5 * (bx[1:] + bx[:-1])
+    Nb = np.size(bc)
     density = False
     
     h_data, be = np.histogram(g['phi1'][phi2_mask_data], bins=bx, density=density)
-    yerr = np.sqrt(h_data)
-    #h_back, be = np.histogram(g['phi1'][phi2_mask_back], bins=bx, density=density)
-    #h_data = h_data - h_back
-    #print(h_back)
-    #med = np.median(h_data)
-    #h_data = h_data / med
-    #yerr = yerr / med
-    
+    yerr_data = np.sqrt(h_data)
+
     h_model, be = np.histogram(cg.phi1[phi2_mask].wrap_at(180*u.deg).value, bins=bx, density=density)
-    #h_model = h_model / np.median(h_model)
+    yerr_model = np.sqrt(h_data)
     
-    ytop = tophat(bc, 40, 20, -40, 7)
+    # data tophat
+    phi1_edges = np.array([-55, -45, -35, -25, -43, -37])
+    base_mask = ((bc>phi1_edges[0]) & (bc<phi1_edges[1])) | ((bc>phi1_edges[2]) & (bc<phi1_edges[3]))
+    hat_mask = (bc>phi1_edges[4]) & (bc<phi1_edges[5])
+    data_base = np.median(h_data[base_mask])
+    data_hat = np.median(h_data[hat_mask])
+
+    position = -40.5
+    width = 8.5
+    ytop_data = tophat(bc, data_base, data_hat, position, width)
+    np.savez('../data/gap_properties', position=position, width=width, phi1_edges=phi1_edges, yerr=yerr_data)
+    
+    # model tophat
+    model_base = np.median(h_model[base_mask])
+    model_hat = np.median(h_model[hat_mask])
+    model_hat = np.minimum(model_hat, model_base*0.5)
+    ytop_model = tophat(bc, model_base, model_hat, position, width)
+    
+    chi_gap = np.sum((h_model - ytop_model)**2/yerr_model**2)/Nb
+    print(t_impact, chi_gap)
     
     plt.close()
     plt.figure(figsize=(10,6))
     
     plt.plot(bc, h_data, 'ko', label='Data')
-    plt.errorbar(bc, h_data, yerr=yerr, fmt='none', color='k', label='')
-    plt.plot(bc, h_model, 'ko', ms=10, mec='none', alpha=0.5, label='Model')
-    plt.plot(bc, ytop, 'r-', label='Top-hat')
+    plt.errorbar(bc, h_data, yerr=yerr_data, fmt='none', color='k', label='')
+    plt.plot(bc, h_model, 'o', ms=10, mec='none', color='0.5', label='Model')
+    plt.errorbar(bc, h_model, yerr=yerr_model, fmt='none', color='0.5', label='')
+    plt.plot(bc, ytop_data, '-', color='k', alpha=0.5, label='Top-hat data')
+    plt.plot(bc, ytop_model, '-', color='0.5', alpha=0.5, label='Top-hat model')
     
     plt.legend(fontsize='small')
     plt.xlabel('$\phi_1$ [deg]')
@@ -635,6 +677,18 @@ def gap_sizes():
     
     for t in times:
         gap_profile(t_impact=t, N=2000)
+
+def tophat_data(x, hat_mid, hat_width):
+    """"""
+    base_level = 31.5
+    hat_level = 20
+    ret=[]
+    for xx in x:
+        if hat_mid-hat_width/2. < xx < hat_mid+hat_width/2.:
+            ret.append(hat_level)
+        else:
+            ret.append(base_level)
+    return np.array(ret)
 
 def tophat(x, base_level, hat_level, hat_mid, hat_width):
     ret=[]
@@ -666,3 +720,342 @@ def fit_tophat():
         plt.plot( x, tophat(x, popt[0], popt[1], popt[2], popt[3]) )
 
     plt.show()
+
+
+# spuriness
+
+import scipy.interpolate
+def loop_track():
+    """Find track through the observed loop stars"""
+    
+    g = Table.read('../data/members.fits')
+    
+    p = np.load('/home/ana/projects/GD1-DR2/output/polytrack.npy')
+    poly = np.poly1d(p)
+    x = np.linspace(-50,-38,10)
+    y = poly(x)
+    
+    x_ = np.array([-36.26, -34.9808, -32.9621, -29.9093])
+    y_ = np.array([1.15983, 1.40602, 1.55373, 1.2583])
+    
+    x_ = np.array([-36.4793, -34.9808, -32.6, -29.9093])
+    y_ = np.array([1.01339, 1.40602, 1.31276, 1.15])
+    
+    x = np.concatenate([x, x_])
+    y = np.concatenate([y, y_])
+    isort = np.argsort(x)
+    x = x[isort]
+    y = y[isort]
+    
+    np.savez('../data/spur_track', x=x, y=y)
+    
+    xi = np.linspace(-50,-30,2000)
+    fy = scipy.interpolate.interp1d(x, y, kind='quadratic')
+    #yi = np.interp(xi, x, y)
+    yi = fy(xi)
+    
+    plt.close()
+    plt.figure(figsize=(12,5))
+    
+    plt.plot(g['phi1'], g['phi2'], 'k.', ms=4)
+    plt.plot(x, y, 'ro', zorder=0)
+    plt.plot(xi, yi, 'r-', lw=0.5)
+    
+    plt.xlim(-80,0)
+    plt.ylim(-10,5)
+    plt.gca().set_aspect('equal')
+    
+    plt.tight_layout()
+
+def loop_stars(N=1000, t_impact=0.5*u.Gyr, bnorm=0.06*u.kpc, bx=0.06*u.kpc, vnorm=200*u.km/u.s, vx=200*u.km/u.s, M=1e7*u.Msun):
+    """Identify loop stars"""
+    
+    ########################
+    # Perturber at encounter
+    
+    pkl = pickle.load(open('../data/gap_present.pkl', 'rb'))
+    c = coord.Galactocentric(x=pkl['x_gap'][0], y=pkl['x_gap'][1], z=pkl['x_gap'][2], v_x=pkl['v_gap'][0], v_y=pkl['v_gap'][1], v_z=pkl['v_gap'][2], **gc_frame_dict)
+    w0 = gd.PhaseSpacePosition(c.transform_to(gc_frame).cartesian)
+    
+    # best-fitting orbit
+    dt = 0.5*u.Myr
+    n_steps = np.int64(t_impact / dt)
+
+    # integrate back in time
+    fit_orbit = ham.integrate_orbit(w0, dt=-dt, n_steps=n_steps)
+    x = fit_orbit.pos.get_xyz()
+    v = fit_orbit.vel.get_d_xyz()
+    
+    # gap location at the time of impact
+    xgap = x[:,-1]
+    vgap = v[:,-1]
+    
+    i = np.array([1,0,0], dtype=float)
+    j = np.array([0,1,0], dtype=float)
+    k = np.array([0,0,1], dtype=float)
+    
+    # find positional plane
+    bi = np.cross(j, vgap)
+    bi = bi/np.linalg.norm(bi)
+    
+    bj = np.cross(vgap, bi)
+    bj = bj/np.linalg.norm(bj)
+    
+    # pick b
+    by = np.sqrt(bnorm**2 - bx**2)
+    b = bx*bi + by*bj
+    xsub = xgap + b
+    
+    # find velocity plane
+    vi = np.cross(vgap, b)
+    vi = vi/np.linalg.norm(vi)
+    
+    vj = np.cross(b, vi)
+    vj = vj/np.linalg.norm(vj)
+    
+    # pick v
+    vy = np.sqrt(vnorm**2 - vx**2)
+    vsub = vx*vi + vy*vj
+    
+    # load one orbital point
+    pos = np.load('../data/log_orbit.npy')
+    phi1, phi2, d, pm1, pm2, vr = pos
+
+    c = gc.GD1(phi1=phi1*u.deg, phi2=phi2*u.deg, distance=d*u.kpc, pm_phi1_cosphi2=pm1*u.mas/u.yr, pm_phi2=pm2*u.mas/u.yr, radial_velocity=vr*u.km/u.s)
+    w0 = gd.PhaseSpacePosition(c.transform_to(gc_frame).cartesian)
+    
+    # best-fitting orbit
+    dt = 0.5*u.Myr
+    n_steps = np.int64(t_impact / dt)
+
+    # integrate back in time
+    fit_orbit = ham.integrate_orbit(w0, dt=-dt, n_steps=n_steps)
+    x = fit_orbit.pos.get_xyz()
+    v = fit_orbit.vel.get_d_xyz()
+    xend = x[:,-1]
+    vend = v[:,-1]
+    
+    # fine-sampled orbit at the time of impact
+    c_impact = coord.Galactocentric(x=xend[0], y=xend[1], z=xend[2], v_x=vend[0], v_y=vend[1], v_z=vend[2], **gc_frame_dict)
+    w0_impact = gd.PhaseSpacePosition(c_impact.transform_to(gc_frame).cartesian)
+    
+    # best-fitting orbit
+    t = 56*u.Myr
+    n_steps = N
+    dt = t/n_steps
+
+    stream = ham.integrate_orbit(w0_impact, dt=dt, n_steps=n_steps)
+    xs = stream.pos.get_xyz()
+    vs = stream.vel.get_d_xyz()
+    
+    Ep = 0.5*(225*u.km/u.s)**2*np.log(np.sum(xs.value**2, axis=0))
+    Ek = 0.5*np.sum(vs**2, axis=0)
+    Etot = Ep + Ek
+    
+    Ep_true = stream.potential_energy()
+    Etot_true = stream.energy()
+    Ek_true = stream.kinetic_energy()
+    
+    #################
+    # Encounter setup
+    
+    # impact parameters
+    Tenc = 0.01*u.Gyr
+    T = 0.5*u.Gyr
+    dt = 0.05*u.Myr
+    rs = 0*u.pc
+    
+    # potential parameters
+    potential = 3
+    Vh = 225*u.km/u.s
+    q = 1*u.Unit(1)
+    rhalo = 0*u.pc
+    par_pot = np.array([Vh.si.value, q.value, rhalo.si.value])
+    
+    # generate stream model
+    potential_perturb = 1
+    par_perturb = np.array([M.si.value, 0., 0., 0.])
+
+    x1, x2, x3, v1, v2, v3 = interact.general_interact(par_perturb, xsub.si.value, vsub.si.value, Tenc.si.value, t_impact.si.value, dt.si.value, par_pot, potential, potential_perturb, xs[0].si.value, xs[1].si.value, xs[2].si.value, vs[0].si.value, vs[1].si.value, vs[2].si.value)
+    stream = {}
+    stream['x'] = (np.array([x1, x2, x3])*u.m).to(u.kpc)
+    stream['v'] = (np.array([v1, v2, v3])*u.m/u.s).to(u.km/u.s)
+    
+    c = coord.Galactocentric(x=stream['x'][0], y=stream['x'][1], z=stream['x'][2], v_x=stream['v'][0], v_y=stream['v'][1], v_z=stream['v'][2], **gc_frame_dict)
+    cg = c.transform_to(gc.GD1)
+    
+    Ep_stream = 0.5*(225*u.km/u.s)**2*np.log(stream['x'][0].value**2 + stream['x'][1].value**2 + stream['x'][2].value**2)
+    Ek_stream = 0.5*(stream['v'][0]**2 + stream['v'][1]**2 + stream['v'][2]**2)
+    Etot_stream = Ep_stream + Ek_stream
+    
+    rE = np.abs(1 - Etot_stream/Etot)
+    dE = Etot - Etot_stream
+    Ntrue = np.size(rE)
+    N2 = int(Ntrue/2)
+    
+    m1 = np.median(rE[:N2])
+    m2 = np.median(rE[N2:])
+    
+    offset = 0.001
+    top1 = np.percentile(dE[:N2], 3)*dE.unit
+    top2 = np.percentile(dE[N2:], 92)*dE.unit
+    ind_loop1 = np.where(dE[:N2]<top1)[0][0]
+    ind_loop2 = np.where(dE[N2:]>top2)[0][-1]
+    
+    #ind_loop1 = np.where(rE[:N2]>m1+offset)[0][0]
+    #ind_loop2 = np.where(rE[N2:]>m2+offset)[0][-1]
+    
+    print(ind_loop1, ind_loop2)
+    
+    loop_mask = np.zeros(Ntrue, dtype=bool)
+    loop_mask[ind_loop1:ind_loop2+N2] = True
+    phi1_mask = (cg.phi1.wrap_at(180*u.deg)>-50.*u.deg) & (cg.phi1.wrap_at(180*u.deg)<-30*u.deg)
+    loop_mask = loop_mask & phi1_mask
+    print(np.sum(loop_mask))
+    
+    # chi spur
+    sp = np.load('../data/spur_track.npz')
+    f = scipy.interpolate.interp1d(sp['x'], sp['y'], kind='quadratic')
+    
+    Nloop = np.sum(loop_mask)
+    chi_spur = np.sum((cg.phi2[loop_mask].value - f(cg.phi1.wrap_at(180*u.deg).value[loop_mask]))**2/0.5**2)/Nloop
+    print(chi_spur)
+    
+    plt.close()
+    fig, ax = plt.subplots(2,1,figsize=(10,7))
+    
+    plt.sca(ax[0])
+    plt.plot(cg.phi1.wrap_at(180*u.deg), dE, 'o')
+    plt.plot(cg.phi1.wrap_at(180*u.deg)[loop_mask], dE[loop_mask], 'o')
+    
+    #plt.plot(cg.phi1.wrap_at(180*u.deg)[N2:], rE[N2:], 'o')
+    #plt.plot(cg.phi1.wrap_at(180*u.deg)[:N2], rE[:N2], 'o')
+    
+    #plt.plot(rE[:N2], 'o')
+    #plt.plot(rE[N2:], 'o')
+    
+    plt.sca(ax[1])
+    plt.plot(cg.phi1.wrap_at(180*u.deg), cg.phi2, 'o')
+    plt.plot(cg.phi1.wrap_at(180*u.deg)[loop_mask], cg.phi2[loop_mask], 'o')
+    
+    #ls = [':', '-']
+    #for e, f in enumerate([0, 0.0002]):
+        #plt.axhline(f+m1, ls=ls[e])
+        #plt.axhline(f+m2, ls=ls[e], color='tab:orange')
+    
+    #plt.axvline(ind_loop1)
+    #plt.axvline(ind_loop2, color='tab:orange')
+    
+    plt.xlim(-80,-20)
+    plt.ylim(-10,10)
+    plt.gca().set_aspect('equal')
+    
+    plt.tight_layout()
+
+
+def gauge_encounter():
+    """"""
+    pk0 = pickle.load(open('../data/gd1_halo_coordinates.pkl', 'rb'))
+    pk = pickle.load(open('../data/gd1_disk_1_coordinates.pkl', 'rb'))
+    pk['models'] += [pk0['model']]
+    pk['energy'] += [pk0['energy']]
+    Nmod = len(pk['models'])
+    
+    chi_gap = np.zeros(Nmod)
+    chi_spur = np.zeros(Nmod)
+    
+    sp = np.load('../data/spur_track.npz')
+    f = scipy.interpolate.interp1d(sp['x'], sp['y'], kind='quadratic')
+    
+    bx = np.linspace(-60,-20,30)
+    bc = 0.5 * (bx[1:] + bx[:-1])
+    Nb = np.size(bc)
+    
+    gap = np.load('../data/gap_properties.npz')
+    phi1_edges = gap['phi1_edges']
+    base_mask = ((bc>phi1_edges[0]) & (bc<phi1_edges[1])) | ((bc>phi1_edges[2]) & (bc<phi1_edges[3]))
+    hat_mask = (bc>phi1_edges[4]) & (bc<phi1_edges[5])
+    
+    p = np.load('/home/ana/projects/GD1-DR2/output/polytrack.npy')
+    poly = np.poly1d(p)
+    
+    ind2plot = [9, 12, 17, 36, Nmod]
+    cnt = 0
+    
+    plt.close()
+    plt.figure(figsize=(15,6))
+    
+    ax1 = plt.subplot2grid((4, 3), (0, 0), rowspan=4)
+    ax2 = plt.subplot2grid((4, 3), (0, 1), colspan=2)
+    ax3 = plt.subplot2grid((4, 3), (1, 1), colspan=2, sharex=ax2)
+    ax4 = plt.subplot2grid((4, 3), (2, 1), colspan=2, sharex=ax2)
+    ax5 = plt.subplot2grid((4, 3), (3, 1), colspan=2, sharex=ax2)
+    ax = [ax1, ax2, ax3, ax4, ax5]
+    
+    for e in range(Nmod):
+        cg = pk['models'][e]
+        cgal = cg.transform_to(gc_frame)
+        
+        # spur chi^2
+        Ep = 0.5*(225*u.km/u.s)**2*np.log(cgal.x.to(u.kpc).value**2 + cgal.y.to(u.kpc).value**2 + cgal.z.to(u.kpc).value**2)
+        Ek = 0.5*(cgal.v_x**2 + cgal.v_y**2 + cgal.v_z**2)
+        Etot = Ep + Ek
+
+        dE = pk['energy'][e] - Etot
+        N = np.size(dE)
+        N2 = int(N/2)
+
+        top1 = np.percentile(dE[:N2], 3)*dE.unit
+        top2 = np.percentile(dE[N2:], 92)*dE.unit
+        ind_loop1 = np.where(dE[:N2]<top1)[0][0]
+        ind_loop2 = np.where(dE[N2:]>top2)[0][-1]
+        
+        aloop_mask = np.zeros(N, dtype=bool)
+        aloop_mask[ind_loop1:ind_loop2+N2] = True
+        phi1_mask = (cg.phi1.wrap_at(180*u.deg)>-50.*u.deg) & (cg.phi1.wrap_at(180*u.deg)<-30*u.deg)
+        loop_mask = aloop_mask & phi1_mask
+        Nloop = np.sum(loop_mask)
+        
+        chi_spur[e] = np.sum((cg.phi2[loop_mask].value - f(cg.phi1.wrap_at(180*u.deg).value[loop_mask]))**2/0.5**2)/Nloop
+        
+        # gap chi^2
+        phi2_mask = np.abs(cg.phi2.value - poly(cg.phi1.wrap_at(180*u.deg).value))<0.5
+        h_model, be = np.histogram(cg.phi1[phi2_mask].wrap_at(180*u.deg).value, bins=bx)
+        
+        model_base = np.median(h_model[base_mask])
+        model_hat = np.median(h_model[hat_mask])
+        model_hat = np.minimum(model_hat, model_base*0.5)
+        ytop_model = tophat(bc, model_base, model_hat, gap['position'], gap['width'])
+        
+        chi_gap[e] = np.sum((h_model - ytop_model)**2/gap['yerr']**2)/Nb
+        
+        if e==ind2plot[cnt]:
+            plt.sca(ax[cnt+1])
+            plt.plot(cg.phi1.wrap_at(180*u.deg), cg.phi2, 'k.')
+            
+            if cnt<3:
+                plt.gca().tick_params(labelbottom=False)
+            else:
+                plt.xlabel('$\phi_1$ [deg]')
+            
+            plt.text(0.03, 0.8, '{}'.format(e), fontsize='small', transform=plt.gca().transAxes)
+            plt.xlim(-80,0)
+            plt.ylabel('$\phi_2$ [deg]')
+            
+            cnt += 1
+    
+    plt.sca(ax[0])
+    plt.plot(chi_gap, chi_spur, 'ko')
+    plt.plot(chi_gap[-1], chi_spur[-1], 'ro')
+    
+    plt.xlabel('$\chi^2_{gap}$')
+    plt.ylabel('$\chi^2_{spur}$')
+    
+    for e in range(Nmod):
+        plt.text(chi_gap[e]*1.07, chi_spur[e]*1.07, '{}'.format(e), fontsize='xx-small')
+    
+    plt.gca().set_xscale('log')
+    plt.gca().set_yscale('log')
+    
+    plt.tight_layout(h_pad=0)
+    plt.savefig('../plots/encounter_likeness.png')
