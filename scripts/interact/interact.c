@@ -6,6 +6,312 @@ double Mcli, Mclf, Rcl, dt;
 // potential definitions
 int par_perpotential[15] = {0, 4, 5, 4, 7, 8, 11, 4, 15, 13, 14, 19, 26, 6, 6};
 
+double energy(double *x, double *v, double vh){
+    int i;
+    double Ep=0., Ek=0., Etot=0.;
+    
+    for(i=0;i<3;i++){
+        Ek += 0.5*v[i]*v[i];
+        Ep += x[i]*x[i];
+    }
+    Ep = log(Ep) * 0.5 * vh * vh;
+    
+//     Ep = 0.5*(225*u.km/u.s)**2*np.log(np.sum(xs.value**2, axis=0))
+//     Ek = 0.5*np.sum(vs**2, axis=0)
+    Etot = Ep + Ek;
+    
+    return Etot;
+}
+
+int abinit_interaction(double *xgap, double *vgap, double *xend, double *vend, double dt_, double dt_fine, double T, double Tenc, double Tstream, int Nstream, double *par_pot, int potential, double *par_perturb, int potential_perturb, double bx, double by, double vx, double vy, double *x1, double *x2, double *x3, double *v1, double *v2, double *v3)
+{
+    int i, j, k, Nimpact, Nenc, Ntot, Napar_pot, Napar_perturb, Napar_combined, potential_combined;
+    double direction, dt_stream, b[3], bi[3], bj[3], binorm, bjnorm, vi[3], vj[3], vinorm, vjnorm, xsub[3], vsub[3], x[3], v[3];
+    
+    Nimpact = T/dt_;
+    dt = dt_;
+    
+    // setup underlying potential
+    Napar_pot = par_perpotential[potential];
+    double apar_pot[Napar_pot];
+    initpar(potential, par_pot, apar_pot);
+    
+    // setup perturber potential
+    Napar_perturb = par_perpotential[potential_perturb];
+    double apar_perturb[Napar_perturb];
+    
+    // setup combined potential of the galaxy and the perturber
+    potential_combined = potential + potential_perturb;
+    Napar_combined = par_perpotential[potential_combined];
+    double apar_combined[Napar_combined];
+    
+    for(i=0;i<Napar_perturb;i++)
+        apar_combined[i] = apar_perturb[i];
+    
+    for(i=0;i<Napar_pot;i++)
+        apar_combined[i+Napar_perturb] = apar_pot[i];
+    
+    ///////////////////////////////////////////
+    // Find initial perturber & stream position
+    direction = -1.;
+    
+//     double e1, e2;
+//     e1 = energy(xgap, vgap, par_pot[0]);
+    
+    // initial leapfrog step
+    dostep1(xgap, vgap, apar_pot, potential, dt, direction);
+    dostep1(xend, vend, apar_pot, potential, dt, direction);
+
+    // leapfrog steps
+    for(i=1;i<Nimpact;i++){
+        dostep(xgap, vgap, apar_pot, potential, dt, direction);
+        dostep(xend, vend, apar_pot, potential, dt, direction);
+    }
+    
+    // final leapfrog step
+    dostep1(xgap, vgap, apar_pot, potential, dt, -direction);
+    dostep1(xend, vend, apar_pot, potential, dt, -direction);
+    
+//     e2 = energy(xgap, vgap, par_pot[0]);
+//     printf("%.20lf %e\n", e1/e2, e1-e2);
+    
+    // find positional plane
+    bi[0] = vgap[2];
+    bi[1] = 0.;
+    bi[2] = -vgap[0];
+    binorm = sqrt(bi[0]*bi[0] + bi[1]*bi[1] + bi[2]*bi[2]);
+    
+    bj[0] = vgap[1]*bi[2] - vgap[2]*bi[1];
+    bj[1] = vgap[2]*bi[0] - vgap[0]*bi[2];
+    bj[2] = vgap[0]*bi[1] - vgap[1]*bi[0];
+    bjnorm = sqrt(bj[0]*bj[0] + bj[1]*bj[1] + bj[2]*bj[2]);
+
+    // position of the perturber
+    for(i=0;i<3;i++){
+        bi[i] = bi[i] / binorm;
+        bj[i] = bj[i] / bjnorm;
+        b[i] = bx*bi[i] + by*bj[i];
+        xsub[i] = xgap[i] + b[i];
+    }
+    
+    // find velocity plane
+    vi[0] = vgap[1]*b[2] - vgap[2]*b[1];
+    vi[1] = vgap[2]*b[0] - vgap[0]*b[2];
+    vi[2] = vgap[0]*b[1] - vgap[1]*b[0];
+    vinorm = sqrt(vi[0]*vi[0] + vi[1]*vi[1] + vi[2]*vi[2]);
+    
+    vj[0] = b[1]*vi[2] - b[2]*vi[1];
+    vj[1] = b[2]*vi[0] - b[0]*vi[2];
+    vj[2] = b[0]*vi[1] - b[1]*vi[0];
+    vjnorm = sqrt(vj[0]*vj[0] + vj[1]*vj[1] + vj[2]*vj[2]);
+    
+    // velocity of the perturber
+    for(i=0;i<3;i++){
+        vi[i] = vi[i] / vinorm;
+        vj[i] = vj[i] / vjnorm;
+        vsub[i] = vx*vi[i] + vy*vj[i];
+    }
+    
+    /////////////////////////
+    // generate stream points
+    direction = 1.;
+    dt_stream = Tstream / (float)Nstream;
+    dt = dt_stream;
+    
+    // initial leapfrog step
+    dostep1(xend, vend, apar_pot, potential, dt, direction);
+    t2n(xend, x1, x2, x3, 0);
+    t2n(vend, v1, v2, v3, 0);
+
+    // leapfrog steps
+    for(i=1;i<Nstream;i++){
+        dostep(xend, vend, apar_pot, potential, dt, direction);
+        t2n(xend, x1, x2, x3, i);
+        t2n(vend, v1, v2, v3, i);
+    }
+    
+    // final leapfrog step
+    dostep1(xend, vend, apar_pot, potential, dt, -direction);
+    t2n(xend, x1, x2, x3, Nstream-1);
+    t2n(vend, v1, v2, v3, Nstream-1);
+    
+    //////////////////////////////////////////////////
+    // Find initial positions for perturber and stream
+    direction = -1.;
+    Nenc = Tenc / dt_fine;
+    dt = dt_fine;
+    Ntot = (T + Tenc) / dt_fine + 1;
+    
+    // initial leapfrog step
+    // perturber
+    dostep1(xsub, vsub, apar_pot, potential, dt, direction);
+    // stream
+    for(i=0;i<Nstream;i++){
+        // choose a star
+        n2t(x, x1, x2, x3, i);
+        n2t(v, v1, v2, v3, i);
+        
+        dostep1(x, v, apar_pot, potential, dt, direction);
+        
+        t2n(x, x1, x2, x3, i);
+        t2n(v, v1, v2, v3, i);
+    }
+
+    // leapfrog steps
+    for(j=1;j<Nenc;j++){
+        // perturber
+        dostep(xsub, vsub, apar_pot, potential, dt, direction);
+        // stream
+        for(i=0;i<Nstream;i++){
+            // choose a star
+            n2t(x, x1, x2, x3, i);
+            n2t(v, v1, v2, v3, i);
+            
+            dostep(x, v, apar_pot, potential, dt, direction);
+            
+            t2n(x, x1, x2, x3, i);
+            t2n(v, v1, v2, v3, i);
+        }
+    }
+    
+    // final leapfrog step
+    // perturber
+    dostep1(xsub, vsub, apar_pot, potential, dt, -direction);
+    // stream
+    for(i=0;i<Nstream;i++){
+        // choose a star
+        n2t(x, x1, x2, x3, i);
+        n2t(v, v1, v2, v3, i);
+        
+        dostep1(x, v, apar_pot, potential, dt, -direction);
+        
+        t2n(x, x1, x2, x3, i);
+        t2n(v, v1, v2, v3, i);
+    }
+    
+    ///////////////////
+    // Perturb the tube
+    direction = 1.;
+    
+//     // Reinitiate the perturber
+//     t2t(x0, xp);
+//     t2t(v0, vp);
+    
+    ////////////////////////
+    // Initial leapfrog step
+    for(k=0;k<3;k++)
+        par_perturb[k+Napar_perturb-3] = xsub[k];
+    initpar(potential_perturb, par_perturb, apar_perturb);
+    for(i=0;i<Napar_perturb;i++)
+        apar_combined[i] = apar_perturb[i];
+    
+    // update stream points
+    for(i=0;i<Nstream;i++){
+        // choose a star
+        n2t(x, x1, x2, x3, i);
+        n2t(v, v1, v2, v3, i);
+        
+        dostep1(x, v, apar_combined, potential_combined, dt, direction);
+        
+        t2n(x, x1, x2, x3, i);
+        t2n(v, v1, v2, v3, i);
+    }
+    
+    // update perturber
+    dostep1(xsub, vsub, apar_pot, potential, dt, direction);
+    
+    /////////////////
+    // Leapfrog steps
+    // in the combined potential of the perturber and the Galaxy
+    for(j=1;j<2*Nenc+1;j++){
+//     for(j=1;j<Ntot;j++){
+        for(k=0;k<3;k++)
+            par_perturb[k+Napar_perturb-3] = xsub[k];
+        initpar(potential_perturb, par_perturb, apar_perturb);
+        for(i=0;i<Napar_perturb;i++)
+            apar_combined[i] = apar_perturb[i];
+        
+        // update stream points
+        for(i=0;i<Nstream;i++){
+            // choose a star
+            n2t(x, x1, x2, x3, i);
+            n2t(v, v1, v2, v3, i);
+            
+            dostep(x, v, apar_combined, potential_combined, dt, direction);
+            
+            t2n(x, x1, x2, x3, i);
+            t2n(v, v1, v2, v3, i);
+        }
+        
+        // update perturber
+        dostep(xsub, vsub, apar_pot, potential, dt, direction);
+    }
+    
+    // update stream points
+    for(i=0;i<Nstream;i++){
+        // choose a star
+        n2t(x, x1, x2, x3, i);
+        n2t(v, v1, v2, v3, i);
+        
+        dostep1(x, v, apar_pot, potential, dt, -direction);
+        
+        t2n(x, x1, x2, x3, i);
+        t2n(v, v1, v2, v3, i);
+    }
+    
+    // without the perturber, to avoid double encounters
+    dt = dt_;
+    Ntot = (T-Tenc)/dt_;
+    
+    // update stream points
+    for(i=0;i<Nstream;i++){
+        // choose a star
+        n2t(x, x1, x2, x3, i);
+        n2t(v, v1, v2, v3, i);
+        
+        dostep1(x, v, apar_pot, potential, dt, direction);
+        
+        t2n(x, x1, x2, x3, i);
+        t2n(v, v1, v2, v3, i);
+    }
+    
+    for(j=0;j<Ntot;j++){
+        // update stream points
+        for(i=0;i<Nstream;i++){
+            // choose a star
+            n2t(x, x1, x2, x3, i);
+            n2t(v, v1, v2, v3, i);
+            
+            dostep(x, v, apar_pot, potential, dt, direction);
+            
+            t2n(x, x1, x2, x3, i);
+            t2n(v, v1, v2, v3, i);
+        }
+    }
+    
+    //////////////////////
+    // Final leapfrog step
+//     for(k=0;k<3;k++)
+//         par_perturb[k+Napar_perturb-3] = xsub[k];
+//     initpar(potential_perturb, par_perturb, apar_perturb);
+//     for(i=0;i<Napar_perturb;i++)
+//         apar_combined[i] = apar_perturb[i];
+    
+    // update stream points
+    for(i=0;i<Nstream;i++){
+        // choose a star
+        n2t(x, x1, x2, x3, i);
+        n2t(v, v1, v2, v3, i);
+        
+        dostep1(x, v, apar_pot, potential, dt, -direction);
+        
+        t2n(x, x1, x2, x3, i);
+        t2n(v, v1, v2, v3, i);
+    }
+    
+    return 0;
+}
+
 int general_interact(double *par_perturb, double *x0, double *v0, double Tenc, double T, double dt_, double *par_pot, int potential, int potential_perturb, int Nstar, double *x1, double *x2, double *x3, double *v1, double *v2, double *v3)
 {
     int i, j, k, Nenc, Ntot, Napar_perturb, Napar_pot, potential_combined, Napar_combined;
@@ -52,6 +358,10 @@ int general_interact(double *par_perturb, double *x0, double *v0, double Tenc, d
     // Find initial perturber position
 //     apar[0] = 0.;
     direction = -1.;
+    
+//     for(i=0;i<3;i++){
+//         printf("%e %e\n", x0[i], v0[i]);
+//     }
     
     // initial leapfrog step
     dostep1(x0, v0, apar_pot, potential, dt, direction);
@@ -168,6 +478,10 @@ int general_interact(double *par_perturb, double *x0, double *v0, double Tenc, d
     initpar(potential_perturb, par_perturb, apar_perturb);
     for(i=0;i<Napar_perturb;i++)
         apar_combined[i] = apar_perturb[i];
+    
+//     for(i=0;i<3;i++){
+//         printf("%e %e\n", xp[i], vp[i]);
+//     }
     
     // update stream points
     for(i=0;i<Nstar;i++){
