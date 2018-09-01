@@ -192,7 +192,7 @@ def save_members():
     
     g.write('../data/members.fits', overwrite=True)
 
-def encounter(bnorm=0.06*u.kpc, bx=0.06*u.kpc, vnorm=200*u.km/u.s, vx=200*u.km/u.s, M=1e7*u.Msun, t_impact=0.5*u.Gyr, point_mass=True, N=1000, verbose=False, fname='gd1_encounter', fig_return=False, fig_annotate=False, model_return=False):
+def encounter(bnorm=0.06*u.kpc, bx=0.06*u.kpc, vnorm=200*u.km/u.s, vx=200*u.km/u.s, M=1e7*u.Msun, t_impact=0.5*u.Gyr, point_mass=True, N=1000, verbose=False, fname='gd1_encounter', fig_return=False, fig_annotate=False, model_return=False, fig_plot=True):
     """Encounter of GD-1 with a massive perturber"""
     
     ########################
@@ -321,34 +321,35 @@ def encounter(bnorm=0.06*u.kpc, bx=0.06*u.kpc, vnorm=200*u.km/u.s, vx=200*u.km/u
     
     g = Table.read('../data/members.fits')
     
-    rasterized = False
-    if fig_return:
-        rasterized = True
-    
-    plt.close()
-    fig, ax = plt.subplots(2, 1, figsize=(12, 5.5), sharex=True, sharey=True)
+    if fig_plot:
+        rasterized = False
+        if fig_return:
+            rasterized = True
+        
+        plt.close()
+        fig, ax = plt.subplots(2, 1, figsize=(12, 5.5), sharex=True, sharey=True)
 
-    plt.sca(ax[0])
-    plt.plot(g['phi1'], g['phi2'], 'ko', ms=2.5, alpha=0.7, mec='none', rasterized=rasterized)
-    
-    plt.ylabel('$\phi_2$ [deg]')
-    plt.gca().set_aspect('equal')
+        plt.sca(ax[0])
+        plt.plot(g['phi1'], g['phi2'], 'ko', ms=2.5, alpha=0.7, mec='none', rasterized=rasterized)
+        
+        plt.ylabel('$\phi_2$ [deg]')
+        plt.gca().set_aspect('equal')
 
-    plt.sca(ax[1])
-    plt.plot(cg.phi1.wrap_at(180*u.deg), cg.phi2, 'k.', rasterized=rasterized)
+        plt.sca(ax[1])
+        plt.plot(cg.phi1.wrap_at(180*u.deg), cg.phi2, 'k.', rasterized=rasterized)
 
-    if fig_annotate:
-        txt = plt.text(0.02, 0.9, 'M={:g}\nt={}\nb={:.0f} | bi={:.0f}\nv={:.0f} | vi={:.0f}\nvz={:.0f}\nr={:.0f}'.format(M, t_impact, bnorm.to(u.pc), bx.to(u.pc), vnorm, vx, vsub[2], np.linalg.norm(xsub)*xsub.unit), transform=plt.gca().transAxes, va='top', ha='left', fontsize='x-small', color='0.2')
-        txt.set_bbox(dict(facecolor='w', alpha=0.7, ec='none'))
+        if fig_annotate:
+            txt = plt.text(0.02, 0.9, 'M={:g}\nt={}\nb={:.0f} | bi={:.0f}\nv={:.0f} | vi={:.0f}\nvz={:.0f}\nr={:.0f}'.format(M, t_impact, bnorm.to(u.pc), bx.to(u.pc), vnorm, vx, vsub[2], np.linalg.norm(xsub)*xsub.unit), transform=plt.gca().transAxes, va='top', ha='left', fontsize='x-small', color='0.2')
+            txt.set_bbox(dict(facecolor='w', alpha=0.7, ec='none'))
 
-    plt.xlabel('$\phi_1$ [deg]')
-    plt.ylabel('$\phi_2$ [deg]')
-    
-    plt.xlim(-85,5)
-    plt.ylim(-7,5)
-    plt.gca().set_aspect('equal')
-    
-    plt.tight_layout()
+        plt.xlabel('$\phi_1$ [deg]')
+        plt.ylabel('$\phi_2$ [deg]')
+        
+        plt.xlim(-85,5)
+        plt.ylim(-7,5)
+        plt.gca().set_aspect('equal')
+        
+        plt.tight_layout()
     if fig_return:
         return fig, cg, stream_init.energy()
     else:
@@ -953,6 +954,8 @@ def loop_stars(N=1000, t_impact=0.5*u.Gyr, bnorm=0.06*u.kpc, bx=0.06*u.kpc, vnor
     plt.tight_layout()
 
 
+# search parameter space
+
 def gauge_encounter():
     """"""
     pk0 = pickle.load(open('../data/gd1_halo_coordinates.pkl', 'rb'))
@@ -1059,3 +1062,291 @@ def gauge_encounter():
     
     plt.tight_layout(h_pad=0)
     plt.savefig('../plots/encounter_likeness.png')
+
+def generate_slices():
+    """"""
+    
+    t_impact = 0.5*u.Gyr
+    M = 7e6*u.Msun
+    vnorm = 225*u.km/u.s
+    vx = 225*u.km/u.s
+    bnorm = 0.03*u.kpc
+    bx = 0.03*u.kpc
+    
+    # fiducial model
+    cg, e = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, t_impact=t_impact, fname='gd1_halo', fig_annotate=True, verbose=False, model_return=True, fig_plot=False)
+    outdict = {'model': [cg], 'energy': [e], 't_impact': [t_impact], 'M': [M], 'vnorm': [vnorm], 'vx': [vx], 'bnorm': [bnorm], 'bx': [bx]}
+    
+    params0 = [M, vnorm, bnorm]
+    params = [M, vnorm, bnorm]
+    Npar = len(params)
+    flist = np.linspace(0.4,1.6,10)
+    
+    for ipar in range(Npar):
+        for f in flist:
+            for i in range(Npar):
+                params[i] = params0[i]
+            params[ipar] = f * params0[ipar]
+            print(params)
+            
+            cg, e = encounter(bnorm=params[2], bx=params[2], vnorm=params[1], vx=params[1], M=params[0], t_impact=t_impact, fname='gd1_halo', fig_annotate=True, verbose=False, model_return=True, fig_plot=False)
+            
+            outdict['model'] += [cg]
+            outdict['energy'] += [e]
+            outdict['t_impact'] += [t_impact]
+            outdict['M'] += [params[0]]
+            outdict['vnorm'] += [params[1]]
+            outdict['vx'] += [params[1]]
+            outdict['bnorm'] += [params[2]]
+            outdict['bx'] += [params[2]]
+    
+    pickle.dump(outdict, open('../data/fiducial_slices.pkl', 'wb'))
+
+def slice_likelihood():
+    """"""
+    pk = pickle.load(open('../data/fiducial_slices.pkl', 'rb'))
+    Nmod = len(pk['model'])
+    
+    chi_gap = np.zeros(Nmod)
+    chi_spur = np.zeros(Nmod)
+    
+    sp = np.load('../data/spur_track.npz')
+    f = scipy.interpolate.interp1d(sp['x'], sp['y'], kind='quadratic')
+    
+    bx = np.linspace(-60,-20,30)
+    bc = 0.5 * (bx[1:] + bx[:-1])
+    Nb = np.size(bc)
+    
+    gap = np.load('../data/gap_properties.npz')
+    phi1_edges = gap['phi1_edges']
+    base_mask = ((bc>phi1_edges[0]) & (bc<phi1_edges[1])) | ((bc>phi1_edges[2]) & (bc<phi1_edges[3]))
+    hat_mask = (bc>phi1_edges[4]) & (bc<phi1_edges[5])
+    
+    p = np.load('/home/ana/projects/GD1-DR2/output/polytrack.npy')
+    poly = np.poly1d(p)
+    
+    ind2plot = [1,10,11,22,Nmod]
+    cnt = 0
+    
+    plt.close()
+    plt.figure(figsize=(15,6))
+    
+    ax1 = plt.subplot2grid((4, 3), (0, 0), rowspan=4)
+    ax2 = plt.subplot2grid((4, 3), (0, 1), colspan=2)
+    ax3 = plt.subplot2grid((4, 3), (1, 1), colspan=2, sharex=ax2)
+    ax4 = plt.subplot2grid((4, 3), (2, 1), colspan=2, sharex=ax2)
+    ax5 = plt.subplot2grid((4, 3), (3, 1), colspan=2, sharex=ax2)
+    ax = [ax1, ax2, ax3, ax4, ax5]
+    
+    for e in range(Nmod):
+        cg = pk['model'][e]
+        cgal = cg.transform_to(gc_frame)
+        
+        # spur chi^2
+        Ep = 0.5*(225*u.km/u.s)**2*np.log(cgal.x.to(u.kpc).value**2 + cgal.y.to(u.kpc).value**2 + cgal.z.to(u.kpc).value**2)
+        Ek = 0.5*(cgal.v_x**2 + cgal.v_y**2 + cgal.v_z**2)
+        Etot = Ep + Ek
+
+        dE = pk['energy'][e] - Etot
+        N = np.size(dE)
+        N2 = int(N/2)
+
+        top1 = np.percentile(dE[:N2], 3)*dE.unit
+        top2 = np.percentile(dE[N2:], 92)*dE.unit
+        ind_loop1 = np.where(dE[:N2]<top1)[0][0]
+        ind_loop2 = np.where(dE[N2:]>top2)[0][-1]
+        
+        aloop_mask = np.zeros(N, dtype=bool)
+        aloop_mask[ind_loop1:ind_loop2+N2] = True
+        phi1_mask = (cg.phi1.wrap_at(180*u.deg)>-50.*u.deg) & (cg.phi1.wrap_at(180*u.deg)<-30*u.deg)
+        loop_mask = aloop_mask & phi1_mask
+        Nloop = np.sum(loop_mask)
+        
+        chi_spur[e] = np.sum((cg.phi2[loop_mask].value - f(cg.phi1.wrap_at(180*u.deg).value[loop_mask]))**2/0.5**2)/Nloop
+        
+        # gap chi^2
+        phi2_mask = np.abs(cg.phi2.value - poly(cg.phi1.wrap_at(180*u.deg).value))<0.5
+        h_model, be = np.histogram(cg.phi1[phi2_mask].wrap_at(180*u.deg).value, bins=bx)
+        
+        model_base = np.median(h_model[base_mask])
+        model_hat = np.median(h_model[hat_mask])
+        model_hat = np.minimum(model_hat, model_base*0.5)
+        ytop_model = tophat(bc, model_base, model_hat, gap['position'], gap['width'])
+        
+        chi_gap[e] = np.sum((h_model - ytop_model)**2/gap['yerr']**2)/Nb
+        
+        if e==ind2plot[cnt]:
+            plt.sca(ax[cnt+1])
+            plt.plot(cg.phi1.wrap_at(180*u.deg), cg.phi2, 'k.')
+            plt.plot(cg.phi1.wrap_at(180*u.deg)[loop_mask], cg.phi2[loop_mask], '.', color='tab:orange')
+            
+            if cnt<3:
+                plt.gca().tick_params(labelbottom=False)
+            else:
+                plt.xlabel('$\phi_1$ [deg]')
+            
+            plt.text(0.03, 0.8, '{}'.format(e), fontsize='small', transform=plt.gca().transAxes)
+            plt.xlim(-80,0)
+            plt.ylabel('$\phi_2$ [deg]')
+            
+            cnt += 1
+    
+    plt.sca(ax[0])
+    plt.plot(chi_gap[1:11], chi_spur[1:11], 'o-', label='M varies')
+    plt.plot(chi_gap[11:21], chi_spur[11:21], 'o-', label='v varies')
+    plt.plot(chi_gap[21:], chi_spur[21:], 'o-', label='b varies')
+
+    plt.plot(chi_gap[0], chi_spur[0], 'ko', ms=8, label='Fiducial')
+    
+    plt.legend(fontsize='x-small')
+    plt.xlabel('$\chi^2_{gap}$')
+    plt.ylabel('$\chi^2_{spur}$')
+    
+    for e in range(Nmod):
+        plt.text(chi_gap[e]+0.02, chi_spur[e]+0.02, '{}'.format(e), fontsize='xx-small')
+    
+    plt.tight_layout(h_pad=0)
+
+import time
+
+def run():
+    """"""
+    
+    t_impact = 1.5*u.Gyr
+    bx = 30*u.pc
+    by = 0*u.pc
+    vx = 225*u.km/u.s
+    vy = 0*u.km/u.s
+    M = 1e7*u.Msun
+    
+    potential = 3
+    Vh = 225*u.km/u.s
+    q = 1*u.Unit(1)
+    rhalo = 0*u.pc
+    par_pot = np.array([Vh.si.value, q.value, rhalo.si.value])
+    
+    potential_perturb = 1
+    par_perturb = np.array([M.si.value, 0., 0., 0.])
+    Tenc = 0.12*u.Gyr
+    
+    pkl = pickle.load(open('../data/gap_present.pkl', 'rb'))
+    c = coord.Galactocentric(x=pkl['x_gap'][0], y=pkl['x_gap'][1], z=pkl['x_gap'][2], v_x=pkl['v_gap'][0], v_y=pkl['v_gap'][1], v_z=pkl['v_gap'][2], **gc_frame_dict)
+    w0 = gd.PhaseSpacePosition(c.transform_to(gc_frame).cartesian)
+    xgap = np.array([w0.pos.x.si.value, w0.pos.y.si.value, w0.pos.z.si.value])
+    vgap = np.array([w0.vel.d_x.si.value, w0.vel.d_y.si.value, w0.vel.d_z.si.value])
+    
+    # load orbital end point
+    pos = np.load('../data/log_orbit.npy')
+    phi1, phi2, d, pm1, pm2, vr = pos
+
+    c_end = gc.GD1(phi1=phi1*u.deg, phi2=phi2*u.deg, distance=d*u.kpc, pm_phi1_cosphi2=pm1*u.mas/u.yr, pm_phi2=pm2*u.mas/u.yr, radial_velocity=vr*u.km/u.s)
+    w0_end = gd.PhaseSpacePosition(c_end.transform_to(gc_frame).cartesian)
+    xend = np.array([w0_end.pos.x.si.value, w0_end.pos.y.si.value, w0_end.pos.z.si.value])
+    vend = np.array([w0_end.vel.d_x.si.value, w0_end.vel.d_y.si.value, w0_end.vel.d_z.si.value])
+    
+    dt_coarse = 0.5*u.Myr
+    Tstream = 56*u.Myr
+    Nstream = 2000
+    dt_stream = Tstream/Nstream
+    dt_fine = 0.05*u.Myr
+    
+    t1 = time.time()
+    x1, x2, x3, v1, v2, v3 = interact.abinit_interaction(xgap, vgap, xend, vend, dt_coarse.si.value, dt_fine.si.value, t_impact.si.value, Tenc.si.value, Tstream.si.value, Nstream, par_pot, potential, par_perturb, potential_perturb, bx.si.value, by.si.value, vx.si.value, vy.si.value)
+    t2 = time.time()
+    
+    ########################
+    # Perturber at encounter
+    
+    # best-fitting orbit
+    dt = 0.5*u.Myr
+    n_steps = np.int64(t_impact / dt)
+
+    # integrate back in time
+    fit_orbit = ham.integrate_orbit(w0, dt=-dt, n_steps=n_steps)
+    x = fit_orbit.pos.get_xyz()
+    v = fit_orbit.vel.get_d_xyz()
+    
+    # gap location at the time of impact
+    xgap = x[:,-1]
+    vgap = v[:,-1]
+    
+    j = np.array([0,1,0], dtype=float)
+    
+    # find positional plane
+    bi = np.cross(j, vgap)
+    bi = bi/np.linalg.norm(bi)
+    
+    bj = np.cross(vgap, bi)
+    bj = bj/np.linalg.norm(bj)
+    
+    b = bx*bi + by*bj
+    xsub = xgap + b
+    
+    # find velocity plane
+    vi = np.cross(vgap, b)
+    vi = vi/np.linalg.norm(vi)
+    
+    vj = np.cross(b, vi)
+    vj = vj/np.linalg.norm(vj)
+    
+    # pick v
+    vsub = vx*vi + vy*vj
+    
+    #####################
+    # Stream at encounter
+    
+    # best-fitting orbit
+    dt = 0.5*u.Myr
+    n_steps = np.int64(t_impact / dt)
+
+    # integrate back in time
+    fit_orbit = ham.integrate_orbit(w0_end, dt=-dt, n_steps=n_steps)
+    x = fit_orbit.pos.get_xyz()
+    v = fit_orbit.vel.get_d_xyz()
+    xend = x[:,-1]
+    vend = v[:,-1]
+    
+    #print(xend.si, vend.si)
+    #print(fit_orbit.energy()[0]/fit_orbit.energy()[-1])
+    
+    # fine-sampled orbit at the time of impact
+    c_impact = coord.Galactocentric(x=xend[0], y=xend[1], z=xend[2], v_x=vend[0], v_y=vend[1], v_z=vend[2], **gc_frame_dict)
+    w0_impact = gd.PhaseSpacePosition(c_impact.transform_to(gc_frame).cartesian)
+    
+    # best-fitting orbit
+    stream_init = ham.integrate_orbit(w0_impact, dt=dt_stream, n_steps=Nstream)
+    xs = stream_init.pos.get_xyz()
+    vs = stream_init.vel.get_d_xyz()
+    
+    x1_, x2_, x3_, v1_, v2_, v3_ = interact.general_interact(par_perturb, xsub.si.value, vsub.si.value, Tenc.si.value, t_impact.si.value, dt_fine.si.value, par_pot, potential, potential_perturb, xs[0].si.value, xs[1].si.value, xs[2].si.value, vs[0].si.value, vs[1].si.value, vs[2].si.value)
+    
+    t3 = time.time()
+    
+    dt_c = t2 - t1
+    dt_p = t3 - t2
+    print(dt_c, dt_p, dt_p/dt_c)
+    
+    stream = {}
+    stream['x'] = (np.array([x1, x2, x3])*u.m).to(u.kpc)
+    stream['v'] = (np.array([v1, v2, v3])*u.m/u.s).to(u.km/u.s)
+    
+    stream_ = {}
+    stream_['x'] = (np.array([x1_, x2_, x3_])*u.m).to(u.kpc)
+    stream_['v'] = (np.array([v1_, v2_, v3_])*u.m/u.s).to(u.km/u.s)
+    
+    plt.close()
+    fig, ax = plt.subplots(1,2,figsize=(10,5))
+    plt.sca(ax[0])
+    plt.plot(stream['x'][0], stream['x'][1], 'o')
+    plt.plot(stream_['x'][0], stream_['x'][1], 'o')
+    
+    plt.sca(ax[1])
+    plt.plot(stream['v'][0], stream['v'][1], 'o')
+    plt.plot(stream_['v'][0], stream_['v'][1], 'o')
+    
+    plt.tight_layout()
+    
+
+def objective_function():
+    """"""
+    
