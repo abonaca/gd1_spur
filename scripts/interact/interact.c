@@ -15,15 +15,12 @@ double energy(double *x, double *v, double vh){
         Ep += x[i]*x[i];
     }
     Ep = log(Ep) * 0.5 * vh * vh;
-    
-//     Ep = 0.5*(225*u.km/u.s)**2*np.log(np.sum(xs.value**2, axis=0))
-//     Ek = 0.5*np.sum(vs**2, axis=0)
     Etot = Ep + Ek;
     
     return Etot;
 }
 
-int abinit_interaction(double *xgap, double *vgap, double *xend, double *vend, double dt_, double dt_fine, double T, double Tenc, double Tstream, int Nstream, double *par_pot, int potential, double *par_perturb, int potential_perturb, double bx, double by, double vx, double vy, double *x1, double *x2, double *x3, double *v1, double *v2, double *v3)
+int abinit_interaction(double *xgap, double *vgap, double *xend, double *vend, double dt_, double dt_fine, double T, double Tenc, double Tstream, int Nstream, double *par_pot, int potential, double *par_perturb, int potential_perturb, double bx, double by, double vx, double vy, double *x1, double *x2, double *x3, double *v1, double *v2, double *v3, double *de)
 {
     int i, j, k, Nimpact, Nenc, Ntot, Napar_pot, Napar_perturb, Napar_combined, potential_combined;
     double direction, dt_stream, b[3], bi[3], bj[3], binorm, bjnorm, vi[3], vj[3], vinorm, vjnorm, xsub[3], vsub[3], x[3], v[3];
@@ -187,6 +184,8 @@ int abinit_interaction(double *xgap, double *vgap, double *xend, double *vend, d
         
         t2n(x, x1, x2, x3, i);
         t2n(v, v1, v2, v3, i);
+        
+        de[i] = energy(x, v, par_pot[0]);
     }
     
     ///////////////////
@@ -307,6 +306,8 @@ int abinit_interaction(double *xgap, double *vgap, double *xend, double *vend, d
         
         t2n(x, x1, x2, x3, i);
         t2n(v, v1, v2, v3, i);
+        
+        de[i] -= energy(x, v, par_pot[0]);
     }
     
     return 0;

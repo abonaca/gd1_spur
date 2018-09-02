@@ -99,13 +99,12 @@ static PyObject *interact_abinit_interaction(PyObject *self, PyObject *args)
     par_perturb = (double*)PyArray_DATA(par_perturb_array);
     
     // Set up return array pointers
-	double *x1, *x2, *x3, *v1, *v2, *v3;
-// 	double x1[Nstream], x2[Nstream], x3[Nstream], v1[Nstream], v2[Nstream], v3[Nstream];
+	double *x1, *x2, *x3, *v1, *v2, *v3, *de;
 	int nd=1;
 	npy_intp dims[2];
 //     int N = T/dt_;
 	dims[0] = Nstream;
-	PyArrayObject *py_x1, *py_x2, *py_x3, *py_v1, *py_v2, *py_v3;
+	PyArrayObject *py_x1, *py_x2, *py_x3, *py_v1, *py_v2, *py_v3, *py_de;
 	
 	// Python arrays
 	py_x1 = (PyArrayObject*) PyArray_SimpleNew(nd, dims, NPY_DOUBLE);
@@ -114,6 +113,7 @@ static PyObject *interact_abinit_interaction(PyObject *self, PyObject *args)
 	py_v1 = (PyArrayObject*) PyArray_SimpleNew(nd, dims, NPY_DOUBLE);
 	py_v2 = (PyArrayObject*) PyArray_SimpleNew(nd, dims, NPY_DOUBLE);
 	py_v3 = (PyArrayObject*) PyArray_SimpleNew(nd, dims, NPY_DOUBLE);
+	py_de = (PyArrayObject*) PyArray_SimpleNew(nd, dims, NPY_DOUBLE);
 	
 	// Pointers to C arrays
 	x1 = pyvector_to_Carrayptrs(py_x1);
@@ -122,10 +122,11 @@ static PyObject *interact_abinit_interaction(PyObject *self, PyObject *args)
 	v1 = pyvector_to_Carrayptrs(py_v1);
 	v2 = pyvector_to_Carrayptrs(py_v2);
 	v3 = pyvector_to_Carrayptrs(py_v3);
+    de = pyvector_to_Carrayptrs(py_de);
     
 	// Call the external C function to calculate the interaction
 	int err; 
-    err = abinit_interaction(xgap, vgap, xend, vend, dt_, dt_fine, T, Tenc, Tstream, Nstream, par_pot, potential, par_perturb, potential_perturb, bx, by, vx, vy, x1, x2, x3, v1, v2, v3);
+    err = abinit_interaction(xgap, vgap, xend, vend, dt_, dt_fine, T, Tenc, Tstream, Nstream, par_pot, potential, par_perturb, potential_perturb, bx, by, vx, vy, x1, x2, x3, v1, v2, v3, de);
     
 	// Check if error raised
 	if(err!=0) {
@@ -134,7 +135,7 @@ static PyObject *interact_abinit_interaction(PyObject *self, PyObject *args)
 	}
     
     // Store return array
-	PyObject *out = Py_BuildValue("OOOOOO", py_x1, py_x2, py_x3, py_v1, py_v2, py_v3);
+	PyObject *out = Py_BuildValue("OOOOOOO", py_x1, py_x2, py_x3, py_v1, py_v2, py_v3, py_de);
 	
 	// Clean up
 	Py_XDECREF(py_x1);
@@ -143,6 +144,7 @@ static PyObject *interact_abinit_interaction(PyObject *self, PyObject *args)
 	Py_XDECREF(py_v1);
 	Py_XDECREF(py_v2);
 	Py_XDECREF(py_v3);
+    Py_XDECREF(py_de);
 
     // Return positions, velocities and energy as a function of time
 	return out;
