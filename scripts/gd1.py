@@ -1350,7 +1350,7 @@ def test_abinitio():
     
     plt.tight_layout()
 
-def run(cont=False, steps=100):
+def run(cont=False, steps=100, nwalkers=100, nth=8):
     """"""
     
     pkl = pickle.load(open('../data/gap_present.pkl', 'rb'))
@@ -1392,7 +1392,7 @@ def run(cont=False, steps=100):
     base_mask = ((bc>phi1_edges[0]) & (bc<phi1_edges[1])) | ((bc>phi1_edges[2]) & (bc<phi1_edges[3]))
     hat_mask = (bc>phi1_edges[4]) & (bc<phi1_edges[5])
     
-    p = np.load('/home/ana/projects/GD1-DR2/output/polytrack.npy')
+    p = np.load('../data/polytrack.npy')
     poly = np.poly1d(p)
     x_ = np.linspace(-100,0,100)
     y_ = poly(x_)
@@ -1444,7 +1444,7 @@ def run(cont=False, steps=100):
     lnp_args = [chigap_max, chispur_max]
     lnprob_args = model_args + gap_args + spur_args + lnp_args
     
-    ndim, nwalkers = len(params), 50
+    ndim = len(params)
     if cont==False:
         seed = 614398
         np.random.seed(seed)
@@ -1467,7 +1467,7 @@ def run(cont=False, steps=100):
         positions = np.arange(-nwalkers, 0, dtype=np.int64)
         p0 = flatchain[positions]
     
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, threads=3, args=lnprob_args)
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, threads=nth, args=lnprob_args)
     
     t1 = time.time()
     pos, prob, state = sampler.run_mcmc(p0, steps, rstate0=genstate)
