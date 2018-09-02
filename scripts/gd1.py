@@ -10,7 +10,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from astropy.table import Table
 import astropy.units as u
 import astropy.coordinates as coord
-from astropy.constants import G
+from astropy.constants import G, c as c_
 from astropy.io import fits
 
 import gala.coordinates as gc
@@ -1138,6 +1138,9 @@ def slice_likelihood():
     ax5 = plt.subplot2grid((4, 3), (3, 1), colspan=2, sharex=ax2)
     ax = [ax1, ax2, ax3, ax4, ax5]
     
+    for key in ['M', 'vnorm', 'bnorm']:
+        print(pk[key][12])
+    
     for e in range(Nmod):
         cg = pk['model'][e]
         cgal = cg.transform_to(gc_frame)
@@ -1171,7 +1174,7 @@ def slice_likelihood():
         model_base = np.median(h_model[base_mask])
         model_hat = np.median(h_model[hat_mask])
         model_hat = np.minimum(model_hat, model_base*0.5)
-        ytop_model = tophat(bc, model_base, model_hat, gap['position'], gap['width'])
+        ytop_model = tophat(bc, model_base, model_hat, gap_position['position'], gap_width['width'])
         
         chi_gap[e] = np.sum((h_model - ytop_model)**2/gap['yerr']**2)/Nb
         
@@ -1208,8 +1211,9 @@ def slice_likelihood():
     plt.tight_layout(h_pad=0)
 
 import time
+import emcee
 
-def run():
+def test_abinitio():
     """"""
     
     t_impact = 1.5*u.Gyr
@@ -1345,8 +1349,237 @@ def run():
     plt.plot(stream_['v'][0], stream_['v'][1], 'o')
     
     plt.tight_layout()
-    
 
-def objective_function():
+def run(cont=False, steps=100):
     """"""
     
+    pkl = pickle.load(open('../data/gap_present.pkl', 'rb'))
+    c = coord.Galactocentric(x=pkl['x_gap'][0], y=pkl['x_gap'][1], z=pkl['x_gap'][2], v_x=pkl['v_gap'][0], v_y=pkl['v_gap'][1], v_z=pkl['v_gap'][2], **gc_frame_dict)
+    w0 = gd.PhaseSpacePosition(c.transform_to(gc_frame).cartesian)
+    xgap = np.array([w0.pos.x.si.value, w0.pos.y.si.value, w0.pos.z.si.value])
+    vgap = np.array([w0.vel.d_x.si.value, w0.vel.d_y.si.value, w0.vel.d_z.si.value])
+    
+    # load orbital end point
+    pos = np.load('../data/log_orbit.npy')
+    phi1, phi2, d, pm1, pm2, vr = pos
+
+    c_end = gc.GD1(phi1=phi1*u.deg, phi2=phi2*u.deg, distance=d*u.kpc, pm_phi1_cosphi2=pm1*u.mas/u.yr, pm_phi2=pm2*u.mas/u.yr, radial_velocity=vr*u.km/u.s)
+    w0_end = gd.PhaseSpacePosition(c_end.transform_to(gc_frame).cartesian)
+    xend = np.array([w0_end.pos.x.si.value, w0_end.pos.y.si.value, w0_end.pos.z.si.value])
+    vend = np.array([w0_end.vel.d_x.si.value, w0_end.vel.d_y.si.value, w0_end.vel.d_z.si.value])
+    
+    dt_coarse = 0.5*u.Myr
+    Tstream = 56*u.Myr
+    Nstream = 2000
+    N2 = int(Nstream*0.5)
+    dt_stream = Tstream/Nstream
+    dt_fine = 0.05*u.Myr
+    wangle = 180*u.deg
+    
+    
+    # gap comparison
+    bins = np.linspace(-60,-20,30)
+    bc = 0.5 * (bins[1:] + bins[:-1])
+    Nb = np.size(bc)
+    f_gap = 0.5
+    delta_phi2 = 0.5
+    
+    gap = np.load('../data/gap_properties.npz')
+    phi1_edges = gap['phi1_edges']
+    gap_position = gap['position']
+    gap_width = gap['width']
+    gap_yerr = gap['yerr']
+    base_mask = ((bc>phi1_edges[0]) & (bc<phi1_edges[1])) | ((bc>phi1_edges[2]) & (bc<phi1_edges[3]))
+    hat_mask = (bc>phi1_edges[4]) & (bc<phi1_edges[5])
+    
+    p = np.load('/home/ana/projects/GD1-DR2/output/polytrack.npy')
+    poly = np.poly1d(p)
+    x_ = np.linspace(-100,0,100)
+    y_ = poly(x_)
+    
+    # spur comparison
+    sp = np.load('../data/spur_track.npz')
+    spx = sp['x']
+    spy = sp['y']
+    phi2_err = 0.5
+    phi1_min = -50*u.deg
+    phi1_max = -30*u.deg
+    percentile1 = 3
+    percentile2 = 92
+    
+    # parameters to sample
+    t_impact = 0.5*u.Gyr
+    bx = 40*u.pc
+    by = 1*u.pc
+    vx = 225*u.km/u.s
+    vy = 1*u.km/u.s
+    M = 7e6*u.Msun
+    rs = 0*u.pc
+    #print((2*G*M*c_**-2).to(u.pc))
+    #print(1.05*u.kpc * np.sqrt(M.to(u.Msun).value*1e-8))
+    
+    potential = 3
+    Vh = 225*u.km/u.s
+    q = 1*u.Unit(1)
+    rhalo = 0*u.pc
+    par_pot = np.array([Vh.si.value, q.value, rhalo.si.value])
+    
+    potential_perturb = 1
+    par_perturb = np.array([M.si.value, 0., 0., 0.])
+    #potential_perturb = 2
+    #par_perturb = np.array([M.si.value, rs.si.value, 0., 0., 0.])
+    Tenc = 0.01*u.Gyr
+    
+    chigap_max = 0.653492461389055
+    chispur_max = 1.0213837095314207
+    
+    params_list = [bx, by, vx, vy, t_impact, M]
+    params_units = [p_.unit for p_ in params_list]
+    params = [p_.value for p_ in params_list]
+    params[5] = np.log10(params[5])
+    
+    model_args = [params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb]
+    gap_args = [poly, wangle, delta_phi2, Nb, bins, bc, base_mask, hat_mask, f_gap, gap_position, gap_width, gap_yerr]
+    spur_args = [N2, percentile1, percentile2, phi1_min, phi1_max, phi2_err, spx, spy]
+    lnp_args = [chigap_max, chispur_max]
+    lnprob_args = model_args + gap_args + spur_args + lnp_args
+    
+    ndim, nwalkers = len(params), 50
+    if cont==False:
+        seed = 614398
+        np.random.seed(seed)
+        p0 = [np.random.randn(ndim) for i in range(nwalkers)]
+        p0 = (np.random.randn(ndim * nwalkers).reshape((nwalkers, ndim))*1e-3 + 1.)*np.array(params)[np.newaxis,:]
+        
+        seed = 3465
+        prng = np.random.RandomState(seed)
+        genstate = np.random.get_state()
+    else:
+        rgstate = pickle.load(open('../data/state.pkl', 'rb'))
+        genstate = rgstate['state']
+        
+        smp = np.load('../data/samples.npz')
+        flatchain = smp['chain']
+        chain = np.transpose(flatchain.reshape(nwalkers, -1, ndim), (1,0,2))
+        nstep = np.shape(chain)[0]
+        flatchain = chain.reshape(nwalkers*nstep, ndim)
+        
+        positions = np.arange(-nwalkers, 0, dtype=np.int64)
+        p0 = flatchain[positions]
+    
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, threads=3, args=lnprob_args)
+    
+    t1 = time.time()
+    pos, prob, state = sampler.run_mcmc(p0, steps, rstate0=genstate)
+    t2 = time.time()
+    
+    if cont==False:
+        np.savez('../data/samples', lnp=sampler.flatlnprobability, chain=sampler.flatchain, nwalkers=nwalkers)
+    else:
+        np.savez('../data/samples_temp', lnp=sampler.flatlnprobability, chain=sampler.flatchain, nwalkers=nwalkers)
+        np.savez('../data/samples', lnp=np.concatenate([smp['lnp'], sampler.flatlnprobability]), chain=np.concatenate([smp['chain'], sampler.flatchain]), nwalkers=nwalkers)
+    
+    rgstate = {'state': state}
+    pickle.dump(rgstate, open('../data/state.pkl', 'wb'))
+    
+    print('Chain: {:5.2f} s'.format(t2 - t1))
+    print('Average acceptance fraction: {}'.format(np.average(sampler.acceptance_fraction[0])))
+    
+    sampler.pool.terminate()
+    
+def lnprob(x, params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb, poly, wangle, delta_phi2, Nb, bins, bc, base_mask, hat_mask, f_gap, gap_position, gap_width, gap_yerr, N2, percentile1, percentile2, phi1_min, phi1_max, phi2_err, spx, spy, chigap_max, chispur_max):
+    """Check if a model is better than the fiducial"""
+    
+    if x[4]<0:
+        return -np.inf
+    
+    x[5] = 10**x[5]
+    params = [x_*u_ for x_, u_ in zip(x, params_units)]
+    if potential_perturb==1:
+        bx, by, vx, vy, t_impact, M = params
+        par_perturb = np.array([M.si.value, 0., 0., 0.])
+    else:
+        bx, by, vx, vy, t_impact, M, rs = params
+        par_perturb = np.array([M.si.value, rs.si.value, 0., 0., 0.])
+    
+    # calculate model
+    x1, x2, x3, v1, v2, v3, dE = interact.abinit_interaction(xgap, vgap, xend, vend, dt_coarse.si.value, dt_fine.si.value, t_impact.si.value, Tenc.si.value, Tstream.si.value, Nstream, par_pot, potential, par_perturb, potential_perturb, bx.si.value, by.si.value, vx.si.value, vy.si.value)
+    
+    c = coord.Galactocentric(x=x1*u.m, y=x2*u.m, z=x3*u.m, v_x=v1*u.m/u.s, v_y=v2*u.m/u.s, v_z=v3*u.m/u.s, **gc_frame_dict)
+    cg = c.transform_to(gc.GD1)
+    
+    # gap chi^2
+    phi2_mask = np.abs(cg.phi2.value - poly(cg.phi1.wrap_at(wangle).value))<delta_phi2
+    h_model, be = np.histogram(cg.phi1[phi2_mask].wrap_at(wangle).value, bins=bins)
+    
+    model_base = np.median(h_model[base_mask])
+    model_hat = np.median(h_model[hat_mask])
+    model_hat = np.minimum(model_hat, model_base*f_gap)
+    ytop_model = tophat(bc, model_base, model_hat,  gap_position, gap_width)
+    
+    chi_gap = np.sum((h_model - ytop_model)**2/gap_yerr**2)/Nb
+    
+    # spur chi^2
+    top1 = np.percentile(dE[:N2], percentile1)
+    top2 = np.percentile(dE[N2:], percentile2)
+    ind_loop1 = np.where(dE[:N2]<top1)[0][0]
+    ind_loop2 = np.where(dE[N2:]>top2)[0][-1]
+    
+    f = scipy.interpolate.interp1d(spx, spy, kind='quadratic')
+    
+    aloop_mask = np.zeros(Nstream, dtype=bool)
+    aloop_mask[ind_loop1:ind_loop2+N2] = True
+    phi1_mask = (cg.phi1.wrap_at(wangle)>phi1_min) & (cg.phi1.wrap_at(wangle)<phi1_max)
+    loop_mask = aloop_mask & phi1_mask
+    Nloop = np.sum(loop_mask)
+    
+    chi_spur = np.sum((cg.phi2[loop_mask].value - f(cg.phi1.wrap_at(wangle).value[loop_mask]))**2/phi2_err**2)/Nloop
+    
+    if (chi_gap<chigap_max) & (chi_spur<chispur_max):
+        return 0.
+    else:
+        return -np.inf
+
+import corner
+def check_chain():
+    """"""
+    sampler = np.load('../data/samples.npz')
+    
+    models = np.unique(sampler['chain'], axis=0)
+    params = ['bx', 'by', 'vx', 'vy', 'T', 'logM']
+    print(np.shape(models), np.shape(models)[0]/np.shape(sampler['chain'])[0])
+    #models = sampler['chain']
+    
+    abr = models[:,:-2]
+    abr[:,0] = np.sqrt(models[:,0]**2 + models[:,1]**2)
+    abr[:,1] = np.sqrt(models[:,2]**2 + models[:,3]**2)
+    abr[:,2] = models[:,4]
+    abr[:,3] = models[:,5]
+    models = abr
+    params = ['B [pc]', 'V [km s$^{-1}$]', 'T [Gyr]', 'log M/M$_\odot$']
+    
+    Nvar = np.shape(models)[1]
+    dax = 2
+
+    plt.close()
+    fig, ax = plt.subplots(Nvar-1, Nvar-1, figsize=(dax*Nvar, dax*Nvar), sharex='col', sharey='row')
+    
+    for i in range(0,Nvar-1):
+        for j in range(i+1,Nvar):
+            plt.sca(ax[j-1][i])
+            
+            plt.plot(models[:,i], models[:,j], '.', color='0.2')
+    
+    for i in range(0,Nvar-1):
+        for j in range(i+1,Nvar-1):
+            plt.sca(ax[i][j])
+            plt.axis('off')
+    
+    for k in range(Nvar-1):
+        plt.sca(ax[-1][k])
+        plt.xlabel(params[k])
+        
+        plt.sca(ax[k][0])
+        plt.ylabel(params[k+1])
+    
+    plt.tight_layout(h_pad=0, w_pad=0)
