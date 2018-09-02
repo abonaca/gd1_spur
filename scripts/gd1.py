@@ -1433,7 +1433,7 @@ def run(cont=False, steps=100, nwalkers=100, nth=8):
     chigap_max = 0.653492461389055
     chispur_max = 1.0213837095314207
     
-    params_list = [bx, by, vx, vy, t_impact, M]
+    params_list = [t_impact, bx, by, vx, vy, M]
     params_units = [p_.unit for p_ in params_list]
     params = [p_.value for p_ in params_list]
     params[5] = np.log10(params[5])
@@ -1490,16 +1490,16 @@ def run(cont=False, steps=100, nwalkers=100, nth=8):
 def lnprob(x, params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb, poly, wangle, delta_phi2, Nb, bins, bc, base_mask, hat_mask, f_gap, gap_position, gap_width, gap_yerr, N2, percentile1, percentile2, phi1_min, phi1_max, phi2_err, spx, spy, chigap_max, chispur_max):
     """Check if a model is better than the fiducial"""
     
-    if x[4]<0:
+    if (x[0]<0) | (np.sqrt(x[3]**2 + x[4]**2)>1000):
         return -np.inf
     
     x[5] = 10**x[5]
     params = [x_*u_ for x_, u_ in zip(x, params_units)]
     if potential_perturb==1:
-        bx, by, vx, vy, t_impact, M = params
+        t_impact, bx, by, vx, vy, M = params
         par_perturb = np.array([M.si.value, 0., 0., 0.])
     else:
-        bx, by, vx, vy, t_impact, M, rs = params
+        t_impact, bx, by, vx, vy, M, rs = params
         par_perturb = np.array([M.si.value, rs.si.value, 0., 0., 0.])
     
     # calculate model
@@ -1568,7 +1568,7 @@ def check_chain():
         for j in range(i+1,Nvar):
             plt.sca(ax[j-1][i])
             
-            plt.plot(models[:,i], models[:,j], '.', color='0.2')
+            plt.plot(models[:,i], models[:,j], '.', ms=1, color='0.2', rasterized=True)
     
     for i in range(0,Nvar-1):
         for j in range(i+1,Nvar-1):
