@@ -1541,22 +1541,23 @@ def lnprob(x, params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, Tenc, Ts
         return -np.inf
 
 import corner
-def check_chain():
+def check_chain(full=False):
     """"""
     sampler = np.load('../data/samples.npz')
     
     models = np.unique(sampler['chain'], axis=0)
-    params = ['bx', 'by', 'vx', 'vy', 'T', 'logM']
+    params = ['T', 'bx', 'by', 'vx', 'vy', 'logM']
     print(np.shape(models), np.shape(models)[0]/np.shape(sampler['chain'])[0])
-    #models = sampler['chain']
     
-    abr = models[:,:-2]
-    abr[:,0] = np.sqrt(models[:,0]**2 + models[:,1]**2)
-    abr[:,1] = np.sqrt(models[:,2]**2 + models[:,3]**2)
-    abr[:,2] = models[:,4]
-    abr[:,3] = models[:,5]
-    models = abr
-    params = ['B [pc]', 'V [km s$^{-1}$]', 'T [Gyr]', 'log M/M$_\odot$']
+    if full==False:
+        abr = models[:,:-2]
+        abr[:,1] = np.sqrt(models[:,1]**2 + models[:,2]**2)
+        abr[:,2] = np.sqrt(models[:,3]**2 + models[:,4]**2)
+        abr[:,0] = models[:,0]
+        abr[:,3] = models[:,5]
+        models = abr
+        params = ['T [Gyr]', 'B [pc]', 'V [km s$^{-1}$]', 'log M/M$_\odot$']
+        lims = [[0.1,16], [10,2000], [30,1000], [5,10]]
     
     Nvar = np.shape(models)[1]
     dax = 2
@@ -1568,7 +1569,7 @@ def check_chain():
         for j in range(i+1,Nvar):
             plt.sca(ax[j-1][i])
             
-            plt.plot(models[:,i], models[:,j], '.', ms=1, color='0.2', rasterized=True)
+            plt.plot(models[:,i], models[:,j], '.', ms=1, alpha=0.03, color='0.2', rasterized=True)
     
     for i in range(0,Nvar-1):
         for j in range(i+1,Nvar-1):
@@ -1578,8 +1579,15 @@ def check_chain():
     for k in range(Nvar-1):
         plt.sca(ax[-1][k])
         plt.xlabel(params[k])
+        if full==False:
+            plt.gca().set_xscale('log')
+            plt.xlim(lims[k])
         
         plt.sca(ax[k][0])
         plt.ylabel(params[k+1])
+        if (full==False) & (k<Nvar-2):
+            plt.gca().set_yscale('log')
+            plt.ylim(lims[k+1])
     
     plt.tight_layout(h_pad=0, w_pad=0)
+    plt.savefig('../plots/corner_f{:d}.png'.format(full))
