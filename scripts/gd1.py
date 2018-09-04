@@ -1350,7 +1350,7 @@ def test_abinitio():
     
     plt.tight_layout()
 
-def run(cont=False, steps=100, nwalkers=100, nth=8):
+def run(cont=False, steps=100, nwalkers=100, nth=8, label=''):
     """"""
     
     pkl = pickle.load(open('../data/gap_present.pkl', 'rb'))
@@ -1406,6 +1406,24 @@ def run(cont=False, steps=100, nwalkers=100, nth=8):
     phi1_max = -30*u.deg
     percentile1 = 3
     percentile2 = 92
+    quad_phi1 = -32*u.deg
+    quad_phi2 = 0.8*u.deg
+    Nquad = 1
+    
+    potential = 3
+    Vh = 225*u.km/u.s
+    q = 1*u.Unit(1)
+    rhalo = 0*u.pc
+    par_pot = np.array([Vh.si.value, q.value, rhalo.si.value])
+    
+    Tenc = 0.01*u.Gyr
+    potential_perturb = 1
+    #par_perturb = np.array([M.si.value, 0., 0., 0.])
+    #potential_perturb = 2
+    #par_perturb = np.array([M.si.value, rs.si.value, 0., 0., 0.])
+    
+    chigap_max = 0.6567184385873621
+    chispur_max = 1.0213837095314207
     
     # parameters to sample
     t_impact = 0.5*u.Gyr
@@ -1418,29 +1436,14 @@ def run(cont=False, steps=100, nwalkers=100, nth=8):
     #print((2*G*M*c_**-2).to(u.pc))
     #print(1.05*u.kpc * np.sqrt(M.to(u.Msun).value*1e-8))
     
-    potential = 3
-    Vh = 225*u.km/u.s
-    q = 1*u.Unit(1)
-    rhalo = 0*u.pc
-    par_pot = np.array([Vh.si.value, q.value, rhalo.si.value])
-    
-    potential_perturb = 1
-    par_perturb = np.array([M.si.value, 0., 0., 0.])
-    #potential_perturb = 2
-    #par_perturb = np.array([M.si.value, rs.si.value, 0., 0., 0.])
-    Tenc = 0.01*u.Gyr
-    
-    chigap_max = 0.653492461389055
-    chispur_max = 1.0213837095314207
-    
     params_list = [t_impact, bx, by, vx, vy, M]
     params_units = [p_.unit for p_ in params_list]
     params = [p_.value for p_ in params_list]
     params[5] = np.log10(params[5])
     
     model_args = [params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb]
-    gap_args = [poly, wangle, delta_phi2, Nb, bins, bc, base_mask, hat_mask, f_gap, gap_position, gap_width, gap_yerr]
-    spur_args = [N2, percentile1, percentile2, phi1_min, phi1_max, phi2_err, spx, spy]
+    gap_args = [poly, wangle, delta_phi2, Nb, bins, bc, base_mask, hat_mask, f_gap, gap_position, gap_width]
+    spur_args = [N2, percentile1, percentile2, phi1_min, phi1_max, phi2_err, spx, spy, quad_phi1, quad_phi2, Nquad]
     lnp_args = [chigap_max, chispur_max]
     lnprob_args = model_args + gap_args + spur_args + lnp_args
     
@@ -1455,10 +1458,10 @@ def run(cont=False, steps=100, nwalkers=100, nth=8):
         prng = np.random.RandomState(seed)
         genstate = np.random.get_state()
     else:
-        rgstate = pickle.load(open('../data/state.pkl', 'rb'))
+        rgstate = pickle.load(open('../data/state{}.pkl'.format(label), 'rb'))
         genstate = rgstate['state']
         
-        smp = np.load('../data/samples.npz')
+        smp = np.load('../data/samples{}.npz'.format(label))
         flatchain = smp['chain']
         chain = np.transpose(flatchain.reshape(nwalkers, -1, ndim), (1,0,2))
         nstep = np.shape(chain)[0]
@@ -1467,30 +1470,38 @@ def run(cont=False, steps=100, nwalkers=100, nth=8):
         positions = np.arange(-nwalkers, 0, dtype=np.int64)
         p0 = flatchain[positions]
     
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, threads=nth, args=lnprob_args)
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, threads=nth, args=lnprob_args, runtime_sortingfn=sort_on_runtime)
     
     t1 = time.time()
     pos, prob, state = sampler.run_mcmc(p0, steps, rstate0=genstate)
     t2 = time.time()
     
     if cont==False:
-        np.savez('../data/samples', lnp=sampler.flatlnprobability, chain=sampler.flatchain, nwalkers=nwalkers)
+        np.savez('../data/samples{}'.format(label), lnp=sampler.flatlnprobability, chain=sampler.flatchain, nwalkers=nwalkers)
     else:
-        np.savez('../data/samples_temp', lnp=sampler.flatlnprobability, chain=sampler.flatchain, nwalkers=nwalkers)
-        np.savez('../data/samples', lnp=np.concatenate([smp['lnp'], sampler.flatlnprobability]), chain=np.concatenate([smp['chain'], sampler.flatchain]), nwalkers=nwalkers)
+        np.savez('../data/samples{}_temp'.format(label), lnp=sampler.flatlnprobability, chain=sampler.flatchain, nwalkers=nwalkers)
+        np.savez('../data/samples{}'.format(label), lnp=np.concatenate([smp['lnp'], sampler.flatlnprobability]), chain=np.concatenate([smp['chain'], sampler.flatchain]), nwalkers=nwalkers)
     
     rgstate = {'state': state}
-    pickle.dump(rgstate, open('../data/state.pkl', 'wb'))
+    pickle.dump(rgstate, open('../data/state{}.pkl'.format(label), 'wb'))
     
     print('Chain: {:5.2f} s'.format(t2 - t1))
     print('Average acceptance fraction: {}'.format(np.average(sampler.acceptance_fraction[0])))
     
     sampler.pool.terminate()
+
+def sort_on_runtime(p):
+    """Improve runtime by starting longest jobs first (sorts on first parameter -- in our case, the encounter time)"""
     
-def lnprob(x, params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb, poly, wangle, delta_phi2, Nb, bins, bc, base_mask, hat_mask, f_gap, gap_position, gap_width, gap_yerr, N2, percentile1, percentile2, phi1_min, phi1_max, phi2_err, spx, spy, chigap_max, chispur_max):
+    p = np.atleast_2d(p)
+    idx = np.argsort(p[:, 0])[::-1]
+    
+    return p[idx], idx
+
+def lnprob(x, params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb, poly, wangle, delta_phi2, Nb, bins, bc, base_mask, hat_mask, f_gap, gap_position, gap_width, N2, percentile1, percentile2, phi1_min, phi1_max, phi2_err, spx, spy, quad_phi1, quad_phi2, Nquad, chigap_max, chispur_max):
     """Check if a model is better than the fiducial"""
     
-    if (x[0]<0) | (np.sqrt(x[3]**2 + x[4]**2)>1000):
+    if (x[0]<0) | (x[0]>14) | (np.sqrt(x[3]**2 + x[4]**2)>1000):
         return -np.inf
     
     x[5] = 10**x[5]
@@ -1508,17 +1519,6 @@ def lnprob(x, params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, Tenc, Ts
     c = coord.Galactocentric(x=x1*u.m, y=x2*u.m, z=x3*u.m, v_x=v1*u.m/u.s, v_y=v2*u.m/u.s, v_z=v3*u.m/u.s, **gc_frame_dict)
     cg = c.transform_to(gc.GD1)
     
-    # gap chi^2
-    phi2_mask = np.abs(cg.phi2.value - poly(cg.phi1.wrap_at(wangle).value))<delta_phi2
-    h_model, be = np.histogram(cg.phi1[phi2_mask].wrap_at(wangle).value, bins=bins)
-    
-    model_base = np.median(h_model[base_mask])
-    model_hat = np.median(h_model[hat_mask])
-    model_hat = np.minimum(model_hat, model_base*f_gap)
-    ytop_model = tophat(bc, model_base, model_hat,  gap_position, gap_width)
-    
-    chi_gap = np.sum((h_model - ytop_model)**2/gap_yerr**2)/Nb
-    
     # spur chi^2
     top1 = np.percentile(dE[:N2], percentile1)
     top2 = np.percentile(dE[N2:], percentile2)
@@ -1533,7 +1533,23 @@ def lnprob(x, params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, Tenc, Ts
     loop_mask = aloop_mask & phi1_mask
     Nloop = np.sum(loop_mask)
     
+    loop_quadrant = (cg.phi1.wrap_at(wangle)[loop_mask]>quad_phi1) & (cg.phi2[loop_mask]>quad_phi2)
+    if np.sum(loop_quadrant)<Nquad:
+        return -np.inf
+    
     chi_spur = np.sum((cg.phi2[loop_mask].value - f(cg.phi1.wrap_at(wangle).value[loop_mask]))**2/phi2_err**2)/Nloop
+    
+    # gap chi^2
+    phi2_mask = np.abs(cg.phi2.value - poly(cg.phi1.wrap_at(wangle).value))<delta_phi2
+    h_model, be = np.histogram(cg.phi1[phi2_mask].wrap_at(wangle).value, bins=bins)
+    yerr = np.sqrt(h_model+1)
+    
+    model_base = np.median(h_model[base_mask])
+    model_hat = np.median(h_model[hat_mask])
+    model_hat = np.minimum(model_hat, model_base*f_gap)
+    ytop_model = tophat(bc, model_base, model_hat,  gap_position, gap_width)
+    
+    chi_gap = np.sum((h_model - ytop_model)**2/yerr**2)/Nb
     
     if (chi_gap<chigap_max) & (chi_spur<chispur_max):
         return 0.
@@ -1541,9 +1557,18 @@ def lnprob(x, params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, Tenc, Ts
         return -np.inf
 
 import corner
-def check_chain(full=False):
-    """"""
+
+def get_unique():
+    """Save unique models in a separate file"""
+    
     sampler = np.load('../data/samples.npz')
+    models = np.unique(sampler['chain'], axis=0)
+    
+    np.savez('../data/unique_samples', chain=models)
+
+def check_chain(full=False, label=''):
+    """"""
+    sampler = np.load('../data/samples{}.npz'.format(label))
     
     models = np.unique(sampler['chain'], axis=0)
     params = ['T', 'bx', 'by', 'vx', 'vy', 'logM']
@@ -1590,4 +1615,203 @@ def check_chain(full=False):
             plt.ylim(lims[k+1])
     
     plt.tight_layout(h_pad=0, w_pad=0)
-    plt.savefig('../plots/corner_f{:d}.png'.format(full))
+    plt.savefig('../plots/corner{}_f{:d}.png'.format(label, full))
+
+
+def lnprob_verbose(x, params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb, poly, wangle, delta_phi2, Nb, bins, bc, base_mask, hat_mask, f_gap, gap_position, gap_width, N2, percentile1, percentile2, phi1_min, phi1_max, phi2_err, spx, spy, quad_phi1, quad_phi2, Nquad, chigap_max, chispur_max):
+    """Check if a model is better than the fiducial"""
+    
+    if (x[0]<0) | (np.sqrt(x[3]**2 + x[4]**2)>1000):
+        return -np.inf
+    
+    x[5] = 10**x[5]
+    params = [x_*u_ for x_, u_ in zip(x, params_units)]
+    if potential_perturb==1:
+        t_impact, bx, by, vx, vy, M = params
+        par_perturb = np.array([M.si.value, 0., 0., 0.])
+    else:
+        t_impact, bx, by, vx, vy, M, rs = params
+        par_perturb = np.array([M.si.value, rs.si.value, 0., 0., 0.])
+    
+    # calculate model
+    x1, x2, x3, v1, v2, v3, dE = interact.abinit_interaction(xgap, vgap, xend, vend, dt_coarse.si.value, dt_fine.si.value, t_impact.si.value, Tenc.si.value, Tstream.si.value, Nstream, par_pot, potential, par_perturb, potential_perturb, bx.si.value, by.si.value, vx.si.value, vy.si.value)
+    
+    c = coord.Galactocentric(x=x1*u.m, y=x2*u.m, z=x3*u.m, v_x=v1*u.m/u.s, v_y=v2*u.m/u.s, v_z=v3*u.m/u.s, **gc_frame_dict)
+    cg = c.transform_to(gc.GD1)
+    
+    # gap chi^2
+    phi2_mask = np.abs(cg.phi2.value - poly(cg.phi1.wrap_at(wangle).value))<delta_phi2
+    h_model, be = np.histogram(cg.phi1[phi2_mask].wrap_at(wangle).value, bins=bins)
+    yerr = np.sqrt(h_model+1)
+    
+    model_base = np.median(h_model[base_mask])
+    model_hat = np.median(h_model[hat_mask])
+    model_hat = np.minimum(model_hat, model_base*f_gap)
+    ytop_model = tophat(bc, model_base, model_hat,  gap_position, gap_width)
+    
+    chi_gap = np.sum((h_model - ytop_model)**2/yerr**2)/Nb
+    
+    # spur chi^2
+    top1 = np.percentile(dE[:N2], percentile1)
+    top2 = np.percentile(dE[N2:], percentile2)
+    ind_loop1 = np.where(dE[:N2]<top1)[0][0]
+    ind_loop2 = np.where(dE[N2:]>top2)[0][-1]
+    
+    f = scipy.interpolate.interp1d(spx, spy, kind='quadratic')
+    
+    aloop_mask = np.zeros(Nstream, dtype=bool)
+    aloop_mask[ind_loop1:ind_loop2+N2] = True
+    phi1_mask = (cg.phi1.wrap_at(wangle)>phi1_min) & (cg.phi1.wrap_at(wangle)<phi1_max)
+    loop_mask = aloop_mask & phi1_mask
+    Nloop = np.sum(loop_mask)
+
+    chi_spur = np.sum((cg.phi2[loop_mask].value - f(cg.phi1.wrap_at(wangle).value[loop_mask]))**2/phi2_err**2)/Nloop
+
+    loop_quadrant = (cg.phi1.wrap_at(wangle)[loop_mask]>quad_phi1) & (cg.phi2[loop_mask]>quad_phi2)
+    print(chi_gap, chi_spur, np.sum(loop_quadrant))
+    
+    plt.close()
+    fig, ax = plt.subplots(3,1,figsize=(13,9))
+    
+    plt.sca(ax[0])
+    plt.plot(bc, h_model, 'o')
+    plt.plot(bc, ytop_model, 'k-')
+    
+    plt.sca(ax[1])
+    plt.plot(cg.phi1.wrap_at(wangle).value, dE, 'o')
+    plt.plot(cg.phi1.wrap_at(wangle).value[aloop_mask], dE[aloop_mask], 'o')
+    
+    plt.sca(ax[2])
+    plt.plot(cg.phi1.wrap_at(wangle).value, cg.phi2.value, 'o')
+    plt.plot(cg.phi1.wrap_at(wangle).value[loop_mask], cg.phi2.value[loop_mask], 'o')
+    plt.plot(cg.phi1.wrap_at(wangle).value[loop_mask], f(cg.phi1.wrap_at(wangle).value[loop_mask]), 'k-')
+    
+    plt.xlim(-60,-20)
+    plt.ylim(-10,5)
+    
+def check_model(fiducial=False):
+    """"""
+    chain = np.load('../data/unique_samples.npz')['chain']
+    ind_massive = chain[:,5]>9
+    
+    x = chain[ind_massive][-1]
+    #T = params[0]*u.Gyr
+    #bx = params[1]*u.pc
+    #bnorm = np.sqrt(params[1]**2 + params[2]**2)*u.pc
+    #vx = params[3]*u.pc
+    #vnorm = np.sqrt(params[3]**2 + params[4]**2)*u.pc
+    #M = 10**params[5]*u.Msun
+    
+    #cg, e = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, t_impact=T, fname='spot_check', fig_annotate=True, verbose=False, model_return=True, fig_plot=True)
+    
+    if fiducial:
+        t_impact = 0.5*u.Gyr
+        bx = 40*u.pc
+        by = 0*u.pc
+        vx = 225*u.km/u.s
+        vy = 0*u.km/u.s
+        M = 7e6*u.Msun
+        rs = 0*u.pc
+        
+        params_list = [t_impact, bx, by, vx, vy, M]
+        params_units = [p_.unit for p_ in params_list]
+        x = [p_.value for p_ in params_list]
+        x[5] = np.log10(x[5])
+    
+    pkl = pickle.load(open('../data/gap_present.pkl', 'rb'))
+    c = coord.Galactocentric(x=pkl['x_gap'][0], y=pkl['x_gap'][1], z=pkl['x_gap'][2], v_x=pkl['v_gap'][0], v_y=pkl['v_gap'][1], v_z=pkl['v_gap'][2], **gc_frame_dict)
+    w0 = gd.PhaseSpacePosition(c.transform_to(gc_frame).cartesian)
+    xgap = np.array([w0.pos.x.si.value, w0.pos.y.si.value, w0.pos.z.si.value])
+    vgap = np.array([w0.vel.d_x.si.value, w0.vel.d_y.si.value, w0.vel.d_z.si.value])
+    
+    # load orbital end point
+    pos = np.load('../data/log_orbit.npy')
+    phi1, phi2, d, pm1, pm2, vr = pos
+
+    c_end = gc.GD1(phi1=phi1*u.deg, phi2=phi2*u.deg, distance=d*u.kpc, pm_phi1_cosphi2=pm1*u.mas/u.yr, pm_phi2=pm2*u.mas/u.yr, radial_velocity=vr*u.km/u.s)
+    w0_end = gd.PhaseSpacePosition(c_end.transform_to(gc_frame).cartesian)
+    xend = np.array([w0_end.pos.x.si.value, w0_end.pos.y.si.value, w0_end.pos.z.si.value])
+    vend = np.array([w0_end.vel.d_x.si.value, w0_end.vel.d_y.si.value, w0_end.vel.d_z.si.value])
+    
+    dt_coarse = 0.5*u.Myr
+    Tstream = 56*u.Myr
+    Nstream = 2000
+    N2 = int(Nstream*0.5)
+    dt_stream = Tstream/Nstream
+    dt_fine = 0.05*u.Myr
+    wangle = 180*u.deg
+    
+    
+    # gap comparison
+    bins = np.linspace(-60,-20,30)
+    bc = 0.5 * (bins[1:] + bins[:-1])
+    Nb = np.size(bc)
+    f_gap = 0.5
+    delta_phi2 = 0.5
+    
+    gap = np.load('../data/gap_properties.npz')
+    phi1_edges = gap['phi1_edges']
+    gap_position = gap['position']
+    gap_width = gap['width']
+    gap_yerr = gap['yerr']
+    base_mask = ((bc>phi1_edges[0]) & (bc<phi1_edges[1])) | ((bc>phi1_edges[2]) & (bc<phi1_edges[3]))
+    hat_mask = (bc>phi1_edges[4]) & (bc<phi1_edges[5])
+    
+    p = np.load('../data/polytrack.npy')
+    poly = np.poly1d(p)
+    x_ = np.linspace(-100,0,100)
+    y_ = poly(x_)
+    
+    # spur comparison
+    sp = np.load('../data/spur_track.npz')
+    spx = sp['x']
+    spy = sp['y']
+    phi2_err = 0.5
+    phi1_min = -50*u.deg
+    phi1_max = -30*u.deg
+    percentile1 = 3
+    percentile2 = 92
+    quad_phi1 = -32*u.deg
+    quad_phi2 = 0.8*u.deg
+    Nquad = 1
+    
+    # parameters to sample
+    t_impact = 0.5*u.Gyr
+    bx = 40*u.pc
+    by = 1*u.pc
+    vx = 225*u.km/u.s
+    vy = 1*u.km/u.s
+    M = 7e6*u.Msun
+    rs = 0*u.pc
+    #print((2*G*M*c_**-2).to(u.pc))
+    #print(1.05*u.kpc * np.sqrt(M.to(u.Msun).value*1e-8))
+    
+    potential = 3
+    Vh = 225*u.km/u.s
+    q = 1*u.Unit(1)
+    rhalo = 0*u.pc
+    par_pot = np.array([Vh.si.value, q.value, rhalo.si.value])
+    
+    potential_perturb = 1
+    par_perturb = np.array([M.si.value, 0., 0., 0.])
+    #potential_perturb = 2
+    #par_perturb = np.array([M.si.value, rs.si.value, 0., 0., 0.])
+    Tenc = 0.01*u.Gyr
+    
+    chigap_max = 0.6567184385873621
+    chispur_max = 1.0213837095314207
+    
+    params_list = [t_impact, bx, by, vx, vy, M]
+    params_units = [p_.unit for p_ in params_list]
+    params = [p_.value for p_ in params_list]
+    params[5] = np.log10(params[5])
+    
+    model_args = [params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb]
+    gap_args = [poly, wangle, delta_phi2, Nb, bins, bc, base_mask, hat_mask, f_gap, gap_position, gap_width]
+    spur_args = [N2, percentile1, percentile2, phi1_min, phi1_max, phi2_err, spx, spy, quad_phi1, quad_phi2, Nquad]
+    lnp_args = [chigap_max, chispur_max]
+    lnprob_args = model_args + gap_args + spur_args + lnp_args
+    
+    print(lnprob(x, *lnprob_args))
+    #lnprob_verbose(x, *lnprob_args)
+
