@@ -1350,7 +1350,7 @@ def test_abinitio():
     
     plt.tight_layout()
 
-def run(cont=False, steps=100, nwalkers=100, nth=8, label=''):
+def run(cont=False, steps=100, nwalkers=100, nth=8, label='', potential_perturb=1):
     """"""
     
     pkl = pickle.load(open('../data/gap_present.pkl', 'rb'))
@@ -1417,7 +1417,7 @@ def run(cont=False, steps=100, nwalkers=100, nth=8, label=''):
     par_pot = np.array([Vh.si.value, q.value, rhalo.si.value])
     
     Tenc = 0.01*u.Gyr
-    potential_perturb = 1
+    #potential_perturb = 1
     #par_perturb = np.array([M.si.value, 0., 0., 0.])
     #potential_perturb = 2
     #par_perturb = np.array([M.si.value, rs.si.value, 0., 0., 0.])
@@ -1432,11 +1432,14 @@ def run(cont=False, steps=100, nwalkers=100, nth=8, label=''):
     vx = 225*u.km/u.s
     vy = 1*u.km/u.s
     M = 7e6*u.Msun
-    rs = 0*u.pc
+    rs = 0.5*u.pc
     #print((2*G*M*c_**-2).to(u.pc))
     #print(1.05*u.kpc * np.sqrt(M.to(u.Msun).value*1e-8))
     
-    params_list = [t_impact, bx, by, vx, vy, M]
+    if potential_perturb==1:
+        params_list = [t_impact, bx, by, vx, vy, M]
+    elif potential_perturb==2:
+        params_list = [t_impact, bx, by, vx, vy, M, rs]
     params_units = [p_.unit for p_ in params_list]
     params = [p_.value for p_ in params_list]
     params[5] = np.log10(params[5])
@@ -1512,6 +1515,8 @@ def lnprob(x, params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, Tenc, Ts
     else:
         t_impact, bx, by, vx, vy, M, rs = params
         par_perturb = np.array([M.si.value, rs.si.value, 0., 0., 0.])
+        if x[6]<0:
+            return -np.inf
     
     # calculate model
     x1, x2, x3, v1, v2, v3, dE = interact.abinit_interaction(xgap, vgap, xend, vend, dt_coarse.si.value, dt_fine.si.value, t_impact.si.value, Tenc.si.value, Tstream.si.value, Nstream, par_pot, potential, par_perturb, potential_perturb, bx.si.value, by.si.value, vx.si.value, vy.si.value)
@@ -1571,8 +1576,9 @@ def check_chain(full=False, label=''):
     sampler = np.load('../data/samples{}.npz'.format(label))
     
     models = np.unique(sampler['chain'], axis=0)
-    params = ['T', 'bx', 'by', 'vx', 'vy', 'logM']
+    params = ['T', 'bx', 'by', 'vx', 'vy', 'logM', 'rs']
     print(np.shape(models), np.shape(models)[0]/np.shape(sampler['chain'])[0])
+    Npar = np.shape(models)[1]
     
     if full==False:
         abr = models[:,:-2]
@@ -1580,9 +1586,14 @@ def check_chain(full=False, label=''):
         abr[:,2] = np.sqrt(models[:,3]**2 + models[:,4]**2)
         abr[:,0] = models[:,0]
         abr[:,3] = models[:,5]
-        models = abr
         params = ['T [Gyr]', 'B [pc]', 'V [km s$^{-1}$]', 'log M/M$_\odot$']
-        lims = [[0.1,16], [10,2000], [30,1000], [5,10]]
+        
+        if Npar>6:
+            abr[:,3] = models[:,6]
+            abr[:,4] = models[:,5]
+            params = ['T [Gyr]', 'B [pc]', 'V [km s$^{-1}$]', '$r_s$ [pc]', 'log M/M$_\odot$']
+        models = abr
+        lims = [[0.1,16], [10,2000], [30,1000], [5,10], [0.1,10]]
     
     Nvar = np.shape(models)[1]
     dax = 2
@@ -1606,13 +1617,13 @@ def check_chain(full=False, label=''):
         plt.xlabel(params[k])
         if full==False:
             plt.gca().set_xscale('log')
-            plt.xlim(lims[k])
+            #plt.xlim(lims[k])
         
         plt.sca(ax[k][0])
         plt.ylabel(params[k+1])
         if (full==False) & (k<Nvar-2):
             plt.gca().set_yscale('log')
-            plt.ylim(lims[k+1])
+            #plt.ylim(lims[k+1])
     
     plt.tight_layout(h_pad=0, w_pad=0)
     plt.savefig('../plots/corner{}_f{:d}.png'.format(label, full))
