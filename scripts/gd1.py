@@ -1425,6 +1425,9 @@ def run(cont=False, steps=100, nwalkers=100, nth=8, label='', potential_perturb=
     chigap_max = 0.6567184385873621
     chispur_max = 1.0213837095314207
     
+    chigap_max = 0.8
+    chispur_max = 1.2
+    
     # parameters to sample
     t_impact = 0.5*u.Gyr
     bx = 40*u.pc
