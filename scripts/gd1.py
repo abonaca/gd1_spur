@@ -1725,9 +1725,9 @@ def check_model(fiducial=False):
         vx = 225*u.km/u.s
         vy = 0*u.km/u.s
         M = 7e6*u.Msun
-        rs = 0*u.pc
+        rs = 1*u.pc
         
-        params_list = [t_impact, bx, by, vx, vy, M]
+        params_list = [t_impact, bx, by, vx, vy, M, rs]
         params_units = [p_.unit for p_ in params_list]
         x = [p_.value for p_ in params_list]
         x[5] = np.log10(x[5])
@@ -1806,8 +1806,8 @@ def check_model(fiducial=False):
     rhalo = 0*u.pc
     par_pot = np.array([Vh.si.value, q.value, rhalo.si.value])
     
-    potential_perturb = 1
-    par_perturb = np.array([M.si.value, 0., 0., 0.])
+    potential_perturb = 2
+    #par_perturb = np.array([M.si.value, 0., 0., 0.])
     #potential_perturb = 2
     #par_perturb = np.array([M.si.value, rs.si.value, 0., 0., 0.])
     Tenc = 0.01*u.Gyr
@@ -1815,10 +1815,10 @@ def check_model(fiducial=False):
     chigap_max = 0.6567184385873621
     chispur_max = 1.0213837095314207
     
-    params_list = [t_impact, bx, by, vx, vy, M]
-    params_units = [p_.unit for p_ in params_list]
-    params = [p_.value for p_ in params_list]
-    params[5] = np.log10(params[5])
+    #params_list = [t_impact, bx, by, vx, vy, M]
+    #params_units = [p_.unit for p_ in params_list]
+    #params = [p_.value for p_ in params_list]
+    #params[5] = np.log10(params[5])
     
     model_args = [params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb]
     gap_args = [poly, wangle, delta_phi2, Nb, bins, bc, base_mask, hat_mask, f_gap, gap_position, gap_width]
