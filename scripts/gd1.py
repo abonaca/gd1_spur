@@ -1425,6 +1425,9 @@ def run(cont=False, steps=100, nwalkers=100, nth=8, label='', potential_perturb=
     chigap_max = 0.6567184385873621
     chispur_max = 1.0213837095314207
     
+    chigap_max = 0.8
+    chispur_max = 1.2
+    
     # parameters to sample
     t_impact = 0.5*u.Gyr
     bx = 40*u.pc
@@ -1605,7 +1608,7 @@ def check_chain(full=False, label=''):
         for j in range(i+1,Nvar):
             plt.sca(ax[j-1][i])
             
-            plt.plot(models[:,i], models[:,j], '.', ms=1, alpha=0.03, color='0.2', rasterized=True)
+            plt.plot(models[:,i], models[:,j], '.', ms=1, alpha=0.1, color='0.2', rasterized=True)
     
     for i in range(0,Nvar-1):
         for j in range(i+1,Nvar-1):
