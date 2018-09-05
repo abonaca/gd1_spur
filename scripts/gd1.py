@@ -1571,6 +1571,7 @@ def get_unique():
     
     np.savez('../data/unique_samples', chain=models)
 
+import scipy.spatial
 def check_chain(full=False, label=''):
     """"""
     sampler = np.load('../data/samples{}.npz'.format(label))
@@ -1592,8 +1593,10 @@ def check_chain(full=False, label=''):
             abr[:,3] = models[:,6]
             abr[:,4] = models[:,5]
             params = ['T [Gyr]', 'B [pc]', 'V [km s$^{-1}$]', '$r_s$ [pc]', 'log M/M$_\odot$']
+            lims = [[0.2,0.8], [0.1,100], [10,1000], [0.1,50], [5,9]]
+        else:
+            lims = [[0.2,0.8], [0.1,100], [10,1000], [5,9]]
         models = abr
-        lims = [[0.1,16], [10,2000], [30,1000], [5,10], [0.1,10]]
     
     Nvar = np.shape(models)[1]
     dax = 2
@@ -1605,7 +1608,18 @@ def check_chain(full=False, label=''):
         for j in range(i+1,Nvar):
             plt.sca(ax[j-1][i])
             
-            plt.plot(models[:,i], models[:,j], '.', ms=1, alpha=0.03, color='0.2', rasterized=True)
+            plt.plot(models[:,i], models[:,j], '.', ms=1, alpha=0.01, color='0.2', rasterized=True)
+            
+            points = np.array([models[:,i], models[:,j]]).T
+            hull = scipy.spatial.ConvexHull(points)
+            
+            xy_vert = np.array([points[hull.vertices,0], points[hull.vertices,1]]).T
+            
+            p = mpl.patches.Polygon(xy_vert, closed=True, ec='0.3', fc='0.8', zorder=0)
+            plt.gca().add_artist(p)
+            
+            #for simplex in hull.simplices:
+                #plt.plot(points[simplex, 0], points[simplex, 1], 'k-')
     
     for i in range(0,Nvar-1):
         for j in range(i+1,Nvar-1):
@@ -1616,14 +1630,14 @@ def check_chain(full=False, label=''):
         plt.sca(ax[-1][k])
         plt.xlabel(params[k])
         if full==False:
-            plt.gca().set_xscale('log')
-            #plt.xlim(lims[k])
+            #plt.gca().set_xscale('log')
+            plt.xlim(lims[k])
         
         plt.sca(ax[k][0])
         plt.ylabel(params[k+1])
-        if (full==False) & (k<Nvar-2):
-            plt.gca().set_yscale('log')
-            #plt.ylim(lims[k+1])
+        if (full==False):# & (k<Nvar-2):
+            #plt.gca().set_yscale('log')
+            plt.ylim(lims[k+1])
     
     plt.tight_layout(h_pad=0, w_pad=0)
     plt.savefig('../plots/corner{}_f{:d}.png'.format(label, full))
