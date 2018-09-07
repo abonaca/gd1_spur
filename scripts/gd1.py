@@ -1618,14 +1618,14 @@ def check_chain(full=False, label=''):
     for k in range(Nvar-1):
         plt.sca(ax[-1][k])
         plt.xlabel(params[k])
-        if full==False:
-            plt.gca().set_xscale('log')
+        #if full==False:
+            #plt.gca().set_xscale('log')
             #plt.xlim(lims[k])
         
         plt.sca(ax[k][0])
         plt.ylabel(params[k+1])
-        if (full==False) & (k<Nvar-2):
-            plt.gca().set_yscale('log')
+        #if (full==False) & (k<Nvar-2):
+            #plt.gca().set_yscale('log')
             #plt.ylim(lims[k+1])
     
     plt.tight_layout(h_pad=0, w_pad=0)
