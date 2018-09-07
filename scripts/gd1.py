@@ -1653,6 +1653,7 @@ def check_chain(full=False, label=''):
             logscale = [False, True, True, True, False]
         else:
             lims = [[0.2,0.8], [0.1,100], [10,1000], [5,9]]
+            logscale = [False, True, True, False]
         models = abr
     
     Nvar = np.shape(models)[1]
