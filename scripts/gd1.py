@@ -1429,6 +1429,7 @@ def run(cont=False, steps=100, nwalkers=100, nth=8, label='', potential_perturb=
     bins = np.linspace(-60,-20,30)
     bc = 0.5 * (bins[1:] + bins[:-1])
     Nb = np.size(bc)
+    Nside_min = 5
     f_gap = 0.5
     delta_phi2 = 0.5
     
@@ -1496,7 +1497,7 @@ def run(cont=False, steps=100, nwalkers=100, nth=8, label='', potential_perturb=
     params[5] = np.log10(params[5])
     
     model_args = [params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb]
-    gap_args = [poly, wangle, delta_phi2, Nb, bins, bc, base_mask, hat_mask, f_gap, gap_position, gap_width]
+    gap_args = [poly, wangle, delta_phi2, Nb, bins, bc, base_mask, hat_mask, Nside_min, f_gap, gap_position, gap_width]
     spur_args = [N2, percentile1, percentile2, phi1_min, phi1_max, phi2_err, spx, spy, quad_phi1, quad_phi2, Nquad]
     lnp_args = [chigap_max, chispur_max]
     lnprob_args = model_args + gap_args + spur_args + lnp_args
@@ -1552,7 +1553,7 @@ def sort_on_runtime(p):
     
     return p[idx], idx
 
-def lnprob(x, params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb, poly, wangle, delta_phi2, Nb, bins, bc, base_mask, hat_mask, f_gap, gap_position, gap_width, N2, percentile1, percentile2, phi1_min, phi1_max, phi2_err, spx, spy, quad_phi1, quad_phi2, Nquad, chigap_max, chispur_max):
+def lnprob(x, params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb, poly, wangle, delta_phi2, Nb, bins, bc, base_mask, hat_mask, Nside_min, f_gap, gap_position, gap_width, N2, percentile1, percentile2, phi1_min, phi1_max, phi2_err, spx, spy, quad_phi1, quad_phi2, Nquad, chigap_max, chispur_max):
     """Check if a model is better than the fiducial"""
     
     if (x[0]<0) | (x[0]>14) | (np.sqrt(x[3]**2 + x[4]**2)>1000):
@@ -1602,15 +1603,18 @@ def lnprob(x, params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, Tenc, Ts
     
     model_base = np.median(h_model[base_mask])
     model_hat = np.median(h_model[hat_mask])
-    model_hat = np.minimum(model_hat, model_base*f_gap)
-    ytop_model = tophat(bc, model_base, model_hat,  gap_position, gap_width)
+    #model_hat = np.minimum(model_hat, model_base*f_gap)
+    if (model_base<Nside_min) | (model_hat>model_base*f_gap):
+        return -np.inf
     
+    ytop_model = tophat(bc, model_base, model_hat,  gap_position, gap_width)
     chi_gap = np.sum((h_model - ytop_model)**2/yerr**2)/Nb
     
-    if (chi_gap<chigap_max) & (chi_spur<chispur_max):
-        return 0.
-    else:
-        return -np.inf
+    return -(chi_gap + chi_spur)
+    #if (chi_gap<chigap_max) & (chi_spur<chispur_max):
+        #return 0.
+    #else:
+        #return -np.inf
 
 import corner
 
