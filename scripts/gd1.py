@@ -19,7 +19,11 @@ import gala.potential as gp
 from gala.units import galactic
 
 import scipy.optimize
-#from scipy.optimize import curve_fit
+import scipy.spatial
+import scipy.interpolate
+import time
+import emcee
+import corner
 
 import interact
 import myutils
@@ -773,7 +777,6 @@ def fit_tophat():
 
 # spuriness
 
-import scipy.interpolate
 def loop_track():
     """Find track through the observed loop stars"""
     
@@ -1258,8 +1261,6 @@ def slice_likelihood():
     
     plt.tight_layout(h_pad=0)
 
-import time
-import emcee
 
 def test_abinitio():
     """"""
@@ -1610,13 +1611,101 @@ def lnprob(x, params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, Tenc, Ts
     ytop_model = tophat(bc, model_base, model_hat,  gap_position, gap_width)
     chi_gap = np.sum((h_model - ytop_model)**2/yerr**2)/Nb
     
-    return -(chi_gap + chi_spur)
+    if np.isfinite(chi_gap) & np.isfinite(chi_spur):
+        return -(chi_gap + chi_spur)
+    else:
+        return -np.inf
     #if (chi_gap<chigap_max) & (chi_spur<chispur_max):
         #return 0.
     #else:
         #return -np.inf
 
-import corner
+
+def plot_corner(label='', full=False):
+    """"""
+    sampler = np.load('../data/samples{}.npz'.format(label))
+    chain = sampler['chain']
+    Npar = np.shape(chain)[1]
+    
+    params = ['T', 'bx', 'by', 'vx', 'vy', 'logM', 'rs']
+    if full==False:
+        params = ['T [Gyr]', 'B [pc]', 'V [km s$^{-1}$]', 'log M/M$_\odot$']
+        abr = chain[:,:-2]
+        abr[:,1] = np.sqrt(chain[:,1]**2 + chain[:,2]**2)
+        abr[:,2] = np.sqrt(chain[:,3]**2 + chain[:,4]**2)
+        abr[:,0] = chain[:,0]
+        abr[:,3] = chain[:,5]
+        if Npar>6:
+            abr[:,3] = chain[:,6]
+            abr[:,4] = chain[:,5]
+            params = ['T [Gyr]', 'B [pc]', 'V [km s$^{-1}$]', '$r_s$ [pc]', 'log M/M$_\odot$']
+            #lims = [[0.,2], [0.1,100], [10,1000], [0.001,1000], [5,9]]
+        chain = abr
+    
+    plt.close()
+    corner.corner(chain, bins=50, labels=params)
+    
+    plt.savefig('../plots/corner{}.png'.format(label))
+
+def plot_chains(label=''):
+    """"""
+    sampler = np.load('../data/samples{}.npz'.format(label))
+    chain = sampler['chain']
+    lnp = sampler['lnp']
+    nwalkers = sampler['nwalkers']
+    ntot, Npar = np.shape(chain)
+    nstep = int(ntot/nwalkers)
+    steps = np.arange(nstep)
+    
+    Npanel = Npar + 1
+    nrow = np.int(np.ceil(np.sqrt(Npanel)))
+    ncol = np.int(np.ceil(Npanel/nrow))
+    da = 2.5
+    params = ['T [Gyr]', '$B_x$ [pc]', '$B_y$ [pc]', '$V_x$ [km s$^{-1}$]', '$V_y$ [km s$^{-1}$]', 'log M/M$_\odot$', '$r_s$ [pc]']
+    
+    plt.close()
+    fig, ax = plt.subplots(nrow, ncol, figsize=(1.5*ncol*da, nrow*da), sharex=True)
+    
+    for i in range(Npar):
+        plt.sca(ax[int(i/nrow)][i%nrow])
+        plt.plot(steps, chain[:,i].reshape(nstep,-1), '-')
+        plt.ylabel(params[i])
+    
+    plt.sca(ax[nrow-1][ncol-1])
+    plt.plot(steps, lnp.reshape(nstep,-1), '-')
+    
+    for i in range(ncol):
+        plt.sca(ax[nrow-1][i])
+        plt.xlabel('Step')
+        
+    plt.tight_layout()
+    plt.savefig('../plots/chain{}.png'.format(label))
+
+def explore_islands(label=''):
+    """"""
+    sampler = np.load('../data/samples{}.npz'.format(label))
+    chain = sampler['chain']
+    
+    params = ['T', 'bx', 'by', 'vx', 'vy', 'logM', 'rs']
+    B = np.sqrt(chain[:,1]**2 + chain[:,2]**2)
+    V = np.sqrt(chain[:,3]**2 + chain[:,4]**2)
+    
+    island = (chain[:,0]>0.7) & (chain[:,0]<1.) & (V<500)
+    Nisland = np.sum(island)
+    Nc = 20
+    np.random.seed(59)
+    ind = np.random.randint(Nisland, size=Nc)
+
+    lnprob_args = get_lnprobargs()
+    params_units = lnprob_args[0]
+
+    for k in range(10):
+        x = chain[island][k]
+        fig, ax, chi_gap, chi_spur, N = lnprob_verbose(x, *lnprob_args)
+        plt.suptitle('  '.join(['{:.2g} {}'.format(x_, u_) for x_, u_ in zip(x, params_units)]), fontsize='medium')
+        plt.tight_layout(rect=[0,0,1,0.96])
+        
+        plt.savefig('../plots/likelihood_island_{}.png'.format(k))
 
 def get_unique(label=''):
     """Save unique models in a separate file"""
@@ -1626,7 +1715,6 @@ def get_unique(label=''):
     
     np.savez('../data/unique_samples{}'.format(label), chain=models)
 
-import scipy.spatial
 def check_chain(full=False, label=''):
     """"""
     sampler = np.load('../data/unique_samples{}.npz'.format(label))
@@ -1720,6 +1808,7 @@ def check_chain(full=False, label=''):
         
         plt.sca(ax[3][3])
         plt.plot(rsrange.to(u.pc), np.log10(mrange.value), '-', color='DarkSlateBlue', lw=1.5)
+        plt.plot(0.3*rsrange.to(u.pc), np.log10(mrange.value), '--', color='DarkSlateBlue', lw=1.5)
         plt.plot(0.1*rsrange.to(u.pc), np.log10(mrange.value), ':', color='DarkSlateBlue', lw=1.5)
     
     plt.tight_layout(h_pad=0, w_pad=0)
@@ -1888,6 +1977,104 @@ def rs_hernquist(M):
     """Return Hernquist scale radius for a halo of mass M"""
     
     return 1.05*u.kpc * np.sqrt(M.to(u.Msun).value*1e-8)
+
+def get_lnprobargs():
+    """"""
+    pkl = pickle.load(open('../data/gap_present.pkl', 'rb'))
+    c = coord.Galactocentric(x=pkl['x_gap'][0], y=pkl['x_gap'][1], z=pkl['x_gap'][2], v_x=pkl['v_gap'][0], v_y=pkl['v_gap'][1], v_z=pkl['v_gap'][2], **gc_frame_dict)
+    w0 = gd.PhaseSpacePosition(c.transform_to(gc_frame).cartesian)
+    xgap = np.array([w0.pos.x.si.value, w0.pos.y.si.value, w0.pos.z.si.value])
+    vgap = np.array([w0.vel.d_x.si.value, w0.vel.d_y.si.value, w0.vel.d_z.si.value])
+    
+    # load orbital end point
+    pos = np.load('../data/log_orbit.npy')
+    phi1, phi2, d, pm1, pm2, vr = pos
+
+    c_end = gc.GD1(phi1=phi1*u.deg, phi2=phi2*u.deg, distance=d*u.kpc, pm_phi1_cosphi2=pm1*u.mas/u.yr, pm_phi2=pm2*u.mas/u.yr, radial_velocity=vr*u.km/u.s)
+    w0_end = gd.PhaseSpacePosition(c_end.transform_to(gc_frame).cartesian)
+    xend = np.array([w0_end.pos.x.si.value, w0_end.pos.y.si.value, w0_end.pos.z.si.value])
+    vend = np.array([w0_end.vel.d_x.si.value, w0_end.vel.d_y.si.value, w0_end.vel.d_z.si.value])
+    
+    dt_coarse = 0.5*u.Myr
+    Tstream = 56*u.Myr
+    Nstream = 2000
+    N2 = int(Nstream*0.5)
+    dt_stream = Tstream/Nstream
+    dt_fine = 0.05*u.Myr
+    wangle = 180*u.deg
+    
+    
+    # gap comparison
+    bins = np.linspace(-60,-20,30)
+    bc = 0.5 * (bins[1:] + bins[:-1])
+    Nb = np.size(bc)
+    f_gap = 0.5
+    delta_phi2 = 0.5
+    
+    gap = np.load('../data/gap_properties.npz')
+    phi1_edges = gap['phi1_edges']
+    gap_position = gap['position']
+    gap_width = gap['width']
+    gap_yerr = gap['yerr']
+    base_mask = ((bc>phi1_edges[0]) & (bc<phi1_edges[1])) | ((bc>phi1_edges[2]) & (bc<phi1_edges[3]))
+    hat_mask = (bc>phi1_edges[4]) & (bc<phi1_edges[5])
+    
+    p = np.load('../data/polytrack.npy')
+    poly = np.poly1d(p)
+    x_ = np.linspace(-100,0,100)
+    y_ = poly(x_)
+    
+    # spur comparison
+    sp = np.load('../data/spur_track.npz')
+    spx = sp['x']
+    spy = sp['y']
+    phi2_err = 0.5
+    phi1_min = -50*u.deg
+    phi1_max = -30*u.deg
+    percentile1 = 3
+    percentile2 = 92
+    quad_phi1 = -32*u.deg
+    quad_phi2 = 0.8*u.deg
+    Nquad = 1
+    
+    # parameters to sample
+    t_impact = 0.5*u.Gyr
+    bx = 40*u.pc
+    by = 1*u.pc
+    vx = 225*u.km/u.s
+    vy = 1*u.km/u.s
+    M = 7e6*u.Msun
+    rs = 0*u.pc
+    #print((2*G*M*c_**-2).to(u.pc))
+    #print(1.05*u.kpc * np.sqrt(M.to(u.Msun).value*1e-8))
+    
+    potential = 3
+    Vh = 225*u.km/u.s
+    q = 1*u.Unit(1)
+    rhalo = 0*u.pc
+    par_pot = np.array([Vh.si.value, q.value, rhalo.si.value])
+    
+    potential_perturb = 2
+    #par_perturb = np.array([M.si.value, 0., 0., 0.])
+    #potential_perturb = 2
+    #par_perturb = np.array([M.si.value, rs.si.value, 0., 0., 0.])
+    Tenc = 0.01*u.Gyr
+    
+    chigap_max = 0.6567184385873621
+    chispur_max = 1.0213837095314207
+    
+    params_list = [t_impact, bx, by, vx, vy, M, rs]
+    params_units = [p_.unit for p_ in params_list]
+    params = [p_.value for p_ in params_list]
+    params[5] = np.log10(params[5])
+    
+    model_args = [params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb]
+    gap_args = [poly, wangle, delta_phi2, Nb, bins, bc, base_mask, hat_mask, f_gap, gap_position, gap_width]
+    spur_args = [N2, percentile1, percentile2, phi1_min, phi1_max, phi2_err, spx, spy, quad_phi1, quad_phi2, Nquad]
+    lnp_args = [chigap_max, chispur_max]
+    lnprob_args = model_args + gap_args + spur_args + lnp_args
+    
+    return lnprob_args
 
 def check_model(fiducial=False, label='', rand=False):
     """"""
