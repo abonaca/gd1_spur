@@ -1701,17 +1701,7 @@ def check_chain(full=False, label=''):
     for k in range(Nvar-1):
         plt.sca(ax[-1][k])
         plt.xlabel(params[k])
-<<<<<<< HEAD
-        #if full==False:
-            #plt.gca().set_xscale('log')
-            #plt.xlim(lims[k])
-        
-        plt.sca(ax[k][0])
-        plt.ylabel(params[k+1])
-        #if (full==False) & (k<Nvar-2):
-            #plt.gca().set_yscale('log')
-            #plt.ylim(lims[k+1])
-=======
+
         if full==False:
             if logscale[k]:
                 plt.gca().set_xscale('log')
@@ -1731,7 +1721,6 @@ def check_chain(full=False, label=''):
         plt.sca(ax[3][3])
         plt.plot(rsrange.to(u.pc), np.log10(mrange.value), '-', color='DarkSlateBlue', lw=1.5)
         plt.plot(0.1*rsrange.to(u.pc), np.log10(mrange.value), ':', color='DarkSlateBlue', lw=1.5)
->>>>>>> c1eb9edeff28ce259db85c080214c19d3780bf4a
     
     plt.tight_layout(h_pad=0, w_pad=0)
     plt.savefig('../plots/corner{}_f{:d}.png'.format(label, full))
