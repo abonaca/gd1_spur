@@ -1631,7 +1631,7 @@ def check_chain(full=False, label=''):
     """"""
     sampler = np.load('../data/unique_samples{}.npz'.format(label))
     
-    models = np.unique(sampler['chain'], axis=0)[::10]
+    models = np.unique(sampler['chain'], axis=0)
     params = ['T', 'bx', 'by', 'vx', 'vy', 'logM', 'rs']
     print(np.shape(models), np.shape(models)[0]/np.shape(sampler['chain'])[0])
     Npar = np.shape(models)[1]
@@ -1649,10 +1649,10 @@ def check_chain(full=False, label=''):
             abr[:,3] = models[:,6]
             abr[:,4] = models[:,5]
             params = ['T [Gyr]', 'B [pc]', 'V [km s$^{-1}$]', '$r_s$ [pc]', 'log M/M$_\odot$']
-            lims = [[0.2,0.8], [0.1,100], [10,1000], [0.1,1000], [5,9]]
+            lims = [[0.,2], [0.1,100], [10,1000], [0.001,1000], [5,9]]
             logscale = [False, True, True, True, False]
         else:
-            lims = [[0.2,0.8], [0.1,100], [10,1000], [5,9]]
+            lims = [[0.,2], [0.1,100], [10,1000], [5,9]]
             logscale = [False, True, True, False]
         models = abr
     
@@ -1672,10 +1672,10 @@ def check_chain(full=False, label=''):
         for j in range(i+1,Nvar):
             plt.sca(ax[j-1][i])
             
-            plt.plot(models[:,i], models[:,j], '.', ms=1, alpha=0.02, color='0.2', rasterized=True)
+            plt.plot(models[:,i], models[:,j], '.', ms=1, alpha=0.1, color='0.2', rasterized=True)
             
-            for k in range(Nc):
-                plt.plot(models[ind[k]][i], models[ind[k]][j], 'o', ms=4, color='PaleVioletRed')
+            #for k in range(Nc):
+                #plt.plot(models[ind[k]][i], models[ind[k]][j], 'o', ms=4, color='PaleVioletRed')
             
             points = np.log10(np.array([models[:,i], models[:,j]]).T)
             hull = scipy.spatial.ConvexHull(points)
