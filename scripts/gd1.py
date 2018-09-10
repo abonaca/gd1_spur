@@ -25,6 +25,9 @@ import time
 import emcee
 import corner
 
+from colossus.cosmology import cosmology
+from colossus.halo import concentration
+
 import interact
 import myutils
 
@@ -1681,7 +1684,7 @@ def plot_chains(label=''):
     plt.tight_layout()
     plt.savefig('../plots/chain{}.png'.format(label))
 
-def explore_islands(label=''):
+def explore_islands(label='', n=1):
     """"""
     sampler = np.load('../data/samples{}.npz'.format(label))
     chain = sampler['chain']
@@ -1690,22 +1693,26 @@ def explore_islands(label=''):
     B = np.sqrt(chain[:,1]**2 + chain[:,2]**2)
     V = np.sqrt(chain[:,3]**2 + chain[:,4]**2)
     
-    island = (chain[:,0]>0.7) & (chain[:,0]<1.) & (V<500)
+    if n==1:
+        island = (chain[:,0]>0.7) & (chain[:,0]<1.) & (V<500)
+    elif n==2:
+        island = (chain[:,0]>1) & (chain[:,0]<1.5)
+    else:
+        island = (chain[:,0]>1.5)
     Nisland = np.sum(island)
-    Nc = 20
+    Nc = 10
     np.random.seed(59)
     ind = np.random.randint(Nisland, size=Nc)
 
-    lnprob_args = get_lnprobargs()
-    params_units = lnprob_args[0]
-
-    for k in range(10):
+    for k in ind:
         x = chain[island][k]
+        lnprob_args = get_lnprobargs()
+        params_units = lnprob_args[0]
         fig, ax, chi_gap, chi_spur, N = lnprob_verbose(x, *lnprob_args)
         plt.suptitle('  '.join(['{:.2g} {}'.format(x_, u_) for x_, u_ in zip(x, params_units)]), fontsize='medium')
         plt.tight_layout(rect=[0,0,1,0.96])
         
-        plt.savefig('../plots/likelihood_island_{}.png'.format(k))
+        plt.savefig('../plots/likelihood_island{}_{}.png'.format(n, k))
 
 def get_unique(label=''):
     """Save unique models in a separate file"""
@@ -1805,11 +1812,20 @@ def check_chain(full=False, label=''):
     if Npar>6:
         mrange = 10**np.linspace(np.min(models[:,4]), np.max(models[:,4]), 20)*u.Msun
         rsrange = rs_hernquist(mrange)
+        rsrange2 = rs_diemer(mrange)
         
         plt.sca(ax[3][3])
-        plt.plot(rsrange.to(u.pc), np.log10(mrange.value), '-', color='DarkSlateBlue', lw=1.5)
-        plt.plot(0.3*rsrange.to(u.pc), np.log10(mrange.value), '--', color='DarkSlateBlue', lw=1.5)
-        plt.plot(0.1*rsrange.to(u.pc), np.log10(mrange.value), ':', color='DarkSlateBlue', lw=1.5)
+        plt.plot(0.1*rsrange2.to(u.pc), np.log10(mrange.value), ':', color='DarkSlateBlue', lw=1.5)
+        plt.plot(0.3*rsrange2.to(u.pc), np.log10(mrange.value), '--', color='DarkSlateBlue', lw=1.5)
+        plt.plot(0.84*rsrange2.to(u.pc), np.log10(mrange.value), '-', color='DarkSlateBlue', lw=1.5)
+        plt.plot(1.16*rsrange2.to(u.pc), np.log10(mrange.value), '-', color='DarkSlateBlue', lw=1.5)
+        #plt.fill_betweenx(0.84*rsrange2.to(u.pc).value, 1.16*rsrange2.to(u.pc).value, np.log10(mrange.value), color='DarkSlateBlue')
+
+        #plt.plot(0.1*rsrange.to(u.pc), np.log10(mrange.value), ':', color='SlateBlue', lw=1.5)
+        #plt.plot(0.3*rsrange.to(u.pc), np.log10(mrange.value), '--', color='SlateBlue', lw=1.5)
+        #plt.plot(0.84*rsrange.to(u.pc), np.log10(mrange.value), '-', color='SlateBlue', lw=1.5)
+        #plt.plot(1.16*rsrange.to(u.pc), np.log10(mrange.value), '-', color='SlateBlue', lw=1.5)
+        ##plt.plot(rsrange.to(u.pc), np.log10(mrange.value), '-', color='SlateBlue', lw=1.5)
     
     plt.tight_layout(h_pad=0, w_pad=0)
     plt.savefig('../plots/corner{}_f{:d}.png'.format(label, full))
@@ -1977,6 +1993,23 @@ def rs_hernquist(M):
     """Return Hernquist scale radius for a halo of mass M"""
     
     return 1.05*u.kpc * np.sqrt(M.to(u.Msun).value*1e-8)
+
+def rs_diemer(M):
+    """Return NFW scale radius for a halo of mass M, assuming Diemer+2018 mass-concetration relation"""
+    
+    cosmology.setCosmology('planck15')
+    csm = cosmology.getCurrent()
+    
+    z_ = 0
+    rho_c = csm.rho_c(z_)
+    h_ = csm.Hz(z_) * 1e-2
+    delta = 200
+    
+    c, mask = concentration.concentration(M.to(u.Msun).value/h_, '200c', 0.0, model='diemer18', range_return=True)
+    R = ((3*M.to(u.Msun).value/h_)/(4*np.pi*delta*rho_c))**(1/3) * h_
+    rs = R / c * 1e3 * u.pc
+    
+    return rs
 
 def get_lnprobargs():
     """"""
