@@ -199,7 +199,7 @@ def save_members():
     
     g.write('../data/members.fits', overwrite=True)
 
-def encounter(bnorm=0.06*u.kpc, bx=0.06*u.kpc, vnorm=200*u.km/u.s, vx=200*u.km/u.s, M=1e7*u.Msun, t_impact=0.5*u.Gyr, point_mass=True, N=1000, verbose=False, fname='gd1_encounter', fig_return=False, fig_annotate=False, model_return=False, fig_plot=True):
+def encounter(bnorm=0.06*u.kpc, bx=0.06*u.kpc, vnorm=200*u.km/u.s, vx=200*u.km/u.s, M=1e7*u.Msun, rs=0*u.pc, t_impact=0.5*u.Gyr, point_mass=True, N=1000, verbose=False, fname='gd1_encounter', fig_return=False, fig_annotate=False, model_return=False, fig_plot=True):
     """Encounter of GD-1 with a massive perturber"""
     
     ########################
@@ -294,7 +294,7 @@ def encounter(bnorm=0.06*u.kpc, bx=0.06*u.kpc, vnorm=200*u.km/u.s, vx=200*u.km/u
     Tenc = 0.01*u.Gyr
     T = 0.5*u.Gyr
     dt = 0.05*u.Myr
-    rs = 0*u.pc
+    #rs = 0*u.pc
     
     # potential parameters
     potential = 3
@@ -309,8 +309,8 @@ def encounter(bnorm=0.06*u.kpc, bx=0.06*u.kpc, vnorm=200*u.km/u.s, vx=200*u.km/u
         par_perturb = np.array([M.si.value, 0., 0., 0.])
     else:
         potential_perturb = 2
-        a = 1.05*u.kpc * np.sqrt(M.to(u.Msun).value*1e-8)
-        par_perturb = np.array([M.si.value, a.si.value, 0, 0, 0])
+        #a = 1.05*u.kpc * np.sqrt(M.to(u.Msun).value*1e-8)
+        par_perturb = np.array([M.si.value, rs.si.value, 0, 0, 0])
         #result = scipy.integrate.quad(lambda x: bnorm.to(u.pc).value*np.cos(x)**-2 * (a.to(u.pc).value + bnorm.to(u.pc).value*np.cos(x)**-1)**-2, -0.5*np.pi, 0.5*np.pi)
         #m_ = M * 0.5 * a.to(u.pc).value * (2 / a.to(u.pc).value - result[0])
         #print('{:e} {:e}'.format(M, m_))
@@ -1718,9 +1718,11 @@ def get_unique(label=''):
     """Save unique models in a separate file"""
     
     sampler = np.load('../data/samples{}.npz'.format(label))
-    models = np.unique(sampler['chain'], axis=0)
+    models, ind = np.unique(sampler['chain'], axis=0, return_index=True)
+    #print(np.shape(models), np.shape(ind))
+    #print(np.shape(np.unique(sampler['lnp'])))
     
-    np.savez('../data/unique_samples{}'.format(label), chain=models)
+    np.savez('../data/unique_samples{}'.format(label), chain=models, lnp=sampler['lnp'][ind])
 
 def check_chain(full=False, label=''):
     """"""
@@ -2252,3 +2254,334 @@ def check_model(fiducial=False, label='', rand=False):
         plt.savefig('../plots/likelihood_r{:d}_{}.png'.format(rand, k))
     
 
+########################
+# Explore fiducial model
+
+def model_time(T, bnorm=0.03*u.kpc, bx=0.03*u.kpc, vnorm=225*u.km/u.s, vx=225*u.km/u.s, M=7e6*u.Msun, t_impact=0.5*u.Gyr):
+    """Return model encounter at a time T"""
+    
+    ########################
+    # Perturber at encounter
+    
+    pkl = pickle.load(open('../data/gap_present.pkl', 'rb'))
+    c = coord.Galactocentric(x=pkl['x_gap'][0], y=pkl['x_gap'][1], z=pkl['x_gap'][2], v_x=pkl['v_gap'][0], v_y=pkl['v_gap'][1], v_z=pkl['v_gap'][2], **gc_frame_dict)
+    w0 = gd.PhaseSpacePosition(c.transform_to(gc_frame).cartesian)
+    
+    # best-fitting orbit
+    dt = 0.5*u.Myr
+    n_steps = np.int64(t_impact / dt)
+
+    # integrate back in time
+    fit_orbit = ham.integrate_orbit(w0, dt=-dt, n_steps=n_steps)
+    x = fit_orbit.pos.get_xyz()
+    v = fit_orbit.vel.get_d_xyz()
+    
+    # gap location at the time of impact
+    xgap = x[:,-1]
+    vgap = v[:,-1]
+    
+    i = np.array([1,0,0], dtype=float)
+    j = np.array([0,1,0], dtype=float)
+    k = np.array([0,0,1], dtype=float)
+    
+    # find positional plane
+    bi = np.cross(j, vgap)
+    bi = bi/np.linalg.norm(bi)
+    
+    bj = np.cross(vgap, bi)
+    bj = bj/np.linalg.norm(bj)
+    
+    # pick b
+    by = np.sqrt(bnorm**2 - bx**2)
+    b = bx*bi + by*bj
+    xsub = xgap + b
+    
+    # find velocity plane
+    vi = np.cross(vgap, b)
+    vi = vi/np.linalg.norm(vi)
+    
+    vj = np.cross(b, vi)
+    vj = vj/np.linalg.norm(vj)
+    
+    # pick v
+    vy = np.sqrt(vnorm**2 - vx**2)
+    vsub = vx*vi + vy*vj
+    
+    #####################
+    # Stream at encounter
+    
+    # load one orbital point
+    pos = np.load('../data/log_orbit.npy')
+    phi1, phi2, d, pm1, pm2, vr = pos
+
+    c = gc.GD1(phi1=phi1*u.deg, phi2=phi2*u.deg, distance=d*u.kpc, pm_phi1_cosphi2=pm1*u.mas/u.yr, pm_phi2=pm2*u.mas/u.yr, radial_velocity=vr*u.km/u.s)
+    w0 = gd.PhaseSpacePosition(c.transform_to(gc_frame).cartesian)
+    
+    # best-fitting orbit
+    dt = 0.5*u.Myr
+    n_steps = np.int64(t_impact / dt)
+
+    # integrate back in time
+    fit_orbit = ham.integrate_orbit(w0, dt=-dt, n_steps=n_steps)
+    x = fit_orbit.pos.get_xyz()
+    v = fit_orbit.vel.get_d_xyz()
+    xend = x[:,-1]
+    vend = v[:,-1]
+    
+    # fine-sampled orbit at the time of impact
+    c_impact = coord.Galactocentric(x=xend[0], y=xend[1], z=xend[2], v_x=vend[0], v_y=vend[1], v_z=vend[2], **gc_frame_dict)
+    w0_impact = gd.PhaseSpacePosition(c_impact.transform_to(gc_frame).cartesian)
+    
+    # best-fitting orbit
+    t = 56*u.Myr
+    n_steps = 1000
+    dt = t/n_steps
+
+    stream_init = ham.integrate_orbit(w0_impact, dt=dt, n_steps=n_steps)
+    xs = stream_init.pos.get_xyz()
+    vs = stream_init.vel.get_d_xyz()
+    
+    #######
+    # setup
+    
+    #################
+    # Encounter setup
+    
+    # impact parameters
+    Tenc = 0.01*u.Gyr
+    #T = 0.5*u.Gyr
+    dt = 0.05*u.Myr
+    
+    # potential parameters
+    potential = 3
+    Vh = 225*u.km/u.s
+    q = 1*u.Unit(1)
+    rhalo = 0*u.pc
+    par_pot = np.array([Vh.si.value, q.value, rhalo.si.value])
+    
+    # perturber parameters
+    potential_perturb = 2
+    rs = 0*u.pc
+    #a = 1.05*u.kpc * np.sqrt(M.to(u.Msun).value*1e-8)
+    par_perturb = np.array([M.si.value, rs.si.value, 0, 0, 0])
+    
+    # generate stream model
+    x1, x2, x3, v1, v2, v3 = interact.general_interact(par_perturb, xsub.si.value, vsub.si.value, Tenc.si.value, T.si.value, dt.si.value, par_pot, potential, potential_perturb, xs[0].si.value, xs[1].si.value, xs[2].si.value, vs[0].si.value, vs[1].si.value, vs[2].si.value)
+    stream = {}
+    stream['x'] = (np.array([x1, x2, x3])*u.m).to(u.kpc)
+    stream['v'] = (np.array([v1, v2, v3])*u.m/u.s).to(u.km/u.s)
+    
+    c = coord.Galactocentric(x=stream['x'][0], y=stream['x'][1], z=stream['x'][2], v_x=stream['v'][0], v_y=stream['v'][1], v_z=stream['v'][2], **gc_frame_dict)
+    
+    return c
+
+def model_evolution():
+    """"""
+    # fiducial setup
+    bnorm = 0.03*u.kpc
+    bx = 0.03*u.kpc
+    vnorm = 225*u.km/u.s
+    vx = 225*u.km/u.s
+    M = 7e6*u.Msun
+    t_impact = 0.5*u.Gyr
+    
+    da = 2
+    Nsnap = 7
+    t = np.logspace(-1,0.5,Nsnap)*u.Gyr
+    #t = np.linspace(0.01,10,Nsnap)*u.Gyr
+    
+    pp = PdfPages('../plots/evolution_v.pdf')
+
+    #for bx in np.linspace(-0.03,0.03,7)*u.kpc:
+    #for vx in np.linspace(-225,225,7)*u.km/u.s:
+    #for m in np.linspace(2e6,12e6,7)[:]*u.Msun:
+    #for b in np.linspace(0.01,0.1,7)*u.kpc:
+    for v in np.linspace(50,350,7)*u.km/u.s:
+        print(v)
+        plt.close()
+        fig, ax = plt.subplots(2, Nsnap, figsize=(da*Nsnap, da*2), sharex='col')
+        
+        for i in range(Nsnap):
+            c = model_time(t[i], vx=v, vnorm=v)
+            
+            plt.sca(ax[0][i])
+            plt.plot(c.x, c.y, 'k.', ms=1, rasterized=True)
+            
+            plt.title('T = {:.2f} Gyr'.format(t[i].to(u.Gyr).value), fontsize='medium')
+            if i==0:
+                plt.ylabel('y [kpc]')
+            
+            
+            plt.sca(ax[1][i])
+            plt.plot(c.x, c.z, 'k.', ms=1, rasterized=True)
+            
+            plt.xlabel('x [kpc]')
+            if i==0:
+                plt.ylabel('z [kpc]')
+        
+        #plt.suptitle('M = {:.2g} M$_\odot$'.format(m.value), fontsize='medium')
+        plt.suptitle('$V$ = {:.0f} km s$^{{-1}}$'.format(v.value), fontsize='medium')
+        #plt.suptitle('$b$ = {:.0f} pc'.format(b.to(u.pc).value), fontsize='medium')
+        plt.tight_layout(rect=(0,0,1,0.92))
+        pp.savefig(fig)
+        #plt.savefig('../plots/evolution_m{:02.1f}.png'.format(m.to(u.Msun).value*1e-6))
+    
+    pp.close()
+
+def new_fiducial(label='_hernquist_pl'):
+    """"""
+    
+    #sampler = np.load('../data/samples{}.npz'.format(label))
+    sampler = np.load('../data/unique_samples{}.npz'.format(label))
+    chain = sampler['chain']
+    lnp = sampler['lnp']
+    
+    Npar = np.shape(chain)[1]
+    params = ['T', 'bx', 'by', 'vx', 'vy', 'logM', 'rs']
+    
+    v = np.sqrt(chain[:,3]**2 + chain[:,4]**2) * u.km/u.s
+    m = 10**chain[:,5] * u.Msun
+    rs = chain[:,6] * u.pc
+    
+    rmin = 0.1 * rs_diemer(m)
+    vmin = 400 * u.km/u.s
+    
+    keep = (rs>rmin) & (v<vmin) & (chain[:,4]<0.5) & (chain[:,2]<0.5)
+    samples = chain[keep]
+    lnp_samples = lnp[keep]
+    
+    keep_top = lnp_samples>np.percentile(lnp_samples, 95)
+    samples = samples[keep_top]
+    lnp_samples = lnp_samples[keep_top]
+    
+    #indmax = np.argmin(lnp_samples)
+    #fid = samples[indmax]
+    fid = np.median(samples, axis=0)
+    print(fid)
+    
+    t_impact = fid[0] * u.Gyr
+    bx = fid[1] * u.pc
+    bnorm = np.sqrt(fid[1]**2 + fid[2]**2) * u.pc
+    vx = fid[3] * u.km/u.s
+    vnorm = np.sqrt(fid[3]**2 + fid[4]**2) * u.km/u.s
+    M = 10**fid[5] * u.Msun
+    rs = fid[6] * u.pc
+    
+    cg, e = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, rs=rs, t_impact=t_impact, fname='gd1_fiducial', point_mass=False, fig_annotate=True, verbose=True, model_return=True)
+    
+
+def manual_fiducial():
+    """A model of a GD-1 encounter with a halo object"""
+
+    bnorm = 10*u.pc
+    bx = 10*u.pc
+    vnorm = 300*u.km/u.s
+    vx = -300*u.km/u.s
+    M = 6e6*u.Msun
+    t_impact = 0.5*u.Gyr
+    rs = 12*u.pc
+    
+    print(rs_diemer(M))
+    cg, e = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, rs=rs, t_impact=t_impact, N=3000, fname='gd1_manfid', point_mass=False, fig_annotate=True, verbose=True, model_return=True)
+
+
+####################
+# Plot paper figures
+
+def plot_fiducial():
+    """"""
+    
+    bnorm = 10*u.pc
+    bx = 10*u.pc
+    vnorm = 300*u.km/u.s
+    vx = -300*u.km/u.s
+    M = 6e6*u.Msun
+    t_impact = 0.5*u.Gyr
+    rs = 12*u.pc
+    
+    cg, e = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, rs=rs, t_impact=t_impact, N=3000, fname='gd1_manfid', point_mass=False, fig_annotate=True, verbose=True, model_return=True)
+
+def fiducial_excursions():
+    """Loop appearance under different impact parameters"""
+    
+    # fiducial impact parameters
+    bnorm = 10*u.pc
+    bx = 10*u.pc
+    vnorm = 300*u.km/u.s
+    vx = -300*u.km/u.s
+    M = 6e6*u.Msun
+    t_impact = 0.5*u.Gyr
+    rs = 12*u.pc
+    
+    # visualization parameters
+    N = 1000
+    wangle = 180*u.deg
+    color = '0.3'
+    ms = 4
+    
+    plt.close()
+    fig, ax = plt.subplots(5,5,figsize=(12,12), sharex=True, sharey=True)
+    
+    for i in range(5):
+        plt.sca(ax[4][i])
+        plt.xlabel('$\phi_1$ [deg]')
+        
+        plt.xlim(-58,-22)
+        plt.ylim(-6,6)
+
+        plt.sca(ax[i][0])
+        plt.ylabel('$\phi_2$ [deg]')
+        
+        plt.sca(ax[2][i])
+        plt.text(0.9,0.2, 'fiducial', transform=plt.gca().transAxes, fontsize='x-small', va='center', ha='right')
+    
+    times = np.array([25,200,500,700,1000]) * u.Myr
+    for e, t in enumerate(times):
+        cg, en = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, rs=rs, t_impact=t, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
+        
+        plt.sca(ax[e][0])
+        plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '.', color=color, ms=ms)
+        
+        plt.text(0.1,0.8, 'T = {:.0f} Myr'.format(t.value), transform=plt.gca().transAxes, fontsize='small', va='center', ha='left')
+    
+    masses = np.array([1,3,6,9,12])*1e6 * u.Msun
+    for e, m in enumerate(masses):
+        cg, en = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=m, rs=rs, t_impact=t_impact, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
+        
+        plt.sca(ax[e][1])
+        plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '.', color=color, ms=ms)
+        
+        if m<1e7*u.Msun:
+            plt.text(0.1,0.8, 'M = {:.0f}$\cdot10^6$ M$_\odot$'.format(m.value*1e-6), transform=plt.gca().transAxes, fontsize='small', va='center', ha='left')
+        else:
+            plt.text(0.1,0.8, 'M = {:.1f}$\cdot10^7$ M$_\odot$'.format(m.value*1e-7), transform=plt.gca().transAxes, fontsize='small', va='center', ha='left')
+    
+    bees = np.array([1,5,10,20,50]) * u.pc
+    for e, b in enumerate(bees):
+        cg, en = encounter(bnorm=b, bx=b, vnorm=vnorm, vx=vx, M=M, rs=rs, t_impact=t_impact, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
+        
+        plt.sca(ax[e][2])
+        plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '.', color=color, ms=ms)
+        
+        plt.text(0.1,0.8, 'b = {:.0f} pc'.format(b.value), transform=plt.gca().transAxes, fontsize='small', va='center', ha='left')
+    
+    vees = np.array([50,150,300,500,800]) * u.km/u.s
+    for e, v in enumerate(vees):
+        cg, en = encounter(bnorm=bnorm, bx=bx, vnorm=v, vx=-v, M=M, rs=rs, t_impact=t_impact, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
+        
+        plt.sca(ax[e][3])
+        plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '.', color=color, ms=ms)
+        
+        plt.text(0.1,0.8, 'V = {:.0f} km s$^{{-1}}$'.format(v.value), transform=plt.gca().transAxes, fontsize='small', va='center', ha='left')
+    
+    rses = np.array([0, 5, 12, 30, 100]) * u.pc
+    for e, r in enumerate(rses):
+        cg, en = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, rs=r, t_impact=t_impact, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
+        
+        plt.sca(ax[e][4])
+        plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '.', color=color, ms=ms)
+        
+        plt.text(0.1,0.8, '$r_s$ = {:.0f} pc'.format(r.value), transform=plt.gca().transAxes, fontsize='small', va='center', ha='left')
+
+    plt.tight_layout(h_pad=0.0, w_pad=0.0)
+    plt.savefig('../plots/excursions.png')
