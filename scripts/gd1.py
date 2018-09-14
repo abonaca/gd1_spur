@@ -1831,6 +1831,7 @@ def check_chain(full=False, label=''):
     
     plt.tight_layout(h_pad=0, w_pad=0)
     plt.savefig('../plots/corner{}_f{:d}.png'.format(label, full))
+    plt.savefig('../paper/corner.pdf')
 
 def check_impulse(label=''):
     """"""
@@ -2488,8 +2489,8 @@ def manual_fiducial():
 ####################
 # Plot paper figures
 
-def plot_fiducial():
-    """"""
+def fiducial_params():
+    """Return fiducial parameters"""
     
     bnorm = 10*u.pc
     bx = 10*u.pc
@@ -2499,25 +2500,195 @@ def plot_fiducial():
     t_impact = 0.5*u.Gyr
     rs = 12*u.pc
     
-    cg, e = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, rs=rs, t_impact=t_impact, N=3000, fname='gd1_manfid', point_mass=False, fig_annotate=True, verbose=True, model_return=True)
+    return (t_impact, M, rs, bnorm, bx, vnorm, vx)
+
+def generate_fiducial():
+    """"""
+    
+    t_impact, M, rs, bnorm, bx, vnorm, vx = fiducial_params()
+    
+    cg, e = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, rs=rs, t_impact=t_impact, N=2000, fname='gd1_manfid', point_mass=False, verbose=False, model_return=True, fig_plot=False)
+    
+    outdict = {'cg': cg, 'e': e}
+    pickle.dump(outdict, open('../data/fiducial.pkl', 'wb'))
+
+def plot_fiducial():
+    """Figure 1"""
+    
+    # params
+    t_impact, M, rs, bnorm, bx, vnorm, vx = fiducial_params()
+    wangle = 180*u.deg
+    
+    # load model
+    pkl = pickle.load(open('../data/fiducial.pkl', 'rb'))
+    cg = pkl['cg']
+    
+    # gap profile
+    bins = np.linspace(-60,-20,30)
+    bc = 0.5 * (bins[1:] + bins[:-1])
+    db = bins[1] - bins[0]
+    Nb = np.size(bc)
+    f_gap = 0.5
+    delta_phi2 = 0.5
+    
+    gap = np.load('../data/gap_properties.npz')
+    phi1_edges = gap['phi1_edges']
+    gap_position = gap['position']
+    gap_width = gap['width']
+    gap_yerr = gap['yerr']
+    base_mask = ((bc>phi1_edges[0]) & (bc<phi1_edges[1])) | ((bc>phi1_edges[2]) & (bc<phi1_edges[3]))
+    hat_mask = (bc>phi1_edges[4]) & (bc<phi1_edges[5])
+    
+    p = np.load('../data/polytrack.npy')
+    poly = np.poly1d(p)
+    x_ = np.linspace(-100,0,100)
+    y_ = poly(x_)
+        
+    phi2_mask = np.abs(cg.phi2.value - poly(cg.phi1.wrap_at(wangle).value))<delta_phi2
+    h_model, be = np.histogram(cg.phi1[phi2_mask].wrap_at(wangle).value, bins=bins)
+    yerr = np.sqrt(h_model+1)/db
+    h_model = h_model/db
+    
+    model_base = np.median(h_model[base_mask])
+    model_hat = np.median(h_model[hat_mask])
+    model_hat = np.minimum(model_hat, model_base*f_gap)
+    ytop_model = tophat(bc, model_base, model_hat,  gap_position, gap_width)
+    
+    # spur
+    sp = np.load('../data/spur_track.npz')
+    spx = sp['x']
+    spy = sp['y']
+    f = scipy.interpolate.interp1d(spx, spy, kind='quadratic')
+    fx = np.linspace(-50, -30, 100)
+    
+    # observations
+    g = Table.read('../data/members.fits')
+    
+    phi2_mask_data = np.abs(g['phi2'] - poly(g['phi1']))<delta_phi2
+    h_data, be = np.histogram(g['phi1'][phi2_mask_data], bins=bins)
+    yerr_data = np.sqrt(h_data+1)/db
+    h_data = h_data/db
+    
+    data_base = np.median(h_data[base_mask])
+    data_hat = np.median(h_data[hat_mask])
+    ytop_data = tophat(bc, data_base, data_hat, gap_position, gap_width)
+    
+    plt.close()
+    fig, ax = plt.subplots(2, 2, figsize=(13, 4.9), sharex='col', sharey='col', gridspec_kw = {'width_ratios':[3, 1]})
+
+    plt.sca(ax[0][0])
+    plt.plot(g['phi1'], g['phi2'], 'ko', ms=2, alpha=0.7, mec='none')
+    plt.plot(fx, f(fx), '-', color='tomato', lw=3, alpha=0.6, zorder=0)
+    
+    plt.text(0.03, 0.9, 'Observed GD-1 stream', fontsize='small', transform=plt.gca().transAxes, va='top', ha='left')
+    txt = plt.text(0.04, 0.75, 'Gaia proper motions\nPanSTARRS photometry', transform=plt.gca().transAxes, va='top', ha='left', fontsize='x-small', color='0.2')
+    txt.set_bbox(dict(facecolor='w', alpha=0.8, ec='none'))
+    
+    plt.ylabel('$\phi_2$ [deg]')
+    plt.xlim(-80,0)
+    plt.ylim(-10,9)
+    plt.gca().set_aspect('equal')
+    
+    plt.sca(ax[1][0])
+    plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, 'ko', ms=4, alpha=0.7, mec='none')
+    plt.plot(fx, f(fx), '-', color='tomato', lw=3, alpha=0.6)
+
+    plt.text(0.03, 0.9, 'Model of a perturbed GD-1', fontsize='small', transform=plt.gca().transAxes, va='top', ha='left')
+    txt = plt.text(0.04, 0.75, """t = {:.0f} Myr
+M = {:.0f}$\cdot$10$^6$ M$_\odot$
+$r_s$ = {:.0f} pc
+b = {:.0f} pc
+V = {:.0f} km s$^{{-1}}$""".format(t_impact.to(u.Myr).value, M.to(u.Msun).value*1e-6, rs.to(u.pc).value, bnorm.to(u.pc).value, vnorm.to(u.km/u.s).value), transform=plt.gca().transAxes, va='top', ha='left', fontsize='x-small', color='0.2')
+    txt.set_bbox(dict(facecolor='w', alpha=0.8, ec='none'))
+
+    plt.xlabel('$\phi_1$ [deg]')
+    plt.ylabel('$\phi_2$ [deg]')
+    
+    plt.xlim(-80,0)
+    plt.ylim(-10,9)
+    plt.gca().set_aspect('equal')
+    
+    plt.sca(ax[0][1])
+    plt.errorbar(bc, h_data, yerr=yerr_data, fmt='none', color='k', label='', alpha=0.7, lw=1.5)
+    plt.plot(bc, h_data, 'wo', ms=6, mec='none')
+    plt.plot(bc, h_data, 'ko', ms=6, mec='none', alpha=0.7)
+    plt.errorbar(bc, h_data, yerr=yerr_data, fmt='none', color='k', label='')
+    plt.plot(bc, ytop_data, '-', color='tomato', lw=3, alpha=0.6, zorder=0)
+    
+    plt.ylabel('N [deg$^{-1}$]')
+    
+    plt.sca(ax[1][1])
+    plt.errorbar(bc, h_model, yerr=yerr, fmt='none', color='k', label='', alpha=0.7, lw=1.5)
+    plt.plot(bc, h_model, 'wo', ms=6, mec='none')
+    plt.plot(bc, h_model, 'ko', ms=6, mec='none', alpha=0.7)
+    plt.plot(bc, ytop_model, '-', color='tomato', lw=3, alpha=0.6, zorder=0)
+    
+    plt.ylabel('N [deg$^{-1}$]')
+    plt.xlabel('$\phi_1$ [deg]')
+    
+    plt.tight_layout(h_pad=0.05)
+    plt.savefig('../paper/data_model_comparison.pdf')
+    
+def fiducial_orbit():
+    """"""
+    x = np.array([-18.34075245, 3.02965498, 11.43273191])*u.kpc
+    v = np.array([68.31170219, -156.98475247, 246.3519816])*u.km/u.s
+    
+    ir = x.value / np.linalg.norm(x.value)
+    vt = np.cross(ir, v)*v.unit
+    vr = v - vt
+    print(vr, vt)
+    print(np.linalg.norm(vr), np.linalg.norm(vt))
+
+def generate_excursions():
+    """Generate models by varying one parameter at a time"""
+    
+    # params
+    t_impact, M, rs, bnorm, bx, vnorm, vx = fiducial_params()
+    wangle = 180*u.deg
+    N = 2000
+    
+    times = np.array([25,200,500,700,1000]) * u.Myr
+    for e, t in enumerate(times):
+        cg, en = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, rs=rs, t_impact=t, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
+        out = {'cg': cg, 'e': e}
+        pickle.dump(out, open('../data/ex_t{:d}.pkl'.format(e), 'wb'))
+    
+    masses = np.array([1,3,6,9,12])*1e6 * u.Msun
+    for e, m in enumerate(masses):
+        cg, en = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=m, rs=rs, t_impact=t_impact, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
+        out = {'cg': cg, 'e': e}
+        pickle.dump(out, open('../data/ex_m{:d}.pkl'.format(e), 'wb'))
+    
+    bees = np.array([1,5,10,20,50]) * u.pc
+    for e, b in enumerate(bees):
+        cg, en = encounter(bnorm=b, bx=b, vnorm=vnorm, vx=vx, M=M, rs=rs, t_impact=t_impact, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
+        out = {'cg': cg, 'e': e}
+        pickle.dump(out, open('../data/ex_b{:d}.pkl'.format(e), 'wb'))
+    
+    vees = np.array([50,150,300,500,800]) * u.km/u.s
+    for e, v in enumerate(vees):
+        cg, en = encounter(bnorm=bnorm, bx=bx, vnorm=v, vx=-v, M=M, rs=rs, t_impact=t_impact, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
+        out = {'cg': cg, 'e': e}
+        pickle.dump(out, open('../data/ex_v{:d}.pkl'.format(e), 'wb'))
+    
+    rses = np.array([0, 5, 12, 30, 100]) * u.pc
+    for e, r in enumerate(rses):
+        cg, en = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, rs=r, t_impact=t_impact, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
+        out = {'cg': cg, 'e': e}
+        pickle.dump(out, open('../data/ex_r{:d}.pkl'.format(e), 'wb'))
 
 def fiducial_excursions():
     """Loop appearance under different impact parameters"""
     
     # fiducial impact parameters
-    bnorm = 10*u.pc
-    bx = 10*u.pc
-    vnorm = 300*u.km/u.s
-    vx = -300*u.km/u.s
-    M = 6e6*u.Msun
-    t_impact = 0.5*u.Gyr
-    rs = 12*u.pc
+    t_impact, M, rs, bnorm, bx, vnorm, vx = fiducial_params()
     
     # visualization parameters
     N = 1000
     wangle = 180*u.deg
     color = '0.3'
-    ms = 4
+    ms = 6
     
     plt.close()
     fig, ax = plt.subplots(5,5,figsize=(12,12), sharex=True, sharey=True)
@@ -2537,7 +2708,11 @@ def fiducial_excursions():
     
     times = np.array([25,200,500,700,1000]) * u.Myr
     for e, t in enumerate(times):
-        cg, en = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, rs=rs, t_impact=t, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
+        pkl = pickle.load(open('../data/ex_t{:d}.pkl'.format(e), 'rb'))
+        cg = pkl['cg']
+        #cg, en = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, rs=rs, t_impact=t, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
+        
+        color = mpl.cm.Purples(1 - np.abs(e-2)/4)
         
         plt.sca(ax[e][0])
         plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '.', color=color, ms=ms)
@@ -2546,8 +2721,12 @@ def fiducial_excursions():
     
     masses = np.array([1,3,6,9,12])*1e6 * u.Msun
     for e, m in enumerate(masses):
-        cg, en = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=m, rs=rs, t_impact=t_impact, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
+        pkl = pickle.load(open('../data/ex_m{:d}.pkl'.format(e), 'rb'))
+        cg = pkl['cg']
+        #cg, en = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=m, rs=rs, t_impact=t_impact, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
         
+        color = mpl.cm.Blues(1 - np.abs(e-2)/4)
+
         plt.sca(ax[e][1])
         plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '.', color=color, ms=ms)
         
@@ -2558,8 +2737,12 @@ def fiducial_excursions():
     
     bees = np.array([1,5,10,20,50]) * u.pc
     for e, b in enumerate(bees):
-        cg, en = encounter(bnorm=b, bx=b, vnorm=vnorm, vx=vx, M=M, rs=rs, t_impact=t_impact, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
+        pkl = pickle.load(open('../data/ex_b{:d}.pkl'.format(e), 'rb'))
+        cg = pkl['cg']
+        #cg, en = encounter(bnorm=b, bx=b, vnorm=vnorm, vx=vx, M=M, rs=rs, t_impact=t_impact, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
         
+        color = mpl.cm.Greens(1 - np.abs(e-2)/4)
+
         plt.sca(ax[e][2])
         plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '.', color=color, ms=ms)
         
@@ -2567,7 +2750,11 @@ def fiducial_excursions():
     
     vees = np.array([50,150,300,500,800]) * u.km/u.s
     for e, v in enumerate(vees):
-        cg, en = encounter(bnorm=bnorm, bx=bx, vnorm=v, vx=-v, M=M, rs=rs, t_impact=t_impact, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
+        pkl = pickle.load(open('../data/ex_v{:d}.pkl'.format(e), 'rb'))
+        cg = pkl['cg']
+        #cg, en = encounter(bnorm=bnorm, bx=bx, vnorm=v, vx=-v, M=M, rs=rs, t_impact=t_impact, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
+        
+        color = mpl.cm.Oranges(1 - np.abs(e-2)/4)
         
         plt.sca(ax[e][3])
         plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '.', color=color, ms=ms)
@@ -2576,12 +2763,17 @@ def fiducial_excursions():
     
     rses = np.array([0, 5, 12, 30, 100]) * u.pc
     for e, r in enumerate(rses):
-        cg, en = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, rs=r, t_impact=t_impact, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
+        pkl = pickle.load(open('../data/ex_r{:d}.pkl'.format(e), 'rb'))
+        cg = pkl['cg']
+        #cg, en = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, rs=r, t_impact=t_impact, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
         
+        color = mpl.cm.Reds(0.7 - np.abs(e-2)/5)
+
         plt.sca(ax[e][4])
         plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '.', color=color, ms=ms)
         
         plt.text(0.1,0.8, '$r_s$ = {:.0f} pc'.format(r.value), transform=plt.gca().transAxes, fontsize='small', va='center', ha='left')
 
     plt.tight_layout(h_pad=0.0, w_pad=0.0)
-    plt.savefig('../plots/excursions.png')
+    plt.savefig('../paper/excursions.pdf')
+
