@@ -787,14 +787,17 @@ def loop_track():
     
     p = np.load('/home/ana/projects/GD1-DR2/output/polytrack.npy')
     poly = np.poly1d(p)
-    x = np.linspace(-50,-38,10)
+    x = np.linspace(-50,-39,10)
     y = poly(x)
     
-    x_ = np.array([-36.26, -34.9808, -32.9621, -29.9093])
-    y_ = np.array([1.15983, 1.40602, 1.55373, 1.2583])
+    #x_ = np.array([-36.26, -34.9808, -32.9621, -29.9093])
+    #y_ = np.array([1.15983, 1.40602, 1.55373, 1.2583])
     
-    x_ = np.array([-36.4793, -34.9808, -32.6, -29.9093])
-    y_ = np.array([1.01339, 1.40602, 1.31276, 1.15])
+    x_ = np.array([-38, -36.4793, -34.9808, -32.6, -29.9093])
+    y_ = np.array([0.64, 1.01339, 1.04, 1.31276, 1.15])
+    
+    x_ = np.array([-38, -36.4793, -32.6, -29.9093])
+    y_ = np.array([0.64, 1.01339, 1.31276, 1.15])
     
     x = np.concatenate([x, x_])
     y = np.concatenate([y, y_])
@@ -805,7 +808,7 @@ def loop_track():
     np.savez('../data/spur_track', x=x, y=y)
     
     xi = np.linspace(-50,-30,2000)
-    fy = scipy.interpolate.interp1d(x, y, kind='quadratic')
+    fy = scipy.interpolate.interp1d(x, y, kind='linear')
     #yi = np.interp(xi, x, y)
     yi = fy(xi)
     
@@ -2493,12 +2496,20 @@ def fiducial_params():
     """Return fiducial parameters"""
     
     bnorm = 10*u.pc
-    bx = 10*u.pc
+    bx =10*u.pc
     vnorm = 300*u.km/u.s
     vx = -300*u.km/u.s
     M = 6e6*u.Msun
     t_impact = 0.5*u.Gyr
     rs = 12*u.pc
+    
+    bnorm = 10*u.pc
+    bx = 5*u.pc
+    vnorm = 300*u.km/u.s
+    vx = -300*u.km/u.s
+    M = 4e6*u.Msun
+    t_impact = 0.53*u.Gyr
+    rs = 10*u.pc
     
     return (t_impact, M, rs, bnorm, bx, vnorm, vx)
 
@@ -2512,7 +2523,7 @@ def generate_fiducial():
     outdict = {'cg': cg, 'e': e}
     pickle.dump(outdict, open('../data/fiducial.pkl', 'wb'))
 
-def plot_fiducial():
+def plot_fiducial(generate=False):
     """Figure 1"""
     
     # params
@@ -2520,6 +2531,8 @@ def plot_fiducial():
     wangle = 180*u.deg
     
     # load model
+    if generate:
+        generate_fiducial()
     pkl = pickle.load(open('../data/fiducial.pkl', 'rb'))
     cg = pkl['cg']
     
@@ -2549,10 +2562,18 @@ def plot_fiducial():
     yerr = np.sqrt(h_model+1)/db
     h_model = h_model/db
     
+    model_hat = np.median(h_model[hat_mask])
+    h_model = h_model - model_hat
+    
     model_base = np.median(h_model[base_mask])
     model_hat = np.median(h_model[hat_mask])
     model_hat = np.minimum(model_hat, model_base*f_gap)
     ytop_model = tophat(bc, model_base, model_hat,  gap_position, gap_width)
+    
+    # rescale
+    h_model = h_model / model_base
+    ytop_model = ytop_model / model_base
+    yerr = yerr / model_base
     
     # spur
     sp = np.load('../data/spur_track.npz')
@@ -2569,9 +2590,17 @@ def plot_fiducial():
     yerr_data = np.sqrt(h_data+1)/db
     h_data = h_data/db
     
-    data_base = np.median(h_data[base_mask])
     data_hat = np.median(h_data[hat_mask])
+    h_data = h_data - data_hat
+    
+    data_hat = np.median(h_data[hat_mask])
+    data_base = np.median(h_data[base_mask])
     ytop_data = tophat(bc, data_base, data_hat, gap_position, gap_width)
+    
+    # rescale
+    h_data = h_data / data_base
+    ytop_data = ytop_data / data_base
+    yerr_data = yerr_data / data_base
     
     plt.close()
     fig, ax = plt.subplots(2, 2, figsize=(13, 4.9), sharex='col', sharey='col', gridspec_kw = {'width_ratios':[3, 1]})
@@ -2615,7 +2644,7 @@ V = {:.0f} km s$^{{-1}}$""".format(t_impact.to(u.Myr).value, M.to(u.Msun).value*
     plt.errorbar(bc, h_data, yerr=yerr_data, fmt='none', color='k', label='')
     plt.plot(bc, ytop_data, '-', color='tomato', lw=3, alpha=0.6, zorder=0)
     
-    plt.ylabel('N [deg$^{-1}$]')
+    plt.ylabel('$\\tilde{N}$ [deg$^{-1}$]')
     
     plt.sca(ax[1][1])
     plt.errorbar(bc, h_model, yerr=yerr, fmt='none', color='k', label='', alpha=0.7, lw=1.5)
@@ -2623,8 +2652,10 @@ V = {:.0f} km s$^{{-1}}$""".format(t_impact.to(u.Myr).value, M.to(u.Msun).value*
     plt.plot(bc, h_model, 'ko', ms=6, mec='none', alpha=0.7)
     plt.plot(bc, ytop_model, '-', color='tomato', lw=3, alpha=0.6, zorder=0)
     
-    plt.ylabel('N [deg$^{-1}$]')
+    plt.ylabel('$\\tilde{N}$ [deg$^{-1}$]')
     plt.xlabel('$\phi_1$ [deg]')
+    plt.xlim(-52, -28)
+    plt.ylim(-0.9, 2.5)
     
     plt.tight_layout(h_pad=0.05)
     plt.savefig('../paper/data_model_comparison.pdf')
@@ -2648,13 +2679,13 @@ def generate_excursions():
     wangle = 180*u.deg
     N = 2000
     
-    times = np.array([25,200,500,700,1000]) * u.Myr
+    times = np.array([25,150,530,700,1000]) * u.Myr
     for e, t in enumerate(times):
         cg, en = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, rs=rs, t_impact=t, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
         out = {'cg': cg, 'e': e}
         pickle.dump(out, open('../data/ex_t{:d}.pkl'.format(e), 'wb'))
     
-    masses = np.array([1,3,6,9,12])*1e6 * u.Msun
+    masses = np.array([1,2,4,7,10])*1e6 * u.Msun
     for e, m in enumerate(masses):
         cg, en = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=m, rs=rs, t_impact=t_impact, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
         out = {'cg': cg, 'e': e}
@@ -2662,7 +2693,7 @@ def generate_excursions():
     
     bees = np.array([1,5,10,20,50]) * u.pc
     for e, b in enumerate(bees):
-        cg, en = encounter(bnorm=b, bx=b, vnorm=vnorm, vx=vx, M=M, rs=rs, t_impact=t_impact, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
+        cg, en = encounter(bnorm=b, bx=0.5*b, vnorm=vnorm, vx=vx, M=M, rs=rs, t_impact=t_impact, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
         out = {'cg': cg, 'e': e}
         pickle.dump(out, open('../data/ex_b{:d}.pkl'.format(e), 'wb'))
     
@@ -2672,7 +2703,7 @@ def generate_excursions():
         out = {'cg': cg, 'e': e}
         pickle.dump(out, open('../data/ex_v{:d}.pkl'.format(e), 'wb'))
     
-    rses = np.array([0, 5, 12, 30, 100]) * u.pc
+    rses = np.array([0, 5, 10, 30, 100]) * u.pc
     for e, r in enumerate(rses):
         cg, en = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, rs=r, t_impact=t_impact, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
         out = {'cg': cg, 'e': e}
@@ -2688,7 +2719,7 @@ def fiducial_excursions():
     N = 1000
     wangle = 180*u.deg
     color = '0.3'
-    ms = 6
+    ms = 8
     
     plt.close()
     fig, ax = plt.subplots(5,5,figsize=(12,12), sharex=True, sharey=True)
@@ -2706,7 +2737,7 @@ def fiducial_excursions():
         plt.sca(ax[2][i])
         plt.text(0.9,0.2, 'fiducial', transform=plt.gca().transAxes, fontsize='x-small', va='center', ha='right')
     
-    times = np.array([25,200,500,700,1000]) * u.Myr
+    times = np.array([25,150,530,700,1000]) * u.Myr
     for e, t in enumerate(times):
         pkl = pickle.load(open('../data/ex_t{:d}.pkl'.format(e), 'rb'))
         cg = pkl['cg']
@@ -2719,7 +2750,7 @@ def fiducial_excursions():
         
         plt.text(0.1,0.8, 'T = {:.0f} Myr'.format(t.value), transform=plt.gca().transAxes, fontsize='small', va='center', ha='left')
     
-    masses = np.array([1,3,6,9,12])*1e6 * u.Msun
+    masses = np.array([1,2,4,7,10])*1e6 * u.Msun
     for e, m in enumerate(masses):
         pkl = pickle.load(open('../data/ex_m{:d}.pkl'.format(e), 'rb'))
         cg = pkl['cg']
@@ -2761,7 +2792,7 @@ def fiducial_excursions():
         
         plt.text(0.1,0.8, 'V = {:.0f} km s$^{{-1}}$'.format(v.value), transform=plt.gca().transAxes, fontsize='small', va='center', ha='left')
     
-    rses = np.array([0, 5, 12, 30, 100]) * u.pc
+    rses = np.array([0, 5, 10, 30, 100]) * u.pc
     for e, r in enumerate(rses):
         pkl = pickle.load(open('../data/ex_r{:d}.pkl'.format(e), 'rb'))
         cg = pkl['cg']
