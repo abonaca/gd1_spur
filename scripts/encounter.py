@@ -3022,5 +3022,5 @@ def orbit_cross():
     plt.ylabel('Relative distance [kpc]')
     
     plt.tight_layout()
-    plt.savefig('../plots/satellite_distances.png')
+    plt.savefig('../plots/satellite_distances.png', dpi=200)
     plt.savefig('../paper/satellite_distances.pdf')
