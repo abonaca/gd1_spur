@@ -2489,6 +2489,195 @@ def manual_fiducial():
     cg, e = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, rs=rs, t_impact=t_impact, N=3000, fname='gd1_manfid', point_mass=False, fig_annotate=True, verbose=True, model_return=True)
 
 
+###################
+# Streakline stream
+from gala.dynamics import mockstream
+
+def streakline_input():
+    """Create streakline model of a correct age"""
+    
+    np.random.seed(143531)
+    
+    t_impact, M, rs, bnorm, bx, vnorm, vx = fiducial_params()
+    t_impact = 0.495*u.Gyr
+    M = 5e6*u.Msun
+    rs = 0.1*rs_diemer(M)
+    bnorm = 15*u.pc
+    bx = 6*u.pc
+    vnorm = 250*u.km/u.s
+    vx = -25*u.km/u.s
+
+    # load one orbital point
+    pos = np.load('../data/log_orbit.npy')
+    phi1, phi2, d, pm1, pm2, vr = pos
+
+    c = gc.GD1(phi1=phi1*u.deg, phi2=phi2*u.deg, distance=d*u.kpc, pm_phi1_cosphi2=pm1*u.mas/u.yr, pm_phi2=pm2*u.mas/u.yr, radial_velocity=vr*u.km/u.s)
+    w0 = gd.PhaseSpacePosition(c.transform_to(gc_frame).cartesian)
+    
+    # best-fitting orbit
+    dt = 0.5*u.Myr
+    n_steps = 120
+    wangle = 180*u.deg
+
+    # integrate back in time
+    fit_orbit = ham.integrate_orbit(w0, dt=dt, n_steps=n_steps)
+    
+    prog_phi0 = -20*u.deg
+
+    model_gd1 = fit_orbit.to_coord_frame(gc.GD1, galactocentric_frame=gc_frame)
+    prog_i = np.abs(model_gd1.phi1.wrap_at(180*u.deg) - prog_phi0).argmin()
+    prog_w0 = fit_orbit[prog_i]
+    
+    dt_orbit = 0.5*u.Myr
+    nstep_impact = np.int64(t_impact / dt_orbit)
+    prog_orbit = ham.integrate_orbit(prog_w0, dt=-dt_orbit, t1=0*u.Myr, t2=-3*u.Gyr)
+    impact_orbit = prog_orbit[nstep_impact:]
+    impact_orbit = impact_orbit[::-1]
+    prog_orbit = prog_orbit[::-1]
+    
+    t_disrupt = -300*u.Myr
+    minit = 7e4
+    mfin = 1e3
+    nrelease = 1
+    n_times = (prog_orbit.t < t_disrupt).sum()
+    prog_mass = np.linspace(minit, mfin, n_times)
+    prog_mass = np.concatenate((prog_mass, np.zeros(len(prog_orbit.t) - n_times))) * u.Msun
+    plt.plot(prog_orbit.t, prog_mass)
+    model_present = mockstream.dissolved_fardal_stream(ham, prog_orbit, prog_mass=prog_mass, t_disrupt=t_disrupt, release_every=nrelease)
+    
+    n_steps_disrupt = int(abs(t_disrupt / (prog_orbit.t[1]-prog_orbit.t[0])))
+    model_present = model_present[:-2*n_steps_disrupt]
+    
+    model_gd1 = model_present.to_coord_frame(gc.GD1, galactocentric_frame=gc_frame)
+    ind_gap = np.where((model_gd1.phi1.wrap_at(wangle)>-43*u.deg) & (model_gd1.phi1.wrap_at(wangle)<-33*u.deg))[0]
+
+    n_times = (impact_orbit.t < t_disrupt).sum()
+    prog_mass = np.linspace(minit, mfin, n_times)
+    prog_mass = np.concatenate((prog_mass, np.zeros(len(impact_orbit.t) - n_times))) * u.Msun
+    model = mockstream.dissolved_fardal_stream(ham, impact_orbit, prog_mass=prog_mass, t_disrupt=t_disrupt, release_every=nrelease)
+
+    n_steps_disrupt = int(abs(t_disrupt / (impact_orbit.t[1]-impact_orbit.t[0])))
+    model = model[:-2*n_steps_disrupt]
+    
+    Nstar = np.shape(model)[0]
+    ivalid = ind_gap < Nstar
+    ind_gap = ind_gap[ivalid]
+    
+    xgap = np.median(model.xyz[:,ind_gap], axis=1)
+    vgap = np.median(model.v_xyz[:,ind_gap], axis=1)
+    
+    
+    ########################
+    # Perturber at encounter
+    
+    i = np.array([1,0,0], dtype=float)
+    j = np.array([0,1,0], dtype=float)
+    k = np.array([0,0,1], dtype=float)
+    
+    # find positional plane
+    bi = np.cross(j, vgap)
+    bi = bi/np.linalg.norm(bi)
+    
+    bj = np.cross(vgap, bi)
+    bj = bj/np.linalg.norm(bj)
+    
+    # pick b
+    by = np.sqrt(bnorm**2 - bx**2)
+    b = bx*bi + by*bj
+    xsub = xgap + b
+    
+    # find velocity plane
+    vi = np.cross(vgap, b)
+    vi = vi/np.linalg.norm(vi)
+    
+    vj = np.cross(b, vi)
+    vj = vj/np.linalg.norm(vj)
+    
+    # pick v
+    vy = np.sqrt(vnorm**2 - vx**2)
+    vsub = vx*vi + vy*vj
+    
+    # impact parameters
+    Tenc = 0.01*u.Gyr
+    dt = 0.05*u.Myr
+    
+    # potential parameters
+    potential = 3
+    Vh = 225*u.km/u.s
+    q = 1*u.Unit(1)
+    rhalo = 0*u.pc
+    par_pot = np.array([Vh.si.value, q.value, rhalo.si.value])
+    
+    # generate stream model
+    potential_perturb = 2
+    par_perturb = np.array([M.si.value, rs.si.value, 0, 0, 0])
+    
+    x1, x2, x3, v1, v2, v3 = interact.general_interact(par_perturb, xsub.si.value, vsub.si.value, Tenc.si.value, t_impact.si.value, dt.si.value, par_pot, potential, potential_perturb, model.x.si.value, model.y.si.value, model.z.si.value, model.v_x.si.value, model.v_y.si.value, model.v_z.si.value)
+    stream = {}
+    stream['x'] = (np.array([x1, x2, x3])*u.m).to(u.pc)
+    stream['v'] = (np.array([v1, v2, v3])*u.m/u.s).to(u.km/u.s)
+    
+    c = coord.Galactocentric(x=stream['x'][0], y=stream['x'][1], z=stream['x'][2], v_x=stream['v'][0], v_y=stream['v'][1], v_z=stream['v'][2], **gc_frame_dict)
+    cg = c.transform_to(gc.GD1)
+    wangle = 180*u.deg
+    
+    # load data
+    g = Table(fits.getdata('/home/ana/projects/GD1-DR2/output/gd1_members.fits'))
+
+    plt.close()
+    fig, ax = plt.subplots(2, 1, figsize=(10, 4.5), sharex=True, sharey=True)
+    plt.subplots_adjust(hspace=0)
+
+    plt.sca(ax[0])
+    plt.scatter(g['phi1'], g['phi2'], s=g['pmem']*2, c=g['pmem'], cmap=mpl.cm.binary, vmin=0.5, vmax=1.1)
+    #plt.plot(g['phi1'], g['phi2'], 'ko', ms=2, alpha=0.7, mec='none')
+    #plt.gca().set_aspect('equal')
+    plt.ylabel('$\phi_2$ [deg]')
+    
+    plt.text(0.03, 0.9, 'Observed GD-1 stream', fontsize='small', transform=plt.gca().transAxes, va='top', ha='left')
+    txt = plt.text(0.04, 0.75, 'Gaia proper motions\nPanSTARRS photometry', transform=plt.gca().transAxes, va='top', ha='left', fontsize='x-small', color='0.2')
+    txt.set_bbox(dict(facecolor='w', alpha=0.8, ec='none'))
+    
+    
+    plt.sca(ax[1])
+    plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, 'k.', ms=3, alpha=0.2)
+    #plt.plot(model_gd1.phi1.wrap_at(wangle), model_gd1.phi2, 'k.', ms=1)
+    #plt.plot(model_gd1.phi1.wrap_at(wangle)[Nstar:], model_gd1.phi2[Nstar:], 'k.', ms=1)
+
+    plt.xlim(-70, -10)
+    plt.ylim(-6,6)
+    plt.yticks([-5,0,5])
+    #plt.gca().set_aspect('equal')
+    plt.xlabel('$\phi_1$ [deg]')
+    plt.ylabel('$\phi_2$ [deg]')
+    
+    plt.text(0.03, 0.9, 'Model of a perturbed GD-1', fontsize='small', transform=plt.gca().transAxes, va='top', ha='left')
+    txt = plt.text(0.04, 0.75, """t = {:.0f} Myr
+M = {:.0f}$\cdot$10$^6$ M$_\odot$
+$r_s$ = {:.0f} pc
+b = {:.0f} pc
+V = {:.0f} km s$^{{-1}}$""".format(t_impact.to(u.Myr).value, M.to(u.Msun).value*1e-6, rs.to(u.pc).value, bnorm.to(u.pc).value, vnorm.to(u.km/u.s).value), transform=plt.gca().transAxes, va='top', ha='left', fontsize='x-small', color='0.2')
+    txt.set_bbox(dict(facecolor='w', alpha=0.8, ec='none'))
+    
+    #plt.close()
+    #plt.figure()
+
+    ##plt.plot(model.cylindrical.rho, model.z, 'k.', alpha=0.5, ms=0.2)
+    ##plt.plot(model[ind_gap].cylindrical.rho, model[ind_gap].z, 'ro', alpha=0.5, ms=0.2)
+    ##plt.plot(np.sqrt(xsub[0]**2 + xsub[1]**2).to(u.kpc), xsub[2].to(u.kpc), 'ro')
+    ##plt.plot(np.sqrt(xgap[0]**2 + xgap[1]**2).to(u.kpc), xgap[2].to(u.kpc), 'ko')
+
+    #plt.plot(model_present.cylindrical.rho, model_present.z, 'k.', alpha=0.5, ms=0.2)
+    #plt.plot(model_present[ind_gap].cylindrical.rho, model_present.z[ind_gap], 'ro', alpha=0.5, ms=0.2)
+    #plt.plot(model_present.cylindrical.rho[:100], model_present.z[:100], 'o')
+    #plt.plot(model_present.cylindrical.rho[-100:], model_present.z[-100:], 'o')
+    
+    #plt.xlabel('R [kpc]')
+    #plt.ylabel('z [kpc]')
+    
+    plt.tight_layout(h_pad=0)
+    plt.savefig('../plots/stream_encounter.png', dpi=200)
+
 ####################
 # Plot paper figures
 
@@ -2807,4 +2996,5 @@ def fiducial_excursions():
 
     plt.tight_layout(h_pad=0.0, w_pad=0.0)
     plt.savefig('../paper/excursions.pdf')
+    plt.savefig('../plots/excursions.png', dpi=150)
 
