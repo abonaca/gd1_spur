@@ -8,6 +8,7 @@
 
 \newcommand{\acronym}[1]{{\small{#1}}}
 \newcommand{\Gaia}{\textsl{Gaia}}
+\newcommand{\articlename}{\textsl{Letter}}
 \newcommand{\lcdm}{\acronym{$\Lambda$CDM}}
 % \newcommand{\Tycho}{\textsl{Tycho}}
 % \newcommand{\DRone}{\textsl{\acronym{DR1}}}
@@ -22,6 +23,8 @@
 % \newcommand{\given}{\,|\,}
 % \newcommand{\T}{^{\mathsf{T}}}
 % \newcommand{\inv}{^{-1}}
+\newcommand{\kpc}{\textrm{kpc}}
+\newcommand{\msun}{\textrm{M}_\odot}
 
 \shorttitle{dynamical evidence of a dark-matter substructure}
 \shortauthors{bonaca \& hogg}
@@ -82,15 +85,39 @@ Galaxy:~kinematics~and~dynamics
 
 \section{Introduction}
 \label{sec:intro}
-- keep short, everything on gd-1 cite
-- just mention gap literature, but cite the laundry list of papers
+
+The clustering of dark matter (DM) on scales smaller than dwarf galaxies remains one of the most pressing unknowns in cosmology and galaxy formation \citep[for a recent review, see][]{Bullock:2017}. % TODO: also Buckley summary?
+Dark matter theories predict different minimum mass scales for clustering: In the \lcdm\ model, DM subhalos with negligible baryonic content are expected to exist in abundance with arbitrarily low masses \citep{Green:2004, Springel:2008}, while alternative models (e.g., warm DM, self-interacting DM, axion DM) have larger cut-off masses in the DM power spectrum that depend on the parameters of these models \citep{Bode:2001, Spergel:2000, Peebles:2000, Mocz:2017}.
+The detection of dark but massive substructure would therefore place strong constraints on the physics of dark matter \citep[e.g.,][]{Buckley:2017}.
+
+Two promising prospects for detecting such structures are (1) through microlensing within and between images of strongly-lensed galaxies \citep{Vegetti:2012}, and (2) using thin stellar streams around the Milky Way \citep{Johnston:2002, Ibata:2002}.
+Thin stellar streams form from the disruption of low-mass stellar systems like globular clusters and dwarf galaxies \citep{TODO} and are thus dynamically cold structures that form through phase-mixing of tidal debris over many orbits around the Galaxy.
+Cold but dynamically old streams stretch into long, thin streams of stars that are extremely sensitive to gravitational perturbations: a gravitational encounter between a dark massive substructure and a stream leaves imprints of the encounter in the form of irregular morphological features (loops, spurs, and folds) and density variations along the stream \citep{SiegalGaskins:2008, Carlberg:2009, Yoon:2011, Ngan:2016}.
+The density variations typically evolve to form spatial under-densities --- typically referred to as ``gaps'' --- that encode information about the perturber structure, perturber orbit, and time of encounter \citep{Yoon:2011, Carlberg:2012, Carlberg:2013, Erkal:2015, Erkal:2015b}.
+
+For low-mass perturbers ($M \lesssim 10^7~\msun$), the characteristic scale of density variations is small, and is therefore difficult to measure.
+For this reason, not all stellar streams within the Milky Way are equally useful for studying the presence of dark substructure: some streams lie in regions of high background density where measuring small density variations is limited by Poisson variations of the background (e.g., Hermus/Hyllus; \citealt{Grillmair:2014}), some streams cross close to the Galactic center and disk where the Galactic bar and/or molecular clouds can leave signatures (e.g., Ophiuchus and Palomar 5; \citealt{Price-Whelan:2016; Pearson:2017, Amorisco:2016}), and other prominent streams are dynamically young and very cold, so epicyclic density variations naturally arise from the formation of the stream (e.g., the Palomar 5 stream; \citealt{Kupper:2008, Kupper:2015}).
+
+The GD-1 stream \citep{Grillmair:2006, Price-Whelan:2018} is one of the most prominent stellar streams in the Milky Way halo and has many characteristics that make it an ideal place to study the small-scale density variations that would arise from gravitational interactions with dark matter substructures.
+GD-1 is close to the Sun for a stream ($d_\odot \sim 8$--$12~\textrm{kpc}$), spans at least $100^\circ$ on the sky, and is at high Galactic latitude ($20^\circ \lesssim b \lesssim 60^\circ$) where Galactic background contamination is relatively small.
+[Already in its discovery, noted under-densities, but background level high - CHECK GRILLMAIR PAPER TO BE SURE]
+[BG low, deep photometry / photometric filtering useful]
+[Subsequence follow-up, deeper photometry, phot. filtering worked to find density variations, "wiggles"]
+[tantalizing possibility that GD-1 has encountered a dark perturber]
+
+[Gaia]
+[also, it's retrograde: Gaia proper motions very useful for removing contamination]
+[what did we find?]
+
+In this \articlename, we explore interpretation of substructure in the GD-1 stream as having arise from ...
+
 
 \section{Models of the stream + perturber encounter}
 \label{sec:model}
 % - literature so far focused on gaps
 - to uncover the origin of the gap+spur structure, we analyze a range of idealized encounters between a massive perturber and stars moving on an orbit that fits the GD-1 stream
 - following the encounter, stars closest receive an energy kick, and start moving towards the location of the perturber's closest approach
-- the single orbit structure of the stream develops a loop after the 
+- the single orbit structure of the stream develops a loop after the
 - however, the stars affected by the encounter actually form a loop that extends towards the location of the closest approach (fig)
 - connect spur morphology to phases of gap growth from denis
 % - sky projections: loop can appear as a spur viewed edge-on
@@ -102,7 +129,7 @@ Galaxy:~kinematics~and~dynamics
 \caption{Members of the GD-1 stellar stream, cleanly selected using Gaia proper motions and PanSTARRS photometry, reveal an underdensity in the stream and a spur extending for $\approx10^\circ$ from this gap (top left).
 The gap is $\approx8^\circ$ wide and is located at $\phi_1\approx-40^\circ$ (top right).
 We present a conceptual model of GD-1 that has been perturbed by a compact, massive object.
-The orbital structure of stars closest to the passing perturber is distorted into a loop of stars that after 0.5\,Gyr appears edge-on and matches the extent of the observed spur (bottom left), as well as the location and the width of the gap (bottom right). 
+The orbital structure of stars closest to the passing perturber is distorted into a loop of stars that after 0.5\,Gyr appears edge-on and matches the extent of the observed spur (bottom left), as well as the location and the width of the gap (bottom right).
 }
 \label{fig:model}
 \end{figure}
@@ -160,6 +187,8 @@ The orbital structure of stars closest to the passing perturber is distorted int
 \section{Discussion}
 - This is huge!
 - Optimistic future of a huge network of cold streams---what might be possible?
+- On model comparison figure: stuff <-60 deg more affected by gaia scan pattern, mass-loss history and stellar pop variation, disk contamination
+- Return to discussion of low-mass subhalos in simulations: baryonic sims predict far fewer subhalos, but dense ones survive? Also crazy-time: LMC replenishing subhalo population
 
 \acknowledgements
 It is a pleasure to thank
