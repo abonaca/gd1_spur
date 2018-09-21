@@ -1657,7 +1657,7 @@ def plot_corner(label='', full=False):
     params = ['T', 'bx', 'by', 'vx', 'vy', 'logM', 'rs', 'Tgap']
     if full==False:
         params = ['T [Gyr]', 'B [pc]', 'V [km s$^{-1}$]', 'log M/M$_\odot$']
-        abr = chain[:,:-2]
+        abr = chain[:,:-3]
         abr[:,1] = np.sqrt(chain[:,1]**2 + chain[:,2]**2)
         abr[:,2] = np.sqrt(chain[:,3]**2 + chain[:,4]**2)
         abr[:,0] = chain[:,0]
@@ -1688,7 +1688,7 @@ def plot_chains(label=''):
     nrow = np.int(np.ceil(np.sqrt(Npanel)))
     ncol = np.int(np.ceil(Npanel/nrow))
     da = 2.5
-    params = ['T [Gyr]', '$B_x$ [pc]', '$B_y$ [pc]', '$V_x$ [km s$^{-1}$]', '$V_y$ [km s$^{-1}$]', 'log M/M$_\odot$', '$r_s$ [pc]']
+    params = ['T [Gyr]', '$B_x$ [pc]', '$B_y$ [pc]', '$V_x$ [km s$^{-1}$]', '$V_y$ [km s$^{-1}$]', 'log M/M$_\odot$', '$r_s$ [pc]', '$T_{gap}$ [Myr]']
     
     plt.close()
     fig, ax = plt.subplots(nrow, ncol, figsize=(1.5*ncol*da, nrow*da), sharex=True)
@@ -1700,6 +1700,7 @@ def plot_chains(label=''):
     
     plt.sca(ax[nrow-1][ncol-1])
     plt.plot(steps, lnp.reshape(nstep,-1), '-')
+    plt.ylabel('ln P')
     
     for i in range(ncol):
         plt.sca(ax[nrow-1][i])
