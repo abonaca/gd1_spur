@@ -1663,7 +1663,7 @@ def plot_corner(label='', full=False):
         chain = abr
     
     plt.close()
-    corner.corner(chain, bins=50, labels=params)
+    corner.corner(chain, bins=50, labels=params, plot_datapoints=False)
     
     plt.savefig('../plots/corner{}.png'.format(label))
 
