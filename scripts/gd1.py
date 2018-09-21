@@ -1610,9 +1610,9 @@ def lnprob(x, params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, Tenc, Ts
     loop_mask = aloop_mask & phi1_mask
     Nloop = np.sum(loop_mask)
     
-    #loop_quadrant = (cg.phi1.wrap_at(wangle)[loop_mask]>quad_phi1) & (cg.phi2[loop_mask]>quad_phi2)
-    #if np.sum(loop_quadrant)<Nquad:
-        #return -np.inf
+    loop_quadrant = (cg.phi1.wrap_at(wangle)[loop_mask]>quad_phi1) & (cg.phi2[loop_mask]>quad_phi2)
+    if np.sum(loop_quadrant)<Nquad:
+        return -np.inf
     
     chi_spur = np.sum((cg.phi2[loop_mask].value - f(cg.phi1.wrap_at(wangle).value[loop_mask]))**2/phi2_err**2)/Nloop
     
