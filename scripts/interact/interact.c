@@ -20,10 +20,10 @@ double energy(double *x, double *v, double vh){
     return Etot;
 }
 
-int abinit_interaction(double *xgap, double *vgap, double *xend, double *vend, double dt_, double dt_fine, double T, double Tenc, double Tstream, int Nstream, double *par_pot, int potential, double *par_perturb, int potential_perturb, double bx, double by, double vx, double vy, double *x1, double *x2, double *x3, double *v1, double *v2, double *v3, double *de)
+int abinit_interaction(double *xend, double *vend, double dt_, double dt_fine, double T, double Tenc, double Tstream, double Tgap, int Nstream, double *par_pot, int potential, double *par_perturb, int potential_perturb, double bx, double by, double vx, double vy, double *x1, double *x2, double *x3, double *v1, double *v2, double *v3, double *de)
 {
     int i, j, k, Nimpact, Nenc, Ntot, Napar_pot, Napar_perturb, Napar_combined, potential_combined;
-    double direction, dt_stream, b[3], bi[3], bj[3], binorm, bjnorm, vi[3], vj[3], vinorm, vjnorm, xsub[3], vsub[3], x[3], v[3];
+    double direction, dt_stream, b[3], bi[3], bj[3], binorm, bjnorm, vi[3], vj[3], vinorm, vjnorm, xgap[3], vgap[3], xsub[3], vsub[3], x[3], v[3];
     
     Nimpact = T/dt_;
     dt = dt_;
@@ -56,21 +56,50 @@ int abinit_interaction(double *xgap, double *vgap, double *xend, double *vend, d
 //     e1 = energy(xgap, vgap, par_pot[0]);
     
     // initial leapfrog step
-    dostep1(xgap, vgap, apar_pot, potential, dt, direction);
+//     dostep1(xgap, vgap, apar_pot, potential, dt, direction);
     dostep1(xend, vend, apar_pot, potential, dt, direction);
 
     // leapfrog steps
     for(i=1;i<Nimpact;i++){
-        dostep(xgap, vgap, apar_pot, potential, dt, direction);
+//         dostep(xgap, vgap, apar_pot, potential, dt, direction);
         dostep(xend, vend, apar_pot, potential, dt, direction);
     }
     
     // final leapfrog step
-    dostep1(xgap, vgap, apar_pot, potential, dt, -direction);
+//     dostep1(xgap, vgap, apar_pot, potential, dt, -direction);
     dostep1(xend, vend, apar_pot, potential, dt, -direction);
     
 //     e2 = energy(xgap, vgap, par_pot[0]);
 //     printf("%.20lf %e\n", e1/e2, e1-e2);
+    
+    /////////////////////////
+    // generate stream points
+    direction = 1.;
+    dt_stream = Tstream / (float)Nstream;
+    dt = dt_stream;
+    
+    // initial leapfrog step
+    dostep1(xend, vend, apar_pot, potential, dt, direction);
+    t2n(xend, x1, x2, x3, 0);
+    t2n(vend, v1, v2, v3, 0);
+
+    // leapfrog steps
+    for(i=1;i<Nstream;i++){
+        dostep(xend, vend, apar_pot, potential, dt, direction);
+        t2n(xend, x1, x2, x3, i);
+        t2n(vend, v1, v2, v3, i);
+    }
+    
+    // final leapfrog step
+    dostep1(xend, vend, apar_pot, potential, dt, -direction);
+    t2n(xend, x1, x2, x3, Nstream-1);
+    t2n(vend, v1, v2, v3, Nstream-1);
+    
+    // find gap location
+    int i_;
+    i_ = Tgap/dt_stream;
+    n2t(xgap, x1, x2, x3, i_);
+    n2t(vgap, v1, v2, v3, i_);
     
     // find positional plane
     bi[0] = vgap[2];
@@ -108,29 +137,6 @@ int abinit_interaction(double *xgap, double *vgap, double *xend, double *vend, d
         vj[i] = vj[i] / vjnorm;
         vsub[i] = vx*vi[i] + vy*vj[i];
     }
-    
-    /////////////////////////
-    // generate stream points
-    direction = 1.;
-    dt_stream = Tstream / (float)Nstream;
-    dt = dt_stream;
-    
-    // initial leapfrog step
-    dostep1(xend, vend, apar_pot, potential, dt, direction);
-    t2n(xend, x1, x2, x3, 0);
-    t2n(vend, v1, v2, v3, 0);
-
-    // leapfrog steps
-    for(i=1;i<Nstream;i++){
-        dostep(xend, vend, apar_pot, potential, dt, direction);
-        t2n(xend, x1, x2, x3, i);
-        t2n(vend, v1, v2, v3, i);
-    }
-    
-    // final leapfrog step
-    dostep1(xend, vend, apar_pot, potential, dt, -direction);
-    t2n(xend, x1, x2, x3, Nstream-1);
-    t2n(vend, v1, v2, v3, Nstream-1);
     
     //////////////////////////////////////////////////
     // Find initial positions for perturber and stream

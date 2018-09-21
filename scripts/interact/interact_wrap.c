@@ -48,36 +48,26 @@ static PyObject *interact_abinit_interaction(PyObject *self, PyObject *args)
 {
     // Parse the input tuple
     int potential, potential_perturb, Nstream;
-    double T, Tenc, Tstream, dt_, dt_fine, bx, by, vx, vy;
-    PyObject *xgap_obj, *xgap_array, *vgap_obj, *vgap_array, *xend_obj, *xend_array, *vend_obj, *vend_array, *par_pot_obj, *par_pot_array, *par_perturb_obj, *par_perturb_array;
+    double T, Tenc, Tstream, Tgap, dt_, dt_fine, bx, by, vx, vy;
+    PyObject *xend_obj, *xend_array, *vend_obj, *vend_array, *par_pot_obj, *par_pot_array, *par_perturb_obj, *par_perturb_array;
 
     // reads in input parameters
-    if (!PyArg_ParseTuple(args, "OOOOdddddiOiOidddd", &xgap_obj, &vgap_obj, &xend_obj, &vend_obj, &dt_, &dt_fine, &T, &Tenc, &Tstream, &Nstream, &par_pot_obj, &potential, &par_perturb_obj, &potential_perturb, &bx, &by, &vx, &vy))
+    if (!PyArg_ParseTuple(args, "OOddddddiOiOidddd", &xend_obj, &vend_obj, &dt_, &dt_fine, &T, &Tenc, &Tstream, &Tgap, &Nstream, &par_pot_obj, &potential, &par_perturb_obj, &potential_perturb, &bx, &by, &vx, &vy))
         return NULL;
 
     // Interpret the input parameters as numpy arrays
-    xgap_array = PyArray_FROM_OTF(xgap_obj, NPY_DOUBLE, NPY_IN_ARRAY);
-    vgap_array = PyArray_FROM_OTF(vgap_obj, NPY_DOUBLE, NPY_IN_ARRAY);
     xend_array = PyArray_FROM_OTF(xend_obj, NPY_DOUBLE, NPY_IN_ARRAY);
     vend_array = PyArray_FROM_OTF(vend_obj, NPY_DOUBLE, NPY_IN_ARRAY);
     par_pot_array = PyArray_FROM_OTF(par_pot_obj, NPY_DOUBLE, NPY_IN_ARRAY);
     par_perturb_array = PyArray_FROM_OTF(par_perturb_obj, NPY_DOUBLE, NPY_IN_ARRAY);
 
     //If that didn't work, throw an exception
-    if (xgap_array == NULL) {
-        Py_XDECREF(xgap_array);
-        return NULL;
-    }
-    if (vgap_array == NULL) {
-        Py_XDECREF(vgap_array);
-        return NULL;
-    }
     if (xend_array == NULL) {
-        Py_XDECREF(xgap_array);
+        Py_XDECREF(xend_array);
         return NULL;
     }
     if (vend_array == NULL) {
-        Py_XDECREF(vgap_array);
+        Py_XDECREF(vend_array);
         return NULL;
     }
     if (par_pot_array == NULL) {
@@ -90,9 +80,7 @@ static PyObject *interact_abinit_interaction(PyObject *self, PyObject *args)
     }
 
     // Get pointers to the data as C-types
-    double *xgap, *vgap, *xend, *vend, *par_pot, *par_perturb;
-    xgap = (double*)PyArray_DATA(xgap_array);
-    vgap = (double*)PyArray_DATA(vgap_array);
+    double *xend, *vend, *par_pot, *par_perturb;
     xend = (double*)PyArray_DATA(xend_array);
     vend = (double*)PyArray_DATA(vend_array);
     par_pot = (double*)PyArray_DATA(par_pot_array);
@@ -126,7 +114,7 @@ static PyObject *interact_abinit_interaction(PyObject *self, PyObject *args)
     
 	// Call the external C function to calculate the interaction
 	int err; 
-    err = abinit_interaction(xgap, vgap, xend, vend, dt_, dt_fine, T, Tenc, Tstream, Nstream, par_pot, potential, par_perturb, potential_perturb, bx, by, vx, vy, x1, x2, x3, v1, v2, v3, de);
+    err = abinit_interaction(xend, vend, dt_, dt_fine, T, Tenc, Tstream, Tgap, Nstream, par_pot, potential, par_perturb, potential_perturb, bx, by, vx, vy, x1, x2, x3, v1, v2, v3, de);
     
 	// Check if error raised
 	if(err!=0) {

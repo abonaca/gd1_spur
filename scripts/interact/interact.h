@@ -4,7 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 
-int abinit_interaction(double *xgap, double *vgap, double *xend, double *vend, double dt_, double dt_fine, double T, double Tenc, double Tstream, int Nstream, double *par_pot, int potential, double *par_perturb, int potential_perturb, double bx, double by, double vx, double vy, double *x1, double *x2, double *x3, double *v1, double *v2, double *v3, double *de);
+int abinit_interaction(double *xend, double *vend, double dt_, double dt_fine, double T, double Tenc, double Tstream, double Tgap, int Nstream, double *par_pot, int potential, double *par_perturb, int potential_perturb, double bx, double by, double vx, double vy, double *x1, double *x2, double *x3, double *v1, double *v2, double *v3, double *de);
 
 double energy(double *x, double *v, double vh);
 

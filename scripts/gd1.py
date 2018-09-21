@@ -61,6 +61,8 @@ def gd1_model():
     i_gap = np.argmin(np.abs(model_x - phi1_gap))
     out = {'x_gap': fit_orbit.pos.get_xyz()[:,i_gap], 'v_gap': fit_orbit.vel.get_d_xyz()[:,i_gap], 'frame': gc_frame}
     pickle.dump(out, open('../data/gap_present.pkl', 'wb'))
+    print('{} {}\n{}\n{}'.format(i_gap, fit_orbit[i_gap], fit_orbit[0], w0))
+    print('dt {}'.format(i_gap*dt.to(u.s)))
     
     plt.close()
     fig, ax = plt.subplots(1, 1, figsize=(12, 5), sharex=True)
@@ -1305,12 +1307,13 @@ def test_abinitio():
     
     dt_coarse = 0.5*u.Myr
     Tstream = 56*u.Myr
+    Tgap = 29.176*u.Myr
     Nstream = 2000
     dt_stream = Tstream/Nstream
     dt_fine = 0.05*u.Myr
-    
+
     t1 = time.time()
-    x1, x2, x3, v1, v2, v3 = interact.abinit_interaction(xgap, vgap, xend, vend, dt_coarse.si.value, dt_fine.si.value, t_impact.si.value, Tenc.si.value, Tstream.si.value, Nstream, par_pot, potential, par_perturb, potential_perturb, bx.si.value, by.si.value, vx.si.value, vy.si.value)
+    x1, x2, x3, v1, v2, v3, de = interact.abinit_interaction(xend, vend, dt_coarse.si.value, dt_fine.si.value, t_impact.si.value, Tenc.si.value, Tstream.si.value, Tgap.si.value, Nstream, par_pot, potential, par_perturb, potential_perturb, bx.si.value, by.si.value, vx.si.value, vy.si.value)
     t2 = time.time()
     
     ########################
@@ -1426,6 +1429,7 @@ def run(cont=False, steps=100, nwalkers=100, nth=8, label='', potential_perturb=
     
     dt_coarse = 0.5*u.Myr
     Tstream = 56*u.Myr
+    Tgap = 29.176*u.Myr
     Nstream = 2000
     N2 = int(Nstream*0.5)
     dt_stream = Tstream/Nstream
@@ -1497,14 +1501,14 @@ def run(cont=False, steps=100, nwalkers=100, nth=8, label='', potential_perturb=
     #print(1.05*u.kpc * np.sqrt(M.to(u.Msun).value*1e-8))
     
     if potential_perturb==1:
-        params_list = [t_impact, bx, by, vx, vy, M]
+        params_list = [t_impact, bx, by, vx, vy, M, Tgap]
     elif potential_perturb==2:
-        params_list = [t_impact, bx, by, vx, vy, M, rs]
+        params_list = [t_impact, bx, by, vx, vy, M, rs, Tgap]
     params_units = [p_.unit for p_ in params_list]
     params = [p_.value for p_ in params_list]
     params[5] = np.log10(params[5])
     
-    model_args = [params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb]
+    model_args = [params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb]
     gap_args = [poly, wangle, delta_phi2, Nb, bins, bc, base_mask, hat_mask, Nside_min, f_gap, gap_position, gap_width]
     spur_args = [N2, percentile1, percentile2, phi1_min, phi1_max, phi2_err, spx, spy, quad_phi1, quad_phi2, Nquad]
     lnp_args = [chigap_max, chispur_max]
@@ -1573,7 +1577,7 @@ def sort_on_runtime(p):
     
     return p[idx], idx
 
-def lnprob(x, params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb, poly, wangle, delta_phi2, Nb, bins, bc, base_mask, hat_mask, Nside_min, f_gap, gap_position, gap_width, N2, percentile1, percentile2, phi1_min, phi1_max, phi2_err, spx, spy, quad_phi1, quad_phi2, Nquad, chigap_max, chispur_max):
+def lnprob(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb, poly, wangle, delta_phi2, Nb, bins, bc, base_mask, hat_mask, Nside_min, f_gap, gap_position, gap_width, N2, percentile1, percentile2, phi1_min, phi1_max, phi2_err, spx, spy, quad_phi1, quad_phi2, Nquad, chigap_max, chispur_max):
     """Check if a model is better than the fiducial"""
     
     if (x[0]<0) | (x[0]>14) | (np.sqrt(x[3]**2 + x[4]**2)>1000):
@@ -1582,16 +1586,19 @@ def lnprob(x, params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, Tenc, Ts
     x[5] = 10**x[5]
     params = [x_*u_ for x_, u_ in zip(x, params_units)]
     if potential_perturb==1:
-        t_impact, bx, by, vx, vy, M = params
+        t_impact, bx, by, vx, vy, M, Tgap = params
         par_perturb = np.array([M.si.value, 0., 0., 0.])
     else:
-        t_impact, bx, by, vx, vy, M, rs = params
+        t_impact, bx, by, vx, vy, M, rs, Tgap = params
         par_perturb = np.array([M.si.value, rs.si.value, 0., 0., 0.])
         if x[6]<0:
             return -np.inf
     
+    if (Tgap<0*u.Myr) | (Tgap>Tstream):
+        return -np.inf
+    
     # calculate model
-    x1, x2, x3, v1, v2, v3, dE = interact.abinit_interaction(xgap, vgap, xend, vend, dt_coarse.si.value, dt_fine.si.value, t_impact.si.value, Tenc.si.value, Tstream.si.value, Nstream, par_pot, potential, par_perturb, potential_perturb, bx.si.value, by.si.value, vx.si.value, vy.si.value)
+    x1, x2, x3, v1, v2, v3, dE = interact.abinit_interaction(xend, vend, dt_coarse.si.value, dt_fine.si.value, t_impact.si.value, Tenc.si.value, Tstream.si.value, Tgap.si.value, Nstream, par_pot, potential, par_perturb, potential_perturb, bx.si.value, by.si.value, vx.si.value, vy.si.value)
     
     c = coord.Galactocentric(x=x1*u.m, y=x2*u.m, z=x3*u.m, v_x=v1*u.m/u.s, v_y=v2*u.m/u.s, v_z=v3*u.m/u.s, **gc_frame_dict)
     cg = c.transform_to(gc.GD1)
@@ -1647,7 +1654,7 @@ def plot_corner(label='', full=False):
     Npar = np.shape(chain)[1]
     print(np.sum(np.isfinite(sampler['lnp'])), np.size(sampler['lnp']))
     
-    params = ['T', 'bx', 'by', 'vx', 'vy', 'logM', 'rs']
+    params = ['T', 'bx', 'by', 'vx', 'vy', 'logM', 'rs', 'Tgap']
     if full==False:
         params = ['T [Gyr]', 'B [pc]', 'V [km s$^{-1}$]', 'log M/M$_\odot$']
         abr = chain[:,:-2]
@@ -1655,7 +1662,7 @@ def plot_corner(label='', full=False):
         abr[:,2] = np.sqrt(chain[:,3]**2 + chain[:,4]**2)
         abr[:,0] = chain[:,0]
         abr[:,3] = chain[:,5]
-        if Npar>6:
+        if Npar>7:
             abr[:,3] = chain[:,6]
             abr[:,4] = chain[:,5]
             params = ['T [Gyr]', 'B [pc]', 'V [km s$^{-1}$]', '$r_s$ [pc]', 'log M/M$_\odot$']
