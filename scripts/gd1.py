@@ -1405,7 +1405,8 @@ def test_abinitio():
     
     plt.tight_layout()
 
-def run(cont=False, steps=100, nwalkers=100, nth=8, label='', potential_perturb=1):
+import copy
+def run(cont=False, steps=100, nwalkers=100, nth=8, label='', potential_perturb=1, test=False):
     """"""
     
     pkl = pickle.load(open('../data/gap_present.pkl', 'rb'))
@@ -1457,7 +1458,7 @@ def run(cont=False, steps=100, nwalkers=100, nth=8, label='', potential_perturb=
     sp = np.load('../data/spur_track.npz')
     spx = sp['x']
     spy = sp['y']
-    phi2_err = 0.5
+    phi2_err = 0.2
     phi1_min = -50*u.deg
     phi1_max = -30*u.deg
     percentile1 = 3
@@ -1514,7 +1515,7 @@ def run(cont=False, steps=100, nwalkers=100, nth=8, label='', potential_perturb=
         seed = 614398
         np.random.seed(seed)
         p0 = [np.random.randn(ndim) for i in range(nwalkers)]
-        p0 = (np.random.randn(ndim * nwalkers).reshape((nwalkers, ndim))*1e-3 + 1.)*np.array(params)[np.newaxis,:]
+        p0 = (np.random.randn(ndim * nwalkers).reshape((nwalkers, ndim))*1e-4 + 1.)*np.array(params)[np.newaxis,:]
         
         seed = 3465
         prng = np.random.RandomState(seed)
@@ -1531,6 +1532,18 @@ def run(cont=False, steps=100, nwalkers=100, nth=8, label='', potential_perturb=
         
         positions = np.arange(-nwalkers, 0, dtype=np.int64)
         p0 = flatchain[positions]
+    
+    if test:
+        N = np.size(p0[:,0])
+        lnp = np.zeros(N)
+        
+        for i in range(N):
+            args = copy.deepcopy(lnprob_args[:])
+            lnp[i] = lnprob(p0[i], *args)
+        
+        print(N, np.sum(np.isfinite(lnp)))
+        
+        return
     
     sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, threads=nth, args=lnprob_args, runtime_sortingfn=sort_on_runtime)
     
@@ -1597,9 +1610,9 @@ def lnprob(x, params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, Tenc, Ts
     loop_mask = aloop_mask & phi1_mask
     Nloop = np.sum(loop_mask)
     
-    loop_quadrant = (cg.phi1.wrap_at(wangle)[loop_mask]>quad_phi1) & (cg.phi2[loop_mask]>quad_phi2)
-    if np.sum(loop_quadrant)<Nquad:
-        return -np.inf
+    #loop_quadrant = (cg.phi1.wrap_at(wangle)[loop_mask]>quad_phi1) & (cg.phi2[loop_mask]>quad_phi2)
+    #if np.sum(loop_quadrant)<Nquad:
+        #return -np.inf
     
     chi_spur = np.sum((cg.phi2[loop_mask].value - f(cg.phi1.wrap_at(wangle).value[loop_mask]))**2/phi2_err**2)/Nloop
     
@@ -1632,6 +1645,7 @@ def plot_corner(label='', full=False):
     sampler = np.load('../data/samples{}.npz'.format(label))
     chain = sampler['chain']
     Npar = np.shape(chain)[1]
+    print(np.sum(np.isfinite(sampler['lnp'])), np.size(sampler['lnp']))
     
     params = ['T', 'bx', 'by', 'vx', 'vy', 'logM', 'rs']
     if full==False:
