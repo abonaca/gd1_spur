@@ -1670,9 +1670,9 @@ def plot_corner(label='', full=False):
         chain = abr
     
     plt.close()
-    corner.corner(chain, bins=50, labels=params, plot_datapoints=False)
+    corner.corner(chain, bins=50, labels=params, plot_datapoints=True)
     
-    plt.savefig('../plots/corner{}.png'.format(label))
+    plt.savefig('../plots/corner{}{:d}.png'.format(label, full))
 
 def plot_chains(label=''):
     """"""
@@ -1708,6 +1708,24 @@ def plot_chains(label=''):
         
     plt.tight_layout()
     plt.savefig('../plots/chain{}.png'.format(label))
+
+def trim_chain(chain, nwalkers, nstart, npar):
+    """Trim number of usable steps in a chain"""
+    
+    chain = chain.reshape(nwalkers,-1,npar)
+    chain = chain[:,nstart:,:]
+    chain = chain.reshape(-1, npar)
+    
+    return chain
+
+def trim_lnp(lnp, nwalkers, nstart):
+    """Trim number of usable steps in lnp"""
+    
+    lnp = lnp.reshape(nwalkers,-1)
+    lnp = lnp[:,nstart:]
+    lnp = lnp.reshape(-1)
+    
+    return lnp
 
 def explore_islands(label='', n=1):
     """"""
@@ -3019,4 +3037,46 @@ def fiducial_excursions():
     plt.tight_layout(h_pad=0.0, w_pad=0.0)
     plt.savefig('../paper/excursions.pdf')
     plt.savefig('../plots/excursions.png', dpi=150)
+
+def fancy_corner(label='', full=False, nstart=2000):
+    """"""
+    sampler = np.load('../data/samples{}.npz'.format(label))
+    chain = sampler['chain']
+    nwalkers = sampler['nwalkers']
+    ntot, npar = np.shape(chain)
+    #nstep = int(ntot/nwalkers)
+    chain = trim_chain(chain, nwalkers, nstart, npar)
+    
+    abr = chain[:,:-3]
+    abr[:,1] = np.sqrt(chain[:,1]**2 + chain[:,2]**2)
+    abr[:,2] = np.log10(np.sqrt(chain[:,3]**2 + chain[:,4]**2))
+    abr[:,0] = chain[:,0]
+    abr[:,3] = np.log10(chain[:,6])
+    abr[:,4] = chain[:,5]
+    params = ['T [Gyr]', 'B [pc]', 'log V/km s$^{-1}$', 'log $r_s$/pc', 'log M/M$_\odot$']
+    chain = abr
+    npar = np.shape(chain)[1]
+    
+    lims = [[0.,1], [0.1,30], [2.1,2.99], [-1,2], [5.8,8]]
+    t_impact = 0.495*u.Gyr
+    M = 5e6*u.Msun
+    rs = 0.1*rs_diemer(M)
+    bnorm = 15*u.pc
+    vnorm = 250*u.km/u.s
+    
+    pfid = [t_impact.to(u.Gyr).value, bnorm.to(u.pc).value, np.log10(vnorm.to(u.km/u.s).value), np.log10(rs.to(u.pc).value), np.log10(M.to(u.Msun).value)]
+    
+    plt.close()
+    fig = corner.corner(chain, bins=50, labels=params, plot_datapoints=False, range=lims, smooth=2, smooth1d=2, color='0.1')
+    ax = fig.get_axes()
+    
+    for i in range(npar-1):
+        for j in range(i+1, npar):
+            ind = i + (j-1)*npar + npar
+            plt.sca(ax[ind])
+            plt.plot(pfid[i], pfid[j], '*', ms=20, mec='orangered', mew=1.5, color='orange')
+
+    plt.savefig('../paper/corner.pdf')
+    plt.savefig('../plots/fancy_corner.png')
+
 
