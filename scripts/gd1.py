@@ -1580,7 +1580,7 @@ def sort_on_runtime(p):
 def lnprob(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb, poly, wangle, delta_phi2, Nb, bins, bc, base_mask, hat_mask, Nside_min, f_gap, gap_position, gap_width, N2, percentile1, percentile2, phi1_min, phi1_max, phi2_err, spx, spy, quad_phi1, quad_phi2, Nquad, chigap_max, chispur_max):
     """Check if a model is better than the fiducial"""
     
-    if (x[0]<0) | (x[0]>14) | (np.sqrt(x[3]**2 + x[4]**2)>1000):
+    if (x[0]<0) | (x[0]>14) | (np.sqrt(x[3]**2 + x[4]**2)>500):
         return -np.inf
     
     x[5] = 10**x[5]
