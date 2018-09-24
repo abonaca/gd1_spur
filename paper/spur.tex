@@ -8,7 +8,9 @@
 
 \newcommand{\acronym}[1]{{\small{#1}}}
 \newcommand{\Gaia}{\textsl{Gaia}}
+\newcommand{\gaia}{\textsl{Gaia}}
 \newcommand{\articlename}{\textsl{Letter}}
+\newcommand{\sectionname}{Section}
 \newcommand{\lcdm}{\acronym{$\Lambda$CDM}}
 % \newcommand{\Tycho}{\textsl{Tycho}}
 % \newcommand{\DRone}{\textsl{\acronym{DR1}}}
@@ -26,7 +28,7 @@
 \newcommand{\kpc}{\textrm{kpc}}
 \newcommand{\msun}{\textrm{M}_\odot}
 
-\shorttitle{dynamical evidence of a dark substructure}
+\shorttitle{dynamical evidence of a dark halo substructure}
 \shortauthors{bonaca et al.}
 
 \begin{document}\sloppy\sloppypar\raggedbottom\frenchspacing
@@ -55,14 +57,17 @@ Dynamical evidence of a dark substructure in the Milky Way halo
 \affil{Harvard--Smithsonian Center for Astrophysics, 60 Garden St, Cambridge, MA 02138, USA}
 
 \begin{abstract}\noindent
-The GD-1 stellar stream is a long, thin, cold stream of stars in the Milky Way halo.
-It is sensitive to details of halo dynamics, and it has been shown to have structure that is suggestive of non-trivial gravitational interactions in its past.
-Here we present a conceptual model for the interaction of GD-1 with a massive perturber that---without fine-tuning---explains many of the features of one of the stream structures, including a gap and an off-stream spur of stars.
-The model involves an impulse by a fast encounter, after which the stream grows a loop of stars that is both off the stream track, and on a set of orbits with different frequencies.
+% The GD-1 stellar stream is a long, thin, cold stream of stars in the Milky Way halo.
+% It is sensitive to details of halo dynamics, and it has been shown to have structure that is suggestive of non-trivial gravitational interactions in its past.
+We present a conceptual model for the interaction of the GD-1 stellar stream with a massive perturber that---without fine-tuning---explains many of the features of one of the stream structures, including a gap and an off-stream spur of stars.
+The model involves an impulse by a fast encounter, after which the stream grows a loop of stars on different orbital energies which, at specific viewing angles, appears off the stream track.
+% The model involves an impulse by a fast encounter, after which the stream grows a loop of stars that is both off the stream track, and on a set of orbits with different frequencies.
 The configuration-space observations are most sensitive to a combination of mass, velocity, age, and impact parameter of the encounter, and future velocity-space observations will be sensitive to a different combination of these.
+% - be more specific
 Given sensible assumptions about age and velocity, the perturber must have had a mass in the range $10^6\,\rm M_\odot$ to $10^8\,\rm M_\odot$.
 Orbit integrations back in time show that the stream encounter could not have been caused by any known globular cluster or dwarf galaxy, and mass and impact-parameter arguments show that it could not have been caused by a molecular cloud in the Milky Way disk.
 The most plausible explanation for the gap-and-spur structure is an encounter with a dark-matter substructure, like those which are naturally predicted in this mass range in this part of the Milky Way halo in \lcdm\ cosmology.
+% - leave possibility of a black hole
 This observation opens up the possibility that detailed observations of streams could measure the mass spectrum of dark-matter substructures and even identify individual substructures and their orbits in the halo.
 
 % We present a conceptual model for the interaction of GD-1, a thin Milky Way stellar stream, with a massive perturber.
@@ -110,7 +115,7 @@ GD-1 is relatively close to the Sun ($d_\odot \sim 8$--$12~\textrm{kpc}$), spans
 Already with its discovery, hints of density variations were apparent in the surface density and map of the stream (e.g., \figurename~XX in \citealt{Grillmair:2006}).
 However, with only photometric data, the background density at the limiting magnitude of the SDSS was too high to strongly conclude about the density structure of GD-1.
 
-Subsequent work used Megacam \citep{instrument paper} to obtain deeper imaging across $\approx 45^\circ$ of GD-1 (APW: check this number).
+Subsequent work used Megacam to obtain deeper imaging across $\approx 45^\circ$ of GD-1 (APW: check this number).
 Using a matched-filter (here with the 2-band photometry from Megacam), it became clear that the density structure of GD-1 contains prominent under-densities (gaps) and ``wiggles'' in the mean track of the stream \citep{deBoer:2018}.
 These features again suggested the tantalizing possibility that GD-1 has encountered a massive perturber.
 
@@ -160,7 +165,7 @@ The orbital structure of stars closest to the passing perturber is distorted int
 \label{fig:scalings}
 \end{figure}
 
-- parameter search
+- parameter search: ABC
 - haven't exhaustively searched the parameter space
 
 \begin{figure}
@@ -171,12 +176,6 @@ The orbital structure of stars closest to the passing perturber is distorted int
 \label{fig:corner}
 \end{figure}
 
-% - modeled gap, loop looks like a spur
-% - scaling rules; show that the configuration-space is most sensitive to $GMT/BV$.
-% - show that the velocity-space is most sensitive to $GM/BV$.
-% - show that $B$ and angles are next-order effects.
-% - are the viewing angles natural for this situation? Might require using a sensible
-% orbit for the stream and sensible location for the observer.
 
 \section{Origin of the GD-1 perturber}
 \label{sec:origin}
@@ -196,6 +195,7 @@ The orbital structure of stars closest to the passing perturber is distorted int
 \label{fig:known_encounters}
 \end{figure}
 
+
 \section{Discussion}
 - This is huge!
 - Optimistic future of a huge network of cold streams---what might be possible?
@@ -203,28 +203,13 @@ The orbital structure of stars closest to the passing perturber is distorted int
 - Return to discussion of low-mass subhalos in simulations: baryonic sims predict far fewer subhalos, but dense ones survive? Also crazy-time: LMC replenishing subhalo population
 
 \acknowledgements
-It is a pleasure to thank
-Douglas Finkbeiner,
-Kathryn Johnston,
-Erica Nelson,
-Sarah Pearson,
-Hans-Walter Rix,
-and
-Josh Speagle
-for valuable discussions and input.
+It is a pleasure to thank Douglas Finkbeiner, Kathryn Johnston, Erica Nelson, Sarah Pearson, Hans-Walter Rix, and Josh Speagle for valuable discussions and input.
 
-This project was developed in part at the
-2018 \acronym{NYC} \Gaia\ \acronym{DR2} Workshop
-at the Center for Computational Astrophysics of the Flatiron Institute
-in New York City in 2018 April.
+This project was developed in part at the 2018 \acronym{NYC} \Gaia\ \acronym{DR2} Workshop at the Center for Computational Astrophysics of the Flatiron Institute in New York City in 2018 April.
 
-This work has made use of data from the European Space Agency (\acronym{ESA}) mission
-\Gaia\ (\url{https://www.cosmos.esa.int/gaia}), processed by the \Gaia\ Data
-Processing and Analysis Consortium (\acronym{DPAC},
-\url{https://www.cosmos.esa.int/web/gaia/dpac/consortium}). Funding for the
-\acronym{DPAC}
-has been provided by national institutions, in particular the institutions
-participating in the \Gaia\ Multilateral Agreement.
+This work was performed in part at Aspen Center for Physics, which is supported by National Science Foundation grant PHY-1607611.
+
+This work has made use of data from the European Space Agency (\acronym{ESA}) mission \Gaia\ (\url{https://www.cosmos.esa.int/gaia}), processed by the \Gaia\ Data Processing and Analysis Consortium (\acronym{DPAC}, \url{https://www.cosmos.esa.int/web/gaia/dpac/consortium}). Funding for the \acronym{DPAC} has been provided by national institutions, in particular the institutions participating in the \Gaia\ Multilateral Agreement.
 
 \bibliographystyle{aasjournal}
 \bibliography{spur}
