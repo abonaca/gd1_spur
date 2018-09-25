@@ -1920,7 +1920,7 @@ def check_impulse(label=''):
     plt.tight_layout()
     plt.savefig('../plots/impulse{}.png'.format(label))
 
-def lnprob_verbose(x, params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb, poly, wangle, delta_phi2, Nb, bins, bc, base_mask, hat_mask, f_gap, gap_position, gap_width, N2, percentile1, percentile2, phi1_min, phi1_max, phi2_err, spx, spy, quad_phi1, quad_phi2, Nquad, chigap_max, chispur_max):
+def lnprob_verbose(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb, poly, wangle, delta_phi2, Nb, bins, bc, base_mask, hat_mask, f_gap, gap_position, gap_width, N2, percentile1, percentile2, phi1_min, phi1_max, phi2_err, spx, spy, quad_phi1, quad_phi2, Nquad, chigap_max, chispur_max):
     """Check if a model is better than the fiducial"""
     
     if (x[0]<0) | (np.sqrt(x[3]**2 + x[4]**2)>1000):
@@ -1928,17 +1928,19 @@ def lnprob_verbose(x, params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, 
     
     x[5] = 10**x[5]
     params = [x_*u_ for x_, u_ in zip(x, params_units)]
+
     if potential_perturb==1:
-        t_impact, bx, by, vx, vy, M = params
+        t_impact, bx, by, vx, vy, M, Tgap = params
         par_perturb = np.array([M.si.value, 0., 0., 0.])
         par_noperturb = np.array([0., 0., 0., 0.])
     else:
-        t_impact, bx, by, vx, vy, M, rs = params
+        t_impact, bx, by, vx, vy, M, rs, Tgap = params
         par_perturb = np.array([M.si.value, rs.si.value, 0., 0., 0.])
         par_noperturb = np.array([0., rs.si.value, 0., 0., 0.])
     
     # calculate model
-    x1, x2, x3, v1, v2, v3, dE = interact.abinit_interaction(xgap, vgap, xend, vend, dt_coarse.si.value, dt_fine.si.value, t_impact.si.value, Tenc.si.value, Tstream.si.value, Nstream, par_pot, potential, par_perturb, potential_perturb, bx.si.value, by.si.value, vx.si.value, vy.si.value)
+    #x1, x2, x3, v1, v2, v3, dE = interact.abinit_interaction(xgap, vgap, xend, vend, dt_coarse.si.value, dt_fine.si.value, t_impact.si.value, Tenc.si.value, Tstream.si.value, Nstream, par_pot, potential, par_perturb, potential_perturb, bx.si.value, by.si.value, vx.si.value, vy.si.value)
+    x1, x2, x3, v1, v2, v3, dE = interact.abinit_interaction(xend, vend, dt_coarse.si.value, dt_fine.si.value, t_impact.si.value, Tenc.si.value, Tstream.si.value, Tgap.si.value, Nstream, par_pot, potential, par_perturb, potential_perturb, bx.si.value, by.si.value, vx.si.value, vy.si.value)
     c = coord.Galactocentric(x=x1*u.m, y=x2*u.m, z=x3*u.m, v_x=v1*u.m/u.s, v_y=v2*u.m/u.s, v_z=v3*u.m/u.s, **gc_frame_dict)
     cg = c.transform_to(gc.GD1)
     
@@ -1993,13 +1995,13 @@ def lnprob_verbose(x, params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, 
     
     plt.sca(ax[2][0])
     plt.plot(cg.phi1.wrap_at(wangle).value, cg.phi2.value, 'o')
-    plt.plot(cg.phi1.wrap_at(wangle).value[loop_mask], cg.phi2.value[loop_mask], 'o')
-    plt.plot(cg.phi1.wrap_at(wangle).value[loop_mask], f(cg.phi1.wrap_at(wangle).value[loop_mask]), 'k.')
+    #plt.plot(cg.phi1.wrap_at(wangle).value[loop_mask], cg.phi2.value[loop_mask], 'o')
+    #plt.plot(cg.phi1.wrap_at(wangle).value[loop_mask], f(cg.phi1.wrap_at(wangle).value[loop_mask]), 'k.')
     
     plt.xlabel('$\phi_1$ [deg]')
     plt.ylabel('$\phi_2$ [deg]')
     plt.xlim(-60,-20)
-    plt.ylim(-10,5)
+    plt.ylim(-5,5)
     
     plt.sca(ax[0][1])
     plt.plot(c.x.to(u.kpc), c.y.to(u.kpc), 'o')
@@ -2024,11 +2026,11 @@ def lnprob_verbose(x, params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, 
     #plt.plot(cg.phi1.wrap_at(wangle).value[~aloop_mask], cg.radial_velocity.to(u.km/u.s)[~aloop_mask], 'o')
     #plt.plot(cg.phi1.wrap_at(wangle).value, vr0, 'o')
     plt.plot(cg.phi1.wrap_at(wangle).value, dvr, 'o')
-    plt.plot(cg.phi1.wrap_at(wangle).value[loop_mask], dvr[loop_mask], 'o')
+    #plt.plot(cg.phi1.wrap_at(wangle).value[loop_mask], dvr[loop_mask], 'o')
     
     plt.xlabel('$\phi_1$ [deg]')
     plt.ylabel('$\Delta$ $V_r$ [km s$^{-1}$]')
-    plt.ylim(-10,10)
+    plt.ylim(-5,5)
     plt.xlim(-60,-20)
     
     plt.tight_layout()
@@ -2076,6 +2078,7 @@ def get_lnprobargs():
     
     dt_coarse = 0.5*u.Myr
     Tstream = 56*u.Myr
+    Tgap = 29.176*u.Myr
     Nstream = 2000
     N2 = int(Nstream*0.5)
     dt_stream = Tstream/Nstream
@@ -2142,12 +2145,12 @@ def get_lnprobargs():
     chigap_max = 0.6567184385873621
     chispur_max = 1.0213837095314207
     
-    params_list = [t_impact, bx, by, vx, vy, M, rs]
+    params_list = [t_impact, bx, by, vx, vy, M, rs, Tgap]
     params_units = [p_.unit for p_ in params_list]
     params = [p_.value for p_ in params_list]
     params[5] = np.log10(params[5])
     
-    model_args = [params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb]
+    model_args = [params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb]
     gap_args = [poly, wangle, delta_phi2, Nb, bins, bc, base_mask, hat_mask, f_gap, gap_position, gap_width]
     spur_args = [N2, percentile1, percentile2, phi1_min, phi1_max, phi2_err, spx, spy, quad_phi1, quad_phi2, Nquad]
     lnp_args = [chigap_max, chispur_max]
@@ -3049,22 +3052,24 @@ def fancy_corner(label='', full=False, nstart=2000):
     
     abr = chain[:,:-3]
     abr[:,1] = np.sqrt(chain[:,1]**2 + chain[:,2]**2)
-    abr[:,2] = np.log10(np.sqrt(chain[:,3]**2 + chain[:,4]**2))
+    abr[:,2] = np.sqrt(chain[:,3]**2 + chain[:,4]**2)
     abr[:,0] = chain[:,0]
     abr[:,3] = np.log10(chain[:,6])
     abr[:,4] = chain[:,5]
-    params = ['T [Gyr]', 'B [pc]', 'log V/km s$^{-1}$', 'log $r_s$/pc', 'log M/M$_\odot$']
+    params = ['T [Gyr]', 'B [pc]', 'V [km s$^{-1}$]', 'log $r_s$/pc', 'log M/M$_\odot$']
+    ind = (abr[:,3]>0) | (abr[:,2]>250)
+    abr = abr[ind]
     chain = abr
     npar = np.shape(chain)[1]
     
-    lims = [[0.,1], [0.1,30], [2.1,2.99], [-1,2], [5.8,8]]
+    lims = [[0.,1], [0.1,30], [200,500], [-1,2], [5.8,8]]
     t_impact = 0.495*u.Gyr
     M = 5e6*u.Msun
     rs = 0.1*rs_diemer(M)
     bnorm = 15*u.pc
     vnorm = 250*u.km/u.s
     
-    pfid = [t_impact.to(u.Gyr).value, bnorm.to(u.pc).value, np.log10(vnorm.to(u.km/u.s).value), np.log10(rs.to(u.pc).value), np.log10(M.to(u.Msun).value)]
+    pfid = [t_impact.to(u.Gyr).value, bnorm.to(u.pc).value, vnorm.to(u.km/u.s).value, np.log10(rs.to(u.pc).value), np.log10(M.to(u.Msun).value)]
     
     plt.close()
     fig = corner.corner(chain, bins=50, labels=params, plot_datapoints=False, range=lims, smooth=2, smooth1d=2, color='0.1')
