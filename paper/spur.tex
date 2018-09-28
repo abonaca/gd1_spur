@@ -1,5 +1,8 @@
 % This Document is Copyright 2018 the authors.
 
+% Misc. notes:
+% - On model comparison figure: stuff <-60 deg more affected by gaia scan pattern, mass-loss history and stellar pop variation, disk contamination
+
 \documentclass[12pt, modern]{aastex62}
 
 \addtolength{\topmargin}{-0.25in}
@@ -198,19 +201,61 @@ The orbital structure of stars closest to the passing perturber is distorted int
 
 
 \section{Discussion}
-- This is huge!
-- Optimistic future of a huge network of cold streams---what might be possible?
-- On model comparison figure: stuff <-60 deg more affected by gaia scan pattern, mass-loss history and stellar pop variation, disk contamination
+
+The stream perturbation models presented above show that the GD-1 stream spur and neighboring gap could plausibly be formed through a gravitational interaction between the stream and a dark, compact, massive perturber.
+By assuming this scenario for the spur and gap formation, we have compared perturbed stream models to the observed gap location and width and spur location and length, and have determined regions of encounter parameter-space that reproduce the observed morphology of the GD-1 stream.
+In this context, we have shown that the perturber would have to be a massive but compact, fast-moving object in the halo of the Milky Way.
+
+\lcdm\ predicts that subhalos with masses between $10^6~\msun < M < 10^8~\msun$ should be abundant...
+[observed dwarfs around the Milky Way are proof of $10^7$--$10^8~\msun$]
+However, [scale radii $\sim 10$ times larger, less dense]
+
+- compare properties to expectation from dark matter, discuss black hole possibility (but also cool!)
+
 - Return to discussion of low-mass subhalos in simulations: baryonic sims predict far fewer subhalos, but dense ones survive? Also crazy-time: LMC replenishing subhalo population
 
+\subsection{Alternative explanations of the spur and gap}
+% This doesn't have to remain a subsection - just putting it here for organizing
+% my thoughts!
+- When discussing alternatives: Why are they less plausible? How could we rule them out in the future, or are they ruled out now?
+
+- SMBH: more massive than MW SMBH - where is progenitor? how did it grow?
+- GMC in disk: wrong relative velocity as GD-1 crosses midplane
+- Internal kinematics of progenitor: fine-tuned to get gap
+- Feathering from stream formation: oriented wrong way w.r.t. GD-1 orbit
+- Stream-fanning: need strong chaos for stream bifurcation. far from bar, halo likely close to spherical within orbit of GD-1
+- Luminous dwarf or globular cluster: either (1) known systems have wrong kinematic measurements, (2) unseen / unknown system, or (3) Milky Way mass distribution very different than expected. Could show difference of orbit over last 500 Myr in different potential models
+
+
+\section{Conclusions}
+
+- This is huge!
+- Optimistic future of a huge network of cold streams---what might be possible?
+
+
 \acknowledgements
-It is a pleasure to thank Douglas Finkbeiner, Kathryn Johnston, Erica Nelson, Sarah Pearson, Hans-Walter Rix, and Josh Speagle for valuable discussions and input.
+It is a pleasure to thank
+Douglas Finkbeiner,
+Kathryn Johnston,
+Erica Nelson,
+Sarah Pearson,
+Hans-Walter Rix, and
+Josh Speagle for valuable discussions and input.
 
 This project was developed in part at the 2018 \acronym{NYC} \Gaia\ \acronym{DR2} Workshop at the Center for Computational Astrophysics of the Flatiron Institute in New York City in 2018 April.
 
 This work was performed in part at Aspen Center for Physics, which is supported by National Science Foundation grant PHY-1607611.
 
 This work has made use of data from the European Space Agency (\acronym{ESA}) mission \Gaia\ (\url{https://www.cosmos.esa.int/gaia}), processed by the \Gaia\ Data Processing and Analysis Consortium (\acronym{DPAC}, \url{https://www.cosmos.esa.int/web/gaia/dpac/consortium}). Funding for the \acronym{DPAC} has been provided by national institutions, in particular the institutions participating in the \Gaia\ Multilateral Agreement.
+
+\software{
+    \package{Astropy} \citep{astropy:2013, astropy:2018},
+    \package{gala} \citep{Price-Whelan:2017},
+    \package{emcee} \citep{Foreman-Mackey:2013},
+    \package{IPython} \citep{Perez:2007},
+    \package{matplotlib} \citep{Hunter:2007},
+    \package{numpy} \citep{Van-der-Walt:2011},
+}
 
 \bibliographystyle{aasjournal}
 \bibliography{spur}
