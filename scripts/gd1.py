@@ -36,12 +36,19 @@ import pickle
 gc_frame_dict = {'galcen_distance':8*u.kpc, 'z_sun':0*u.pc}
 gc_frame = coord.Galactocentric(**gc_frame_dict)
 ham = gp.Hamiltonian(gp.LogarithmicPotential(v_c=225*u.km/u.s, r_h=0*u.kpc, q1=1, q2=1, q3=1, units=galactic))
+ham_log = gp.Hamiltonian(gp.LogarithmicPotential(v_c=225*u.km/u.s, r_h=0*u.kpc, q1=1, q2=1, q3=1, units=galactic))
+ham_mw = gp.Hamiltonian(gp.load('../data/mwpot.yml'))
 
-def gd1_model():
+def gd1_model(pot='log'):
     """Find a model of GD-1 in a log halo"""
     
+    if pot=='log':
+        ham = ham_log
+    elif pot=='mw':
+        ham = ham_mw
+    
     # load one orbital point
-    pos = np.load('../data/log_orbit.npy')
+    pos = np.load('../data/{}_orbit.npy'.format(pot))
     phi1, phi2, d, pm1, pm2, vr = pos
 
     c = gc.GD1(phi1=phi1*u.deg, phi2=phi2*u.deg, distance=d*u.kpc, pm_phi1_cosphi2=pm1*u.mas/u.yr, pm_phi2=pm2*u.mas/u.yr, radial_velocity=vr*u.km/u.s)
@@ -60,7 +67,7 @@ def gd1_model():
     phi1_gap = coord.Angle(-40*u.deg)
     i_gap = np.argmin(np.abs(model_x - phi1_gap))
     out = {'x_gap': fit_orbit.pos.get_xyz()[:,i_gap], 'v_gap': fit_orbit.vel.get_d_xyz()[:,i_gap], 'frame': gc_frame}
-    pickle.dump(out, open('../data/gap_present.pkl', 'wb'))
+    pickle.dump(out, open('../data/gap_present_{}.pkl'.format(pot), 'wb'))
     print('{} {}\n{}\n{}'.format(i_gap, fit_orbit[i_gap], fit_orbit[0], w0))
     print('dt {}'.format(i_gap*dt.to(u.s)))
     
@@ -79,7 +86,7 @@ def gd1_model():
     plt.gca().set_aspect('equal')
     
     plt.tight_layout()
-    plt.savefig('../plots/gd1_orbit.png', dpi=100)
+    plt.savefig('../plots/gd1_orbit_{}.png'.format(pot), dpi=100)
 
 def impact_geometry(t_impact=0.5*u.Gyr):
     """"""
@@ -1270,7 +1277,13 @@ def slice_likelihood():
     plt.tight_layout(h_pad=0)
 
 
-def test_abinitio():
+def mw_potential():
+    """"""
+    ham_mw = gp.Hamiltonian(gp.load('../data/mwpot.yml'))
+    print(ham_mw.potential.parameters)
+    print(ham_mw.potential)
+
+def test_abinitio(pot='log'):
     """"""
     
     t_impact = 1.5*u.Gyr
@@ -1279,25 +1292,38 @@ def test_abinitio():
     vx = 225*u.km/u.s
     vy = 0*u.km/u.s
     M = 1e7*u.Msun
+    rs = 10*u.pc
     
-    potential = 3
-    Vh = 225*u.km/u.s
-    q = 1*u.Unit(1)
-    rhalo = 0*u.pc
-    par_pot = np.array([Vh.si.value, q.value, rhalo.si.value])
+    if pot=='log':
+        potential = 3
+        Vh = 225*u.km/u.s
+        q = 1*u.Unit(1)
+        rhalo = 0*u.pc
+        par_pot = np.array([Vh.si.value, q.value, rhalo.si.value])
+        ham = ham_log
+    elif pot=='mw':
+        potential = 6
+        Mh = 7e11*u.Msun
+        Rh = 15.62*u.kpc
+        Vh = np.sqrt(G*Mh/Rh).to(u.km/u.s)
+        par_gal = [4e9*u.Msun, 1*u.kpc, 5.5e10*u.Msun, 3*u.kpc, 0.28*u.kpc, Vh, 15.62*u.kpc, 0*u.rad, 1*u.Unit(1), 1*u.Unit(1), 0.95*u.Unit(1)]
+        par_pot = np.array([x_.si.value for x_ in par_gal])
+        ham = ham_mw
     
     potential_perturb = 1
     par_perturb = np.array([M.si.value, 0., 0., 0.])
+    potential_perturb = 2
+    par_perturb = np.array([M.si.value, rs.si.value, 0., 0., 0.])
     Tenc = 0.12*u.Gyr
     
-    pkl = pickle.load(open('../data/gap_present.pkl', 'rb'))
+    pkl = pickle.load(open('../data/gap_present_{}.pkl'.format(pot), 'rb'))
     c = coord.Galactocentric(x=pkl['x_gap'][0], y=pkl['x_gap'][1], z=pkl['x_gap'][2], v_x=pkl['v_gap'][0], v_y=pkl['v_gap'][1], v_z=pkl['v_gap'][2], **gc_frame_dict)
     w0 = gd.PhaseSpacePosition(c.transform_to(gc_frame).cartesian)
     xgap = np.array([w0.pos.x.si.value, w0.pos.y.si.value, w0.pos.z.si.value])
     vgap = np.array([w0.vel.d_x.si.value, w0.vel.d_y.si.value, w0.vel.d_z.si.value])
     
     # load orbital end point
-    pos = np.load('../data/log_orbit.npy')
+    pos = np.load('../data/{}_orbit.npy'.format(pot))
     phi1, phi2, d, pm1, pm2, vr = pos
 
     c_end = gc.GD1(phi1=phi1*u.deg, phi2=phi2*u.deg, distance=d*u.kpc, pm_phi1_cosphi2=pm1*u.mas/u.yr, pm_phi2=pm2*u.mas/u.yr, radial_velocity=vr*u.km/u.s)
@@ -1354,6 +1380,9 @@ def test_abinitio():
     # pick v
     vsub = vx*vi + vy*vj
     
+    print(xsub.si)
+    print(vsub.si)
+    
     #####################
     # Stream at encounter
     
@@ -1386,7 +1415,7 @@ def test_abinitio():
     
     dt_c = t2 - t1
     dt_p = t3 - t2
-    print(dt_c, dt_p, dt_p/dt_c)
+    #print(dt_c, dt_p, dt_p/dt_c)
     
     stream = {}
     stream['x'] = (np.array([x1, x2, x3])*u.m).to(u.kpc)
@@ -1399,12 +1428,12 @@ def test_abinitio():
     plt.close()
     fig, ax = plt.subplots(1,2,figsize=(10,5))
     plt.sca(ax[0])
-    plt.plot(stream['x'][0], stream['x'][1], 'o')
-    plt.plot(stream_['x'][0], stream_['x'][1], 'o')
+    plt.plot(stream['x'][0], stream['x'][1], 'o', ms=8)
+    plt.plot(stream_['x'][0], stream_['x'][1], 'o', ms=6)
     
     plt.sca(ax[1])
-    plt.plot(stream['v'][0], stream['v'][1], 'o')
-    plt.plot(stream_['v'][0], stream_['v'][1], 'o')
+    plt.plot(stream['v'][0], stream['v'][1], 'o', ms=8)
+    plt.plot(stream_['v'][0], stream_['v'][1], 'o', ms=6)
     
     plt.tight_layout()
 
