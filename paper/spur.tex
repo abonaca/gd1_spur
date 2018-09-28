@@ -141,7 +141,7 @@ In \sectionname~\ref{sec:model}, we ...
 
 \begin{figure}
 \begin{center}
-\includegraphics[width=\textwidth]{data_model_comparison.pdf}
+\includegraphics[width=\textwidth]{../plots/stream_encounter.png}
 \end{center}
 \caption{Members of the GD-1 stellar stream, cleanly selected using Gaia proper motions and PanSTARRS photometry, reveal an underdensity in the stream and a spur extending for $\approx10^\circ$ from this gap (top left).
 The gap is $\approx8^\circ$ wide and is located at $\phi_1\approx-40^\circ$ (top right).
@@ -155,18 +155,7 @@ The orbital structure of stars closest to the passing perturber is distorted int
 - exact details depend on the following parameters: time of encounter, impact parameter, velocity, mass and size of the perturber
 - to find parameters allowed by the data, we would ideally like to forward model, but generative model is hard and we don't have it
 - instead, we devised a set of expert criteria that allow us to compare whether a conceptual model represents the observed structure of GD-1
-- metrics
-
-\begin{figure}
-\begin{center}
-\includegraphics[width=\textwidth]{excursions.pdf}
-\end{center}
-\caption{}
-\label{fig:scalings}
-\end{figure}
-
-- parameter search: ABC
-- haven't exhaustively searched the parameter space
+- pseudo-likelihood -- ABC
 
 \begin{figure}
 \begin{center}
@@ -175,6 +164,18 @@ The orbital structure of stars closest to the passing perturber is distorted int
 \caption{}
 \label{fig:corner}
 \end{figure}
+
+- parameter search w emcee
+- comment on pdfs
+- analytical argument for a young spur?
+
+% \begin{figure}
+% \begin{center}
+% \includegraphics[width=\textwidth]{excursions.pdf}
+% \end{center}
+% \caption{}
+% \label{fig:scalings}
+% \end{figure}
 
 
 \section{Origin of the GD-1 perturber}
