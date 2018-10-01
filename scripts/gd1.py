@@ -1988,7 +1988,7 @@ def lnprob_verbose(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstrea
     model_hat = np.minimum(model_hat, model_base*f_gap)
     ytop_model = tophat(bc, model_base, model_hat,  gap_position, gap_width)
     
-    chi_gap = np.sum((h_model - ytop_model)**2/yerr**2)/Nb
+    chi_gap = np.sum((h_model - ytop_model)**2/(2*yerr)**2)/Nb
     
     # spur chi^2
     top1 = np.percentile(dE[:N2], percentile1)
@@ -2024,7 +2024,7 @@ def lnprob_verbose(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstrea
     
     plt.sca(ax[2][0])
     plt.plot(cg.phi1.wrap_at(wangle).value, cg.phi2.value, 'o')
-    #plt.plot(cg.phi1.wrap_at(wangle).value[loop_mask], cg.phi2.value[loop_mask], 'o')
+    plt.plot(cg.phi1.wrap_at(wangle).value[loop_mask], cg.phi2.value[loop_mask], 'o')
     #plt.plot(cg.phi1.wrap_at(wangle).value[loop_mask], f(cg.phi1.wrap_at(wangle).value[loop_mask]), 'k.')
     
     plt.xlabel('$\phi_1$ [deg]')
@@ -2055,7 +2055,7 @@ def lnprob_verbose(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstrea
     #plt.plot(cg.phi1.wrap_at(wangle).value[~aloop_mask], cg.radial_velocity.to(u.km/u.s)[~aloop_mask], 'o')
     #plt.plot(cg.phi1.wrap_at(wangle).value, vr0, 'o')
     plt.plot(cg.phi1.wrap_at(wangle).value, dvr, 'o')
-    #plt.plot(cg.phi1.wrap_at(wangle).value[loop_mask], dvr[loop_mask], 'o')
+    plt.plot(cg.phi1.wrap_at(wangle).value[loop_mask], dvr[loop_mask], 'o')
     
     plt.xlabel('$\phi_1$ [deg]')
     plt.ylabel('$\Delta$ $V_r$ [km s$^{-1}$]')
@@ -2064,7 +2064,7 @@ def lnprob_verbose(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstrea
     
     plt.tight_layout()
     
-    return fig, ax, chi_gap, chi_spur, np.sum(loop_quadrant)
+    return fig, ax, chi_gap, chi_spur, np.sum(loop_quadrant), -(chi_gap + chi_spur)
 
 def rs_hernquist(M):
     """Return Hernquist scale radius for a halo of mass M"""
@@ -2187,12 +2187,14 @@ def get_lnprobargs():
     
     return lnprob_args
 
-def check_model(fiducial=False, label='', rand=False):
+def check_model(fiducial=False, label='', rand=False, Nc=10):
     """"""
     chain = np.load('../data/unique_samples{}.npz'.format(label))['chain']
+    vnorm = np.sqrt(chain[:,3]*82 + chain[:,4]**2)
+    ind = vnorm>450
+    chain = chain[ind]
     Nsample = np.shape(chain)[0]
     if rand:
-        Nc = 20
         np.random.seed(59)
         ind = np.random.randint(Nsample, size=Nc)
     else:
@@ -2201,7 +2203,6 @@ def check_model(fiducial=False, label='', rand=False):
     
     for k in range(Nc):
         x = chain[ind[k]]
-        #print(x)
 
         if fiducial:
             t_impact = 0.5*u.Gyr
@@ -2222,7 +2223,7 @@ def check_model(fiducial=False, label='', rand=False):
             
             print(rs_hernquist(M))
             
-            params_list = [t_impact, bx, by, vx, vy, M, rs]
+            params_list = [t_impact, bx, by, vx, vy, M, rs, Tgap]
             params_units = [p_.unit for p_ in params_list]
             x = [p_.value for p_ in params_list]
             x[5] = np.log10(x[5])
@@ -2292,6 +2293,7 @@ def check_model(fiducial=False, label='', rand=False):
         vy = 1*u.km/u.s
         M = 7e6*u.Msun
         rs = 0*u.pc
+        Tgap = 29*u.Myr
         #print((2*G*M*c_**-2).to(u.pc))
         #print(1.05*u.kpc * np.sqrt(M.to(u.Msun).value*1e-8))
         
@@ -2310,19 +2312,20 @@ def check_model(fiducial=False, label='', rand=False):
         chigap_max = 0.6567184385873621
         chispur_max = 1.0213837095314207
         
-        params_list = [t_impact, bx, by, vx, vy, M, rs]
+        params_list = [t_impact, bx, by, vx, vy, M, rs, Tgap]
         params_units = [p_.unit for p_ in params_list]
         params = [p_.value for p_ in params_list]
         params[5] = np.log10(params[5])
         
-        model_args = [params_units, xgap, vgap, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb]
+        model_args = [params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb]
         gap_args = [poly, wangle, delta_phi2, Nb, bins, bc, base_mask, hat_mask, f_gap, gap_position, gap_width]
         spur_args = [N2, percentile1, percentile2, phi1_min, phi1_max, phi2_err, spx, spy, quad_phi1, quad_phi2, Nquad]
         lnp_args = [chigap_max, chispur_max]
         lnprob_args = model_args + gap_args + spur_args + lnp_args
         
         #print(lnprob(x, *lnprob_args))
-        fig, ax, chi_gap, chi_spur, N = lnprob_verbose(x, *lnprob_args)
+        fig, ax, chi_gap, chi_spur, N, lnp = lnprob_verbose(x, *lnprob_args)
+        print(lnp)
         
         plt.suptitle('  '.join(['{:.2g} {}'.format(x_, u_) for x_, u_ in zip(x,params_units)]), fontsize='medium')
         plt.tight_layout(rect=[0,0,1,0.96])

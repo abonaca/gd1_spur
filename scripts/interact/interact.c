@@ -131,9 +131,9 @@ int abinit_interaction(double *xend, double *vend, double dt_, double dt_fine, d
         bj[i] = bj[i] / bjnorm;
         b[i] = bx*bi[i] + by*bj[i];
         xsub[i] = xgap[i] + b[i];
-        printf("%e\t", xsub[i]);
+//         printf("%e\t", xsub[i]);
     }
-    printf("\n");
+//     printf("\n");
     
     // find velocity plane
     vi[0] = vgap[1]*b[2] - vgap[2]*b[1];
@@ -151,9 +151,9 @@ int abinit_interaction(double *xend, double *vend, double dt_, double dt_fine, d
         vi[i] = vi[i] / vinorm;
         vj[i] = vj[i] / vjnorm;
         vsub[i] = vx*vi[i] + vy*vj[i];
-        printf("%e\t", vsub[i]);
+//         printf("%e\t", vsub[i]);
     }
-    printf("\n");
+//     printf("\n");
     
     //////////////////////////////////////////////////
     // Find initial positions for perturber and stream
