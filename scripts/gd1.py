@@ -1793,20 +1793,48 @@ def get_unique(label=''):
     models, ind = np.unique(sampler['chain'], axis=0, return_index=True)
     #print(np.shape(models), np.shape(ind))
     #print(np.shape(np.unique(sampler['lnp'])))
+    ifinite = np.isfinite(sampler['lnp'][ind])
     
-    np.savez('../data/unique_samples{}'.format(label), chain=models, lnp=sampler['lnp'][ind])
+    np.savez('../data/unique_samples{}'.format(label), chain=models[ifinite], lnp=sampler['lnp'][ind][ifinite])
 
-def check_chain(full=False, label=''):
+def choose_lnp_threshold(label='', p=10):
+    """"""
+    sampler = np.load('../data/samples{}.npz'.format(label))
+    ifinite = np.isfinite(sampler['lnp'])
+    lnp = sampler['lnp'][ifinite]
+    
+    pp = np.percentile(lnp, p)
+    print(pp)
+    
+    plt.close()
+    plt.figure(figsize=(8,5))
+    
+    plt.hist(lnp, bins=100, histtype='step', color='k', lw=2)
+    plt.axvline(pp, color='firebrick', lw=4, alpha=0.4)
+    
+    plt.gca().set_yscale('log')
+    
+    plt.tight_layout()
+
+def check_chain(full=False, label='', p=1):
     """"""
     sampler = np.load('../data/unique_samples{}.npz'.format(label))
     
     models = np.unique(sampler['chain'], axis=0)
+    models = sampler['chain']
+    lnp = sampler['lnp']
+    pp = np.percentile(lnp, p)
+    
+    ind = lnp>=pp
+    models = models[ind]
+    lnp = lnp[ind]
+    
     params = ['T', 'bx', 'by', 'vx', 'vy', 'logM', 'rs']
     print(np.shape(models), np.shape(models)[0]/np.shape(sampler['chain'])[0])
     Npar = np.shape(models)[1]
     
     if full==False:
-        abr = models[:,:-2]
+        abr = models[:,:-3]
         abr[:,1] = np.sqrt(models[:,1]**2 + models[:,2]**2)
         abr[:,2] = np.sqrt(models[:,3]**2 + models[:,4]**2)
         abr[:,0] = models[:,0]
@@ -1818,8 +1846,9 @@ def check_chain(full=False, label=''):
             abr[:,3] = models[:,6]
             abr[:,4] = models[:,5]
             params = ['T [Gyr]', 'B [pc]', 'V [km s$^{-1}$]', '$r_s$ [pc]', 'log M/M$_\odot$']
-            lims = [[0.,2], [0.1,100], [10,1000], [0.001,1000], [5,9]]
+            lims = [[0.,2], [0.1,75], [10,500], [0.001,40], [5,9]]
             logscale = [False, True, True, True, False]
+            logscale = [False, False, False, False, False]
         else:
             lims = [[0.,2], [0.1,100], [10,1000], [5,9]]
             logscale = [False, True, True, False]
@@ -1835,13 +1864,13 @@ def check_chain(full=False, label=''):
     hull_ids = np.empty(0, dtype=int)
 
     plt.close()
-    fig, ax = plt.subplots(Nvar-1, Nvar-1, figsize=(dax*Nvar, dax*Nvar), sharex='col', sharey='row')
+    fig, ax = plt.subplots(Nvar-1, Nvar-1, figsize=(dax*Nvar, dax*Nvar), sharex='col', sharey='row' ,squeeze=False)
     
     for i in range(0,Nvar-1):
         for j in range(i+1,Nvar):
             plt.sca(ax[j-1][i])
             
-            plt.plot(models[:,i], models[:,j], '.', ms=1, alpha=0.1, color='0.2', rasterized=True)
+            #plt.plot(models[:,i], models[:,j], '.', ms=1, alpha=0.1, color='0.2', rasterized=True)
             
             #for k in range(Nc):
                 #plt.plot(models[ind[k]][i], models[ind[k]][j], 'o', ms=4, color='PaleVioletRed')
@@ -1852,7 +1881,7 @@ def check_chain(full=False, label=''):
             xy_vert = 10**np.array([points[hull.vertices,0], points[hull.vertices,1]]).T
             hull_ids = np.concatenate([hull_ids, hull.vertices])
             
-            p = mpl.patches.Polygon(xy_vert, closed=True, ec='0.3', fc='0.8', zorder=0)
+            p = mpl.patches.Polygon(xy_vert, closed=True, lw=2, ec='0.8', fc='0.9', zorder=0)
             plt.gca().add_artist(p)
             
             #for simplex in hull.simplices:
@@ -1861,6 +1890,20 @@ def check_chain(full=False, label=''):
     hull_ids = np.unique(hull_ids)
     print(np.size(hull_ids))
     np.save('../data/hull_points{}'.format(label), hull_ids)
+    
+    t_impact = 0.495*u.Gyr
+    M = 5e6*u.Msun
+    rs = 0.1*rs_diemer(M)
+    bnorm = 15*u.pc
+    vnorm = 250*u.km/u.s
+    
+    pfid = [t_impact.to(u.Gyr).value, bnorm.to(u.pc).value, vnorm.to(u.km/u.s).value, (rs.to(u.pc).value), np.log10(M.to(u.Msun).value)]
+    
+    for i in range(Nvar-1):
+        for j in range(i+1, Nvar):
+            #ind = i + (j-1)*Nvar + Nvar
+            plt.sca(ax[j-1][i])
+            plt.plot(pfid[i], pfid[j], '*', ms=20, mec='orangered', mew=1.5, color='orange')
     
     for i in range(0,Nvar-1):
         for j in range(i+1,Nvar-1):
@@ -1883,23 +1926,17 @@ def check_chain(full=False, label=''):
                 plt.gca().set_yscale('log')
             plt.ylim(lims[k+1])
     
-    if Npar>6:
-        mrange = 10**np.linspace(np.min(models[:,4]), np.max(models[:,4]), 20)*u.Msun
-        rsrange = rs_hernquist(mrange)
-        rsrange2 = rs_diemer(mrange)
+    #if Npar>6:
+        #mrange = 10**np.linspace(np.min(models[:,4]), np.max(models[:,4]), 20)*u.Msun
+        #rsrange = rs_hernquist(mrange)
+        #rsrange2 = rs_diemer(mrange)
         
-        plt.sca(ax[3][3])
-        plt.plot(0.1*rsrange2.to(u.pc), np.log10(mrange.value), ':', color='DarkSlateBlue', lw=1.5)
-        plt.plot(0.3*rsrange2.to(u.pc), np.log10(mrange.value), '--', color='DarkSlateBlue', lw=1.5)
-        plt.plot(0.84*rsrange2.to(u.pc), np.log10(mrange.value), '-', color='DarkSlateBlue', lw=1.5)
-        plt.plot(1.16*rsrange2.to(u.pc), np.log10(mrange.value), '-', color='DarkSlateBlue', lw=1.5)
-        #plt.fill_betweenx(0.84*rsrange2.to(u.pc).value, 1.16*rsrange2.to(u.pc).value, np.log10(mrange.value), color='DarkSlateBlue')
+        #plt.sca(ax[3][3])
+        #plt.plot(0.1*rsrange2.to(u.pc), np.log10(mrange.value), ':', color='DarkSlateBlue', lw=1.5)
+        #plt.plot(0.3*rsrange2.to(u.pc), np.log10(mrange.value), '--', color='DarkSlateBlue', lw=1.5)
+        #plt.plot(0.84*rsrange2.to(u.pc), np.log10(mrange.value), '-', color='DarkSlateBlue', lw=1.5)
+        #plt.plot(1.16*rsrange2.to(u.pc), np.log10(mrange.value), '-', color='DarkSlateBlue', lw=1.5)
 
-        #plt.plot(0.1*rsrange.to(u.pc), np.log10(mrange.value), ':', color='SlateBlue', lw=1.5)
-        #plt.plot(0.3*rsrange.to(u.pc), np.log10(mrange.value), '--', color='SlateBlue', lw=1.5)
-        #plt.plot(0.84*rsrange.to(u.pc), np.log10(mrange.value), '-', color='SlateBlue', lw=1.5)
-        #plt.plot(1.16*rsrange.to(u.pc), np.log10(mrange.value), '-', color='SlateBlue', lw=1.5)
-        ##plt.plot(rsrange.to(u.pc), np.log10(mrange.value), '-', color='SlateBlue', lw=1.5)
     
     plt.tight_layout(h_pad=0, w_pad=0)
     plt.savefig('../plots/corner{}_f{:d}.png'.format(label, full))
@@ -2015,7 +2052,10 @@ def lnprob_verbose(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstrea
     plt.sca(ax[0][0])
     plt.plot(bc, h_model, 'o')
     plt.plot(bc, ytop_model, 'k-')
+
+    plt.text(0.95, 0.15, '$\chi^2_{{gap}}$ = {:.2f}'.format(chi_gap), ha='right', transform=plt.gca().transAxes, fontsize='small')
     plt.ylabel('N')
+    plt.xlim(-60,-20)
     
     plt.sca(ax[1][0])
     plt.plot(cg.phi1.wrap_at(wangle).value, dE, 'o')
@@ -2025,8 +2065,10 @@ def lnprob_verbose(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstrea
     plt.sca(ax[2][0])
     plt.plot(cg.phi1.wrap_at(wangle).value, cg.phi2.value, 'o')
     plt.plot(cg.phi1.wrap_at(wangle).value[loop_mask], cg.phi2.value[loop_mask], 'o')
-    #plt.plot(cg.phi1.wrap_at(wangle).value[loop_mask], f(cg.phi1.wrap_at(wangle).value[loop_mask]), 'k.')
+    isort = np.argsort(cg.phi1.wrap_at(wangle).value[loop_mask])
+    plt.plot(cg.phi1.wrap_at(wangle).value[loop_mask][isort], f(cg.phi1.wrap_at(wangle).value[loop_mask])[isort], 'k-')
     
+    plt.text(0.95, 0.15, '$\chi^2_{{spur}}$ = {:.2f}'.format(chi_spur), ha='right', transform=plt.gca().transAxes, fontsize='small')
     plt.xlabel('$\phi_1$ [deg]')
     plt.ylabel('$\phi_2$ [deg]')
     plt.xlim(-60,-20)
@@ -2187,11 +2229,14 @@ def get_lnprobargs():
     
     return lnprob_args
 
-def check_model(fiducial=False, label='', rand=False, Nc=10):
+def check_model(fiducial=False, label='', rand=False, Nc=10, fast=True):
     """"""
     chain = np.load('../data/unique_samples{}.npz'.format(label))['chain']
-    vnorm = np.sqrt(chain[:,3]*82 + chain[:,4]**2)
-    ind = vnorm>450
+    vnorm = np.sqrt(chain[:,3]**2 + chain[:,4]**2)
+    if fast:
+        ind = vnorm>490
+    else:
+        ind = vnorm<350
     chain = chain[ind]
     Nsample = np.shape(chain)[0]
     if rand:
@@ -2330,7 +2375,7 @@ def check_model(fiducial=False, label='', rand=False, Nc=10):
         plt.suptitle('  '.join(['{:.2g} {}'.format(x_, u_) for x_, u_ in zip(x,params_units)]), fontsize='medium')
         plt.tight_layout(rect=[0,0,1,0.96])
         
-        plt.savefig('../plots/likelihood_r{:d}_{}.png'.format(rand, k))
+        plt.savefig('../plots/likelihood_f{:d}_r{:d}_{}.png'.format(fast, rand, k))
     
 
 ########################
