@@ -134,14 +134,13 @@ Galaxy:~kinematics~and~dynamics
 
 
 \section{Encounter of GD-1 with a massive perturber}
-% - baseline model that reproduces the models
 % - present the fiducial model (fig 1)
 % - comparison with the data is qualitative, data is the following (cite pwb, here is what we did in addition to select likely members)
 % - define pseudo-likelihood and explain our high-level exploration of the parameter space (fig 2)
 % - comment on densities of known objects in the mass-radius plane (ie compare our pdf to molecular clouds, globular clusters, central densities of dwarf galaxies, cdm subhalo predictions) (I am thinking of this as an inset to fig 2, but could be a separate figure as well)
 \subsection{Features in the GD-1 stellar stream}
 \label{sec:data}
-GD-1 is the longest ($>100^\circ$, kpc) thin ($\sigma\approx12'$, pc) stellar stream discovered in the Galactic halo \citep{gd2006}.
+GD-1 is the longest ($>100^\circ$, 10\,kpc) thin ($\sigma\approx12'$, 30\,pc) stellar stream discovered in the Galactic halo \citep{gd2006}.
 Based on its width and length, GD-1 is expected to be extremely informative about the global distribution of matter in the Galaxy \citep{lux2013, bh2018}.
 Indeed, dynamical modeling of GD-1 individually, and in concert with the tidal tails of the Palomar~5 globular cluster, has already revealed that the inner dark matter halo is spherical \citep{koposov2010, bowden2015, bovy2016}.
 Furthermore, \citet{cg2013} used data from the Sloan Digital Sky Survey \citep[SDSS,][]{york2000} to identify gaps in stellar density along GD-1 and concluded that the number, size and depth of GD-1 gaps is consistent with $\Lambda$CDM predictions of stream perturbation by dark-matter subhalos.
@@ -154,24 +153,36 @@ Patterns imparted by the complex selection function, confusion by background gal
 
 To highlight the complex structure of the GD-1 stream, we present the distribution of likely stream members at the top of Figure~\ref{fig:fiducial}.
 As a first step in finding likely members, we followed \citet{pwb} in selecting stars consistent with an old and metal-poor population at a distance of 8\,kpc, and moving retrograde with respect to the Galactic disk, with proper motions in the GD-1 reference frame $(\mu_{\phi_1}, \mu_{\phi_2})\approx(-7,0)\;\rm mas\,yr^{-1}$.
-We then modeled the spatial distribution of these stars in the $\phi_2$ direction (i.e. along the stream) as a combination of a constant background, a stream component at the location of the main stream track, and two additional Gaussian components on either side of the main stream.
-- free parameters, constrained w mcmc
-- for each star, we calculate
-- total membership is
+The spatial distribution of these stars in the $\phi_2$ direction (i.e. perpendicular to the stream) is modeled as a combination of a constant background, a stream component at the location of the main stream track, and one additional Gaussian components on either side of the main stream to capture stream features beyond the main track.
+We solved for the normalization, position and width of every component by exploring the parameter space with an ensemble MCMC sampler \citep{Foreman-Mackey:2013}.
+We used 256 walkers that ran for a total of 1280 steps, and kept the final 256 steps to generate posterior samples in these parameters.
+The above procedure is a full-stream generalization of the calculation in \citep{pwb} that quantified the fraction of stars in the additional components at the locations of the spur and the blob.
+Finally, we define stream membership probability, $p_{mem}$, as the joint probability of a star belonging either to the main stream or the additional feature, and evaluate these probabilities using MCMC samples for every star.
 Figure~\ref{fig:fiducial} shows stars with $p_{mem}>0.5$, with larger and darker points representing stars with a higher membership probability.
 
-- stream width and density change along the stream
-- most prominent features: two gaps, one looks almost completely empty
-The number of stars in the additional components is larger than the background in the spur and blob region, and consistent with zero along the rest of the stream.
-In the following section we present a model of GD-1 that simultaneously explains both the gap in the stream and the associated spur of member stars.
+Most likely GD-1 members trace a thin stream, whose width varies between $\sigma\approx'$ and $'$.
+% $\sigma\approx'$ at $\phi_1\approx-13^\circ$ to $\sigma\approx'$ at $\phi_1\approx-50^\circ$.
+Stellar density along the stream is not uniform, with the most significant underdensities, or gaps, located at $\phi_1\approx-40^\circ$ and $\phi_1\approx-20^\circ$.
+Additional components are above the background density in the spur region, $\phi_1\approx-35^\circ$, and the blob region, $\phi_1\approx-15^\circ$, and consistent with zero along the rest of the stream.
+In the following section we present a conceptual model of GD-1 that simultaneously explains the gap in the stream and the spur extending from the stream.
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=\textwidth]{../plots/stream_encounter.png}
+\end{center}
+\caption{Likely members of the GD-1 stellar stream, cleanly selected using Gaia proper motions and PanSTARRS photometry, reveal an underdensity in the stream and a spur extending for $\approx10^\circ$ from this gap (top).
+% The gap is $\approx8^\circ$ wide and is located at $\phi_1\approx-40^\circ$ (top right).
+An idealized model of GD-1 that has been perturbed by a compact, massive object (bottom).
+The orbital structure of stars closest to the passing perturber is distorted into a loop of stars that after 0.5\,Gyr appears as an underdensity coinciding with the observed gap, and extends out of the stream similar to the observed spur.
+% edge-on and matches the extent of the observed spur, as well as the location and the width of the gap.
+}
+\label{fig:fiducial}
+\end{figure}
 
 \subsection{Perturbed model of GD-1}
 \label{sec:model}
-% - gaps studied as a signature of interaction
-% - in addition, here we have stars off from the main stream
-% - in this section we show that both features can be simultaneously explained with an interaction
-- unlike the observed gd-1, model in a smooth galaxy is also smooth \citep{pwb}
-- streakline model \citep{fardal2015}, so it does account for substructure inherent to the process of disruption \citep{kupper2008,kupper2010}
+Unlike the observed gd-1, model in a smooth galaxy is also smooth \citep{pwb}, even after taking into account substructure produced by the epicyclic motions of stream stars relative to the progenitor's orbit \citep{kupper2008,kupper2010, fardal2015}.
+% - streakline model \citep{fardal2015}, so it does account for substructure inherent to the process of disruption \citep{}
 - can get one gap by disrupting the progenitor there
 - to explain the other gap, we present a streakline model of the GD-1 stream that also had a close encounter with a dense, massive perturber
 
@@ -185,23 +196,14 @@ In the following section we present a model of GD-1 that simultaneously explains
 - this deforms the regular structure of a stream, which then develops a loop
 - at the chosen impact geometry, this loop of stars appears edge on at the present, and looks like a spur (Figure~\ref{fig:fiducial}, bottom).
 
+- even though the extent of the stream doesn't match, the agreement between the observed GD-1 and this model is remarkable
+- in the following section we explore the range of impact parameters that still produce a good match to the observed stream
+
 % - to uncover the origin of the gap+spur structure, we analyze a range of idealized encounters between a massive perturber and stars moving on an orbit that fits the GD-1 stream
 % - the single orbit structure of the stream develops a loop after the
 % - however, the stars affected by the encounter actually form a loop that extends towards the location of the closest approach (fig)
 % - connect spur morphology to phases of gap growth from denis
 % % - sky projections: loop can appear as a spur viewed edge-on
-
-\begin{figure}
-\begin{center}
-\includegraphics[width=\textwidth]{../plots/stream_encounter.png}
-\end{center}
-\caption{Members of the GD-1 stellar stream, cleanly selected using Gaia proper motions and PanSTARRS photometry, reveal an underdensity in the stream and a spur extending for $\approx10^\circ$ from this gap (top left).
-The gap is $\approx8^\circ$ wide and is located at $\phi_1\approx-40^\circ$ (top right).
-We present a conceptual model of GD-1 that has been perturbed by a compact, massive object.
-The orbital structure of stars closest to the passing perturber is distorted into a loop of stars that after 0.5\,Gyr appears edge-on and matches the extent of the observed spur (bottom left), as well as the location and the width of the gap (bottom right).
-}
-\label{fig:fiducial}
-\end{figure}
 
 \subsection{Properties of the GD-1 perturber}
 - for some viewing angles, a loop of stream stars formed following an encounter with a massive perturber can appear as a spur and a gap combo
@@ -284,7 +286,7 @@ The orbital structure of stars closest to the passing perturber is distorted int
 
 
 \acknowledgements
-It is a pleasure to thank Benedikt Diemer, Elena D'Onghia, Douglas Finkbeiner, Lars Hernquist, Kathryn Johnston, Doug Lin, Erica Nelson, Sarah Pearson, Hans-Walter Rix, and Josh Speagle + someone from CUNY for valuable discussions and input.
+It is a pleasure to thank Vasily Belokurov, Benedikt Diemer, Elena D'Onghia, Adrienne Erickcek, Douglas Finkbeiner, Lars Hernquist, Kathryn Johnston, Sergey Koposov, Doug Lin, Erica Nelson, Sarah Pearson, Hans-Walter Rix, and Josh Speagle + someone from CUNY for valuable discussions and input.
 
 This project was developed in part at the 2018 \acronym{NYC} \Gaia\ \acronym{DR2} Workshop at the Center for Computational Astrophysics of the Flatiron Institute in New York City in 2018 April.
 
