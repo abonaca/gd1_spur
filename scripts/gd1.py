@@ -1986,7 +1986,7 @@ def check_impulse(label=''):
     plt.tight_layout()
     plt.savefig('../plots/impulse{}.png'.format(label))
 
-def lnprob_verbose(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb, poly, wangle, delta_phi2, Nb, bins, bc, base_mask, hat_mask, f_gap, gap_position, gap_width, N2, percentile1, percentile2, phi1_min, phi1_max, phi2_err, spx, spy, quad_phi1, quad_phi2, Nquad, chigap_max, chispur_max):
+def lnprob_verbose(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb, poly, wangle, delta_phi2, Nb, bins, bc, base_mask, hat_mask, f_gap, gap_position, gap_width, N2, percentile1, percentile2, phi1_min, phi1_max, phi2_err, spx, spy, quad_phi1, quad_phi2, Nquad, chigap_max, chispur_max, colored=True, plot_comp=True, chi_label=True):
     """Check if a model is better than the fiducial"""
     
     if (x[0]<0) | (np.sqrt(x[3]**2 + x[4]**2)>1000):
@@ -2051,24 +2051,30 @@ def lnprob_verbose(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstrea
     
     plt.sca(ax[0][0])
     plt.plot(bc, h_model, 'o')
-    plt.plot(bc, ytop_model, 'k-')
+    if plot_comp:
+        plt.plot(bc, ytop_model, 'k-')
 
-    plt.text(0.95, 0.15, '$\chi^2_{{gap}}$ = {:.2f}'.format(chi_gap), ha='right', transform=plt.gca().transAxes, fontsize='small')
+    if chi_label:
+        plt.text(0.95, 0.15, '$\chi^2_{{gap}}$ = {:.2f}'.format(chi_gap), ha='right', transform=plt.gca().transAxes, fontsize='small')
     plt.ylabel('N')
     plt.xlim(-60,-20)
     
     plt.sca(ax[1][0])
     plt.plot(cg.phi1.wrap_at(wangle).value, dE, 'o')
-    plt.plot(cg.phi1.wrap_at(wangle).value[aloop_mask], dE[aloop_mask], 'o')
+    if colored:
+        plt.plot(cg.phi1.wrap_at(wangle).value[aloop_mask], dE[aloop_mask], 'o')
     plt.ylabel('$\Delta$ E')
     
     plt.sca(ax[2][0])
     plt.plot(cg.phi1.wrap_at(wangle).value, cg.phi2.value, 'o')
-    plt.plot(cg.phi1.wrap_at(wangle).value[loop_mask], cg.phi2.value[loop_mask], 'o')
-    isort = np.argsort(cg.phi1.wrap_at(wangle).value[loop_mask])
-    plt.plot(cg.phi1.wrap_at(wangle).value[loop_mask][isort], f(cg.phi1.wrap_at(wangle).value[loop_mask])[isort], 'k-')
+    if colored:
+        plt.plot(cg.phi1.wrap_at(wangle).value[loop_mask], cg.phi2.value[loop_mask], 'o')
+    if plot_comp:
+        isort = np.argsort(cg.phi1.wrap_at(wangle).value[loop_mask])
+        plt.plot(cg.phi1.wrap_at(wangle).value[loop_mask][isort], f(cg.phi1.wrap_at(wangle).value[loop_mask])[isort], 'k-')
     
-    plt.text(0.95, 0.15, '$\chi^2_{{spur}}$ = {:.2f}'.format(chi_spur), ha='right', transform=plt.gca().transAxes, fontsize='small')
+    if chi_label:
+        plt.text(0.95, 0.15, '$\chi^2_{{spur}}$ = {:.2f}'.format(chi_spur), ha='right', transform=plt.gca().transAxes, fontsize='small')
     plt.xlabel('$\phi_1$ [deg]')
     plt.ylabel('$\phi_2$ [deg]')
     plt.xlim(-60,-20)
@@ -2076,7 +2082,8 @@ def lnprob_verbose(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstrea
     
     plt.sca(ax[0][1])
     plt.plot(c.x.to(u.kpc), c.y.to(u.kpc), 'o')
-    plt.plot(c.x.to(u.kpc)[loop_mask], c.y.to(u.kpc)[loop_mask], 'o') #, color='orange')
+    if colored:
+        plt.plot(c.x.to(u.kpc)[loop_mask], c.y.to(u.kpc)[loop_mask], 'o') #, color='orange')
     
     plt.xlabel('x [kpc]')
     plt.ylabel('y [kpc]')
@@ -2084,7 +2091,8 @@ def lnprob_verbose(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstrea
     plt.sca(ax[1][1])
     cr = np.sqrt(c.x**2 + c.y**2)
     plt.plot(cr.to(u.kpc), c.z.to(u.kpc), 'o')
-    plt.plot(cr.to(u.kpc)[loop_mask], c.z.to(u.kpc)[loop_mask], 'o') #, color='orange')
+    if colored:
+        plt.plot(cr.to(u.kpc)[loop_mask], c.z.to(u.kpc)[loop_mask], 'o') #, color='orange')
     
     plt.xlabel('R [kpc]')
     plt.ylabel('z [kpc]')
@@ -2097,7 +2105,8 @@ def lnprob_verbose(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstrea
     #plt.plot(cg.phi1.wrap_at(wangle).value[~aloop_mask], cg.radial_velocity.to(u.km/u.s)[~aloop_mask], 'o')
     #plt.plot(cg.phi1.wrap_at(wangle).value, vr0, 'o')
     plt.plot(cg.phi1.wrap_at(wangle).value, dvr, 'o')
-    plt.plot(cg.phi1.wrap_at(wangle).value[loop_mask], dvr[loop_mask], 'o')
+    if colored:
+        plt.plot(cg.phi1.wrap_at(wangle).value[loop_mask], dvr[loop_mask], 'o')
     
     plt.xlabel('$\phi_1$ [deg]')
     plt.ylabel('$\Delta$ $V_r$ [km s$^{-1}$]')
