@@ -148,7 +148,7 @@ However, density variations in streams at the SDSS depth can originate in part f
 
 Recently, \citet{pwb} used proper motions from the \gaia\ mission \citep{gdr2} and photometry from PanSTARRS \citep{ps} to confidently separate GD-1 stars from the Milky Way field stars.
 This contamination-free view of GD-1 enabled the first unambiguous detection of gaps in a stellar stream, which remain evident in deeper imaging \citep{deboer2018}.
-Additionally, the combined astrometric and photometric selection revealed GD-1 stars offset from the main stream track: an extended spur at $(\phi_1, \phi_2)\approx(-33^\circ,1^\circ)$ and a diffuse blob at $(\phi_1, \phi_2)\approx(-14^\circ,-1^\circ)$ in GD-1 coordinates.
+Additionally, the combined astrometric and photometric selection reveals GD-1 stars offset from the main stream track: an extended spur at $(\phi_1, \phi_2)\approx(-33^\circ,1^\circ)$ and a diffuse blob at $(\phi_1, \phi_2)\approx(-14^\circ,-1^\circ)$ in GD-1 coordinates.
 Patterns imparted by the complex selection function, confusion by background galaxies, or foreground dust do not coincide with these GD-1 features; instead, they are inherent properties of the stream itself.
 
 To highlight the complex structure of the GD-1 stream, we present the distribution of likely stream members at the top of Figure~\ref{fig:fiducial}.
@@ -181,67 +181,78 @@ The orbital structure of stars closest to the passing perturber is distorted int
 
 \subsection{Perturbed model of GD-1}
 \label{sec:model}
-Unlike the observed gd-1, model in a smooth galaxy is also smooth \citep{pwb}, even after taking into account substructure produced by the epicyclic motions of stream stars relative to the progenitor's orbit \citep{kupper2008,kupper2010, fardal2015}.
-% - streakline model \citep{fardal2015}, so it does account for substructure inherent to the process of disruption \citep{}
-- can get one gap by disrupting the progenitor there
-- to explain the other gap, we present a streakline model of the GD-1 stream that also had a close encounter with a dense, massive perturber
+Unlike the observed GD-1, a globular cluster disrupting on the GD-1 orbit in a simple --- analytic and smooth --- galaxy creates a stream that is also smooth \citep{pwb}.
+This model follows stars as they leave the progenitor, and accounts for their epicylic motion relative to the progenitor's orbit \citep{kupper2008, kupper2010, fardal2015}.
+The resulting pattern of over- and underdensities is much more uniform than the observed stream, so the full extent of density variations in GD-1 cannot be simply explained by the process of globular cluster disruption alone.
+As inhomogeneities can also be introduced into a stellar stream by adding a perturbation to the gravitational potential \citep[e.g.,][]{sgv2008}, in this Section we present a model of the GD-1 stream that had a recent, close encounter with a dense, massive object.
 
-- found the orbit in potential
-- follow progenitor of mass x and evaporate, until it completely disrupts x Myr before the present day
-- these values were chosen to reproduce one gap morphology
-- to produce the other gap, we also follow a perturber, assumed to be a Hernquist sphere of mass x and scale radius y
-- the orbit of the perturber is such that it has the closest approach of x pc moving at what angle? y Myr before the present
-- following the encounter, stars closest receive an energy kick, and start moving towards the location of the perturber's closest approach
-- tie to gap literature
-- this deforms the regular structure of a stream, which then develops a loop
-- at the chosen impact geometry, this loop of stars appears edge on at the present, and looks like a spur (Figure~\ref{fig:fiducial}, bottom).
+As a first step in creating a model of the GD-1 stream, we follow \citet{pwb} in finding the orbit of the GD-1 progenitor by fitting the six-dimensional phase-space distribution of GD-1 stars.
+We assume a spherical logarithmic potential with a circular velocity of 225\,km\,s$^{-1}$ for orbit integration.
+This simple gravitational potential is very close to the best-fit model of GD-1 \citep{koposov2010, bowden2015}, and it also allows much faster force evaluations than the standard, multi-component model of the Milky Way.
+We then assume that the GD-1 progenitor was a globular cluster of initial mass $7\times10^4\rm\,M_\odot$ and half-light radius \,pc.
+In our model, it started losing stars through evaporation 3\,Gyr ago and completely disrupted 300\,Myr before the present day.
+We follow the progenitor's dissolution by releasing test particles from its Lagrange points, and produce a streakline model of the stream \citep{fardal2015}.
+Although idealized, such models capture detailed properties of the more realistic, N-body, simulations of disrupting globular clusters \citep{kupper2012}.
+The present day distribution of test particles is shown in GD-1 coordinates in the bottom of Figure~\ref{fig:fiducial}.
+Had the progenitor survived to the present, it would be located at $\phi_1=-20^\circ$.
+Instead, this model has a gap at that location, which coincides with the gap observed in GD-1.
+The progenitor's initial mass and time of disruption were chosen to reproduce the stream width and the morphology of the more depleted observed gap.
 
-- even though the extent of the stream doesn't match, the agreement between the observed GD-1 and this model is remarkable
-- in the following section we explore the range of impact parameters that still produce a good match to the observed stream
+To produce the second gap, our model also includes a massive and dense object on an orbit that crosses GD-1.
+The object is represented by a \citet{hernquist1990} sphere of mass $5\times10^6\rm\,M_\odot$ and scale radius 10\,pc.
+Its closest approach to GD-1 happened 495\,Myr with a relative distance of 15\,pc, which is smaller than the stream width.
+During the encounter, nearby stars receive a velocity kick from the perturber, and they start moving towards the location of its closest approach.
+In case of a weaker perturbation, e.g., one produced by a more diffuse perturber, the most significant component of the velocity kick is along the stream, which changes the orbital period of affected stars \citep{eb2015}.
+On one side of the perturber, the affected stars have shorter orbital periods and hence speed by the unaffected stars, while on the other side they take longer to orbit the Galaxy, and lag behind the unaffected stream stars.
+This creates a gap at the projected location of the closest approach, with a pile-up of stars on either side of the gap creating a signature double-horned profile \citep{carlberg2012}.
+However, the perturber in our model is dense, so it imparts a significant velocity kick perpendicular to the stream as well as along the stream.
+This leads to a loop of stars straying beyond the unperturbed stream track.
+At the present, this loop is viewed edge-on and looks like the observed spur (Figure~\ref{fig:fiducial}, bottom).
 
-% - to uncover the origin of the gap+spur structure, we analyze a range of idealized encounters between a massive perturber and stars moving on an orbit that fits the GD-1 stream
-% - the single orbit structure of the stream develops a loop after the
-% - however, the stars affected by the encounter actually form a loop that extends towards the location of the closest approach (fig)
-% - connect spur morphology to phases of gap growth from denis
-% % - sky projections: loop can appear as a spur viewed edge-on
+The stream model in the bottom of Figure~\ref{fig:fiducial} qualitatively matches many features in the observed GD-1 stream (Figure~\ref{fig:fiducial}, top).
+Not only are both of the most prominent gaps reproduced at the right location and with the right size, but their density contrast is matched as well.
+The gap at $\phi_1\approx-20^\circ$, modeled as a disrupted progenitor, is almost completely depleted, while the gap at $\phi_1\approx-40^\circ$, the location of the impact, still retains some stars.
+Furthermore, the model features a spur of the correct offset from the main stream and correct length.
+It is not a perfect model, for example, the model stream extends past the observed extent of GD-1.
+Still, this model is a remarkably realistic rendition of the observed GD-1, so we next quantitatively explore the range of impact parameters that produce a good match to the observed stream.
 
 \subsection{Properties of the GD-1 perturber}
-- for some viewing angles, a loop of stream stars formed following an encounter with a massive perturber can appear as a spur and a gap combo
-- exact details depend on the following parameters: time of encounter, impact parameter, velocity, mass and size of the perturber
-- to find parameters allowed by the data, we would ideally like to forward model, but generative model is hard and we don't have it
-- instead, we devised a set of expert criteria that allow us to compare whether a conceptual model represents the observed structure of GD-1
-- pseudo-likelihood -- ABC
+% - for some viewing angles, a loop of stream stars formed following an encounter with a massive perturber can appear as a spur and a gap combo
+% - exact details depend on the following parameters: time of encounter, impact parameter, velocity, mass and size of the perturber
+% - to find parameters allowed by the data, we would ideally like to forward model, but generative model is hard and we don't have it
+% - instead, we devised a set of expert criteria that allow us to compare whether a conceptual model represents the observed structure of GD-1
+% - pseudo-likelihood -- ABC
 
 \begin{figure}
 \begin{center}
-\includegraphics[width=0.8\textwidth]{corner.pdf}
+\includegraphics[width=0.65\textwidth]{corner.pdf}
 \end{center}
 \caption{}
 \label{fig:corner}
 \end{figure}
 
-- parameter search w emcee
-- comment on pdfs
-- analytical argument for a young spur?
+% - parameter search w emcee
+% - comment on pdfs
+% - analytical argument for a young spur?
 
-% \begin{figure}
-% \begin{center}
+\begin{figure}
+\begin{center}
 % \includegraphics[width=\textwidth]{excursions.pdf}
-% \end{center}
-% \caption{}
-% \label{fig:scalings}
-% \end{figure}
+\end{center}
+\caption{}
+\label{fig:scalings}
+\end{figure}
 
 
 \section{Origin of the GD-1 perturber}
 \label{sec:origin}
-- classes of objects: known satellite, unknown, disk
-- integrate backwards to show that it can't be any known object.
-- look at molecular cloud properties and show that they are all out.
-- give some typical dm substructure numbers for the whole galaxy and for this radius range in the nearby halo.
-- also something about the mass-size relationship for these dm structures.
-- conclusion: dm substructure is the most plausible of the options.
-- interesting point: The predictions about \lcdm\ substructure in the inner halo are controversial right now because of simulation differences. If this matters, this point should enter the abstract and modify the naturalness of the conclusion.
+% - classes of objects: known satellite, unknown, disk
+% - integrate backwards to show that it can't be any known object.
+% - look at molecular cloud properties and show that they are all out.
+% - give some typical dm substructure numbers for the whole galaxy and for this radius range in the nearby halo.
+% - also something about the mass-size relationship for these dm structures.
+% - conclusion: dm substructure is the most plausible of the options.
+% - interesting point: The predictions about \lcdm\ substructure in the inner halo are controversial right now because of simulation differences. If this matters, this point should enter the abstract and modify the naturalness of the conclusion.
 
 \begin{figure}
 \begin{center}
@@ -250,6 +261,9 @@ Unlike the observed gd-1, model in a smooth galaxy is also smooth \citep{pwb}, e
 \caption{Data from \citet{simon2018} and \citet{gdr2_satellites}.}
 \label{fig:known_encounters}
 \end{figure}
+
+
+\section{Predictions for the kinematic signatures of the encounter in GD-1}
 
 
 \section{Discussion}

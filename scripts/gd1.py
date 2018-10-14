@@ -2659,6 +2659,7 @@ def streakline_input():
     
     dt_orbit = 0.5*u.Myr
     nstep_impact = np.int64(t_impact / dt_orbit)
+    #prog_orbit = ham.integrate_orbit(prog_w0, dt=-dt_orbit, t1=0*u.Myr, t2=-3*u.Gyr)
     prog_orbit = ham.integrate_orbit(prog_w0, dt=-dt_orbit, t1=0*u.Myr, t2=-3*u.Gyr)
     impact_orbit = prog_orbit[nstep_impact:]
     impact_orbit = impact_orbit[::-1]
