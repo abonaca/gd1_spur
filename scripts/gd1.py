@@ -1862,6 +1862,8 @@ def check_chain(full=False, label='', p=1):
     np.random.seed(59)
     ind = np.random.randint(Nsample, size=Nc)
     hull_ids = np.empty(0, dtype=int)
+    panel_id = np.empty((0,2), dtype=int)
+    vertices = np.empty((0,2))
 
     plt.close()
     fig, ax = plt.subplots(Nvar-1, Nvar-1, figsize=(dax*Nvar, dax*Nvar), sharex='col', sharey='row' ,squeeze=False)
@@ -1879,7 +1881,12 @@ def check_chain(full=False, label='', p=1):
             hull = scipy.spatial.ConvexHull(points)
             
             xy_vert = 10**np.array([points[hull.vertices,0], points[hull.vertices,1]]).T
+            vertices = np.concatenate([vertices, xy_vert])
             hull_ids = np.concatenate([hull_ids, hull.vertices])
+            
+            #print(len(hull.vertices))
+            current_id = np.tile(np.array([i,j]), len(hull.vertices)).reshape(-1,2)
+            panel_id = np.concatenate([panel_id, current_id])
             
             p = mpl.patches.Polygon(xy_vert, closed=True, lw=2, ec='0.8', fc='0.9', zorder=0)
             plt.gca().add_artist(p)
@@ -1887,9 +1894,9 @@ def check_chain(full=False, label='', p=1):
             #for simplex in hull.simplices:
                 #plt.plot(points[simplex, 0], points[simplex, 1], 'k-')
     
-    hull_ids = np.unique(hull_ids)
-    print(np.size(hull_ids))
-    np.save('../data/hull_points{}'.format(label), hull_ids)
+    #hull_ids = np.unique(hull_ids)
+    #print(np.size(hull_ids))
+    np.savez('../data/hull_points{}'.format(label), all=hull_ids, unique=np.unique(hull_ids), panel=panel_id, vertices=vertices)
     
     t_impact = 0.495*u.Gyr
     M = 5e6*u.Msun
@@ -3157,6 +3164,7 @@ def fancy_corner(label='', full=False, nstart=2000):
     vnorm = 250*u.km/u.s
     
     pfid = [t_impact.to(u.Gyr).value, bnorm.to(u.pc).value, vnorm.to(u.km/u.s).value, np.log10(rs.to(u.pc).value), np.log10(M.to(u.Msun).value)]
+    
     
     plt.close()
     fig = corner.corner(chain, bins=50, labels=params, plot_datapoints=False, range=lims, smooth=2, smooth1d=2, color='0.1')
