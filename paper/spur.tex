@@ -201,7 +201,8 @@ The progenitor's initial mass and time of disruption were chosen to reproduce th
 To produce the second gap, our model also includes a massive and dense object on an orbit that crosses GD-1.
 The object is represented by a \citet{hernquist1990} sphere of mass $5\times10^6\rm\,M_\odot$ and scale radius 10\,pc.
 Its closest approach to GD-1 happened 495\,Myr with a relative distance of 15\,pc, which is smaller than the stream width.
-During the encounter, nearby stars receive a velocity kick from the perturber, and they start moving towards the location of its closest approach.
+The perturber came closest to GD-1 stars that are presently at $\phi_1\approx-38^\circ$.
+During the encounter, nearby stars received a velocity kick from the perturber, and started moving towards the location of its closest approach.
 In case of a weaker perturbation, e.g., one produced by a more diffuse perturber, the most significant component of the velocity kick is along the stream, which changes the orbital period of affected stars \citep{eb2015}.
 On one side of the perturber, the affected stars have shorter orbital periods and hence speed by the unaffected stars, while on the other side they take longer to orbit the Galaxy, and lag behind the unaffected stream stars.
 This creates a gap at the projected location of the closest approach, with a pile-up of stars on either side of the gap creating a signature double-horned profile \citep{carlberg2012}.
@@ -217,11 +218,9 @@ It is not a perfect model, for example, the model stream extends past the observ
 Still, this model is a remarkably realistic rendition of the observed GD-1, so we next quantitatively explore the range of impact parameters that produce a good match to the observed stream.
 
 \subsection{Properties of the GD-1 perturber}
-% - for some viewing angles, a loop of stream stars formed following an encounter with a massive perturber can appear as a spur and a gap combo
-% - exact details depend on the following parameters: time of encounter, impact parameter, velocity, mass and size of the perturber
-% - to find parameters allowed by the data, we would ideally like to forward model, but generative model is hard and we don't have it
-% - instead, we devised a set of expert criteria that allow us to compare whether a conceptual model represents the observed structure of GD-1
-% - pseudo-likelihood -- ABC
+\label{sec:perturber_properties}
+In our fiducial model of the GD-1 stellar stream (Section~\ref{sec:model}), the encounter with a perturber introduced a gap in the stream and ejected a spur of GD-1 stars beyond the main stream.
+In this section, we constrain the range in perturber's mass and size, its impact parameter, velocity, and time of perturbation that reproduce well the location and width of the gap, and the location and extent of the spur.
 
 \begin{figure}
 \begin{center}
@@ -231,9 +230,22 @@ Still, this model is a remarkably realistic rendition of the observed GD-1, so w
 \label{fig:corner}
 \end{figure}
 
-% - parameter search w emcee
-% - comment on pdfs
-% - analytical argument for a young spur?
+Ideally, to find parameters allowed by the data, we would like to create a model of the stream and compare it to the data directly.
+However, generating a realistic stream model is expensive, so instead, we devised a set of expert criteria that allow us to compare whether a conceptual stream model represents the observed structure of GD-1.
+- describe data: gap == top hat; spur == spline through control points
+- pseudo-likelihood: $\chi^2_{gap}$ + $\chi^2_{spur}$
+- ABC
+
+- assumption: stream==orbit
+- fiducial in this case becomes -> second row
+- same values, but different orientation
+- since stream-orbit misalignment is not negligible for GD-1 \citep{sb2013}, the orientation angles not the same
+- a few more examples
+
+- sample the space
+- highly idealized, so we only provide plausible ranges
+
+- takeaways from the corner plot: close encounter, recent encounter, solutions for a range of velocities, mass--velocity degeneracy, compact perturber
 
 \begin{figure}
 \begin{center}
@@ -242,6 +254,14 @@ Still, this model is a remarkably realistic rendition of the observed GD-1, so w
 \caption{}
 \label{fig:scalings}
 \end{figure}
+
+- to understand where the constraints are coming from, we show the a grid of stream models that vary a single parameter at the time
+- fiducial in the middle row
+- from left to right: time, mass, impact parameter, velocity, size
+
+- analytical argument for a young spur?
+- slow v: no longer in the impulse approximation -- the exact degeneracy no longer holds there?
+- this is not a comprehensive search of the parameter space, so lower mass solutions may still exist
 
 
 \section{Origin of the GD-1 perturber}
