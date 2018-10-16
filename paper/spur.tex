@@ -224,36 +224,17 @@ In this section, we constrain the range in perturber's mass and size, its impact
 
 \begin{figure}
 \begin{center}
-\includegraphics[width=0.65\textwidth]{corner.pdf}
+% \includegraphics[width=\textwidth]{excursions.pdf}
 \end{center}
 \caption{}
-\label{fig:corner}
+\label{fig:scalings}
 \end{figure}
-
-Ideally, to find parameters allowed by the data, we would like to create a model of the stream and compare it to the data directly.
-However, generating a realistic stream model is expensive, so instead, we devised a set of expert criteria that allow us to compare whether a conceptual stream model represents the observed structure of GD-1.
-- describe data: gap == top hat; spur == spline through control points
-- pseudo-likelihood: $\chi^2_{gap}$ + $\chi^2_{spur}$
-- ABC
 
 - assumption: stream==orbit
 - fiducial in this case becomes -> second row
 - same values, but different orientation
 - since stream-orbit misalignment is not negligible for GD-1 \citep{sb2013}, the orientation angles not the same
 - a few more examples
-
-- sample the space
-- highly idealized, so we only provide plausible ranges
-
-- takeaways from the corner plot: close encounter, recent encounter, solutions for a range of velocities, mass--velocity degeneracy, compact perturber
-
-\begin{figure}
-\begin{center}
-% \includegraphics[width=\textwidth]{excursions.pdf}
-\end{center}
-\caption{}
-\label{fig:scalings}
-\end{figure}
 
 - to understand where the constraints are coming from, we show the a grid of stream models that vary a single parameter at the time
 - fiducial in the middle row
@@ -264,8 +245,36 @@ However, generating a realistic stream model is expensive, so instead, we devise
 - this is not a comprehensive search of the parameter space, so lower mass solutions may still exist
 
 
-\section{Origin of the GD-1 perturber}
-\label{sec:origin}
+\begin{figure}
+\begin{center}
+\includegraphics[width=\textwidth]{param_search.pdf}
+\end{center}
+\caption{}
+\label{fig:corner}
+\end{figure}
+
+Ideally, to find parameters allowed by the data, we would like to create a model of the stream and compare it to the data directly.
+However, generating a realistic stream model is expensive, so instead, we devised a set of expert criteria that allow us to compare whether a conceptual stream model represents the observed structure of GD-1.
+% - ABC
+In the top row of Figure~\ref{fig:corner} we show the data used to evaluate models:
+- describe data: gap == top hat; spur == spline through control points
+- pseudo-likelihood: $\chi^2_{gap}$ + $\chi^2_{spur}$
+
+- sample the space
+- highly idealized, so we only provide plausible ranges
+- marginalized over orientation angles, impact location
+
+- takeaways from the corner plot: close encounter, recent encounter, solutions for a range of velocities, mass--velocity degeneracy, compact perturber
+
+
+\section{Predictions for the kinematic signatures of the encounter in GD-1}
+
+
+\section{Discussion}
+\label{sec:discussion}
+-recap
+
+\subsection{Perturbative origin of GD-1 structures}
 % - classes of objects: known satellite, unknown, disk
 % - integrate backwards to show that it can't be any known object.
 % - look at molecular cloud properties and show that they are all out.
@@ -282,11 +291,28 @@ However, generating a realistic stream model is expensive, so instead, we devise
 \label{fig:known_encounters}
 \end{figure}
 
+- known halo satellites
+- giant molecular clouds
+- black holes
+- dark matter subhalos
 
-\section{Predictions for the kinematic signatures of the encounter in GD-1}
+
+\subsection{Non-perturbative origin of GD-1 structures}
+- structure in the progenitor
+- stream feather
+- chaos
 
 
-\section{Discussion}
+\subsection{Limitations of this work}
+- not true N-body
+- single profile assumed
+
+
+\subsection{Prospects}
+- network of streams
+
+
+
 
 % The stream perturbation models presented above show that the GD-1 stream spur and neighboring gap could plausibly be formed through a gravitational interaction between the stream and a dark, compact, massive perturber.
 % By assuming this scenario for the spur and gap formation, we have compared perturbed stream models to the observed gap location and width and spur location and length, and have determined regions of encounter parameter-space that reproduce the observed morphology of the GD-1 stream.
