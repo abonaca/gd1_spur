@@ -49,17 +49,38 @@ def param_search():
     spy = sp['y']
     
     # lists with data points
+    wangle = 180*u.deg
+    gap_data = [[bc, h_data]]
+    gap_model = [[bc, ytop_data]]
+    spur_data = [[g['phi1'], g['phi2']]]
+    loops = []
+    pfid = []
     
-    spur_data = [g['phi1'], g['phi2']]
+    ids = [-1, 15, 16]
+    for i in ids:
+        pkl = pickle.load(open('../data/predictions/model_{:03d}.pkl'.format(i), 'rb'))
+        cg = pkl['stream']
+
+        gap_data += [[pkl['bincen'], pkl['nbin']]]
+        gap_model += [[pkl['bincen'], pkl['nexp']]]
+        spur_data += [[cg.phi1.wrap_at(wangle), cg.phi2]]
+        loops += [pkl['all_loop']]
+        
+        # parameters
+        x = pkl['x']
+        bnorm = np.sqrt(x[1]**2 + x[2]**2)
+        vnorm = np.sqrt(x[3]**2 + x[4]**2)
+        pfid += [[x[0], bnorm, vnorm, x[6], np.log10(x[5])]]
     
     colors = ['k', 'orange', 'deepskyblue', 'limegreen']
     accent_colors = ['k', 'orangered', 'navy', 'forestgreen']
-    sizes = [1, 2, 2, 2]
+    sizes = [1, 4, 4, 4]
+    labels = ['Data', 'Model A (fiducial)', 'Model B', 'Model C']
     
     plt.close()
-    fig = plt.figure(figsize=(14,7))
+    fig = plt.figure(figsize=(13,6.5))
     
-    gs0 = mpl.gridspec.GridSpec(1, 2, left=0.07, right=0.97, bottom=0.15, top=0.95, wspace=0.2)
+    gs0 = mpl.gridspec.GridSpec(1, 2, left=0.07, right=0.97, bottom=0.15, top=0.95, wspace=0.25)
 
     gs_left = mpl.gridspec.GridSpecFromSubplotSpec(4, 2, subplot_spec=gs0[0], width_ratios=[1,2], wspace=0.4, hspace=0.1)
     gs_right = mpl.gridspec.GridSpecFromSubplotSpec(4, 4, subplot_spec=gs0[1], hspace=0.1, wspace=0.1)
@@ -69,9 +90,9 @@ def param_search():
         ax = plt.Subplot(fig, gs_left[e,0])
         ax1 = fig.add_subplot(ax)
         
-        plt.plot(bc, h_data, 'o', ms=6, color=colors[e])
+        plt.plot(gap_data[e][0], gap_data[e][1], 'o', ms=6, color=colors[e])
         #plt.errorbar(bc, h_data, yerr=yerr_data, fmt='none', color='k', label='')
-        plt.plot(bc, ytop_data, '-', color='k', alpha=0.5, lw=3)
+        plt.plot(gap_model[e][0], gap_model[e][1], '-', color='k', alpha=0.5, lw=3)
         
         plt.xlim(-55, -25)
         #plt.ylim(-0.5, 1.5)
@@ -84,17 +105,18 @@ def param_search():
         ax = plt.Subplot(fig, gs_left[e,1])
         ax2 = fig.add_subplot(ax)
         
-        plt.plot(spur_data[0], spur_data[1], 'o', ms=sizes[e], color=colors[e])
+        plt.plot(spur_data[e][0], spur_data[e][1], 'o', ms=sizes[e], color=colors[e])
         if e>0:
-            ind = (spur_data[0]>-50) & (spur_data[0]<-30)
-            plt.plot(spur_data[0][ind], spur_data[1][ind], 'o', ms=2*sizes[e], color=colors[e], mec=accent_colors[e], mew=1)
+            ind = loops[e-1]
+            #print(ind)
+            plt.plot(spur_data[e][0][ind], spur_data[e][1][ind], 'o', ms=1.2*sizes[e], color=accent_colors[e], mec=accent_colors[e], mew=1)
         
         plt.plot(spx, spy, '-', color='k', alpha=0.5, lw=3)
         
         plt.xlim(-55,-25)
         plt.ylim(-6,6)
-        #if e==0:
-            #plt.gca().set_aspect('equal')
+        txt = plt.text(0.07,0.75, labels[e], transform=plt.gca().transAxes, fontsize='small')
+        txt.set_bbox(dict(facecolor='w', alpha=0.8, ec='none'))
         
         if e<3:
             plt.setp(plt.gca().get_xticklabels(), visible=False)
@@ -110,12 +132,14 @@ def param_search():
     vertices = hull['vertices']
     pids = hull['panel']
     
-    
-    
     Nvar = 5
     params = ['T [Gyr]', 'b [pc]', 'V [km s$^{-1}$]', '$r_s$ [pc]', 'log M/M$_\odot$']
     lims = [[0.,2], [1,70], [10,500], [1,40], [5,8.6]]
     ax = [[[]*4]*4]*4
+    
+    symbols = ['*', 'o', 's']
+    sizes = [15, 8, 8]
+    labels = ['Model A (fiducial)', 'Model B', 'Model C']
     
     for i in range(0,Nvar-1):
         for j in range(i+1,Nvar):
@@ -124,9 +148,13 @@ def param_search():
             
             vert_id = (pids[:,0]==i) & (pids[:,1]==j)
             xy_vert = vertices[vert_id]
-            p = mpl.patches.Polygon(xy_vert, closed=True, lw=2, ec='0.8', fc='0.9', zorder=0)
-            plt.gca().add_artist(p)
+            p = mpl.patches.Polygon(xy_vert, closed=True, lw=2, ec='0.8', fc='0.9', zorder=0, label='Consistent with data')
+            #plt.gca().add_artist(p)
+            patch = plt.gca().add_patch(p)
             
+            for e in range(3):
+                plt.plot(pfid[e][i], pfid[e][j], symbols[e], ms=sizes[e], mec=accent_colors[e+1], mew=1.5, color=colors[e+1], label=labels[e])
+
             plt.xlim(lims[i])
             plt.ylim(lims[j])
             
@@ -140,6 +168,14 @@ def param_search():
             else:
                 plt.ylabel(params[j])
     
+    plt.sca(ax[3][2])
+    # sort legend entries
+    handles, labels = plt.gca().get_legend_handles_labels()
+    labels, handles = zip(*sorted(zip(labels, handles), key=lambda t: t[0]))
+    plt.legend(handles, labels, frameon=False, loc=2, fontsize='medium', bbox_to_anchor=(-0.2,4.3))
+    #plt.legend(frameon=False, loc=2, fontsize='medium', bbox_to_anchor=(-0.2,4.3))
+    
+    plt.savefig('../paper/param_search.pdf')
 
 # calculations
 

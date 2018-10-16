@@ -2124,6 +2124,73 @@ def lnprob_verbose(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstrea
     
     return fig, ax, chi_gap, chi_spur, np.sum(loop_quadrant), -(chi_gap + chi_spur)
 
+def lnprob_detailed(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb, poly, wangle, delta_phi2, Nb, bins, bc, base_mask, hat_mask, f_gap, gap_position, gap_width, N2, percentile1, percentile2, phi1_min, phi1_max, phi2_err, spx, spy, quad_phi1, quad_phi2, Nquad, chigap_max, chispur_max, colored=True, plot_comp=True, chi_label=True):
+    """Check if a model is better than the fiducial"""
+    
+    if (x[0]<0) | (np.sqrt(x[3]**2 + x[4]**2)>1000):
+        return -np.inf
+    
+    x[5] = 10**x[5]
+    params = [x_*u_ for x_, u_ in zip(x, params_units)]
+
+    if potential_perturb==1:
+        t_impact, bx, by, vx, vy, M, Tgap = params
+        par_perturb = np.array([M.si.value, 0., 0., 0.])
+        par_noperturb = np.array([0., 0., 0., 0.])
+    else:
+        t_impact, bx, by, vx, vy, M, rs, Tgap = params
+        par_perturb = np.array([M.si.value, rs.si.value, 0., 0., 0.])
+        par_noperturb = np.array([0., rs.si.value, 0., 0., 0.])
+    
+    # calculate model
+    x1, x2, x3, v1, v2, v3, dE = interact.abinit_interaction(xend, vend, dt_coarse.si.value, dt_fine.si.value, t_impact.si.value, Tenc.si.value, Tstream.si.value, Tgap.si.value, Nstream, par_pot, potential, par_perturb, potential_perturb, bx.si.value, by.si.value, vx.si.value, vy.si.value)
+    c = coord.Galactocentric(x=x1*u.m, y=x2*u.m, z=x3*u.m, v_x=v1*u.m/u.s, v_y=v2*u.m/u.s, v_z=v3*u.m/u.s, **gc_frame_dict)
+    cg = c.transform_to(gc.GD1)
+    
+    # gap chi^2
+    phi2_mask = np.abs(cg.phi2.value - poly(cg.phi1.wrap_at(wangle).value))<delta_phi2
+    h_model, be = np.histogram(cg.phi1[phi2_mask].wrap_at(wangle).value, bins=bins)
+    yerr = np.sqrt(h_model+1)
+    
+    model_base = np.median(h_model[base_mask])
+    model_hat = np.median(h_model[hat_mask])
+    model_hat = np.minimum(model_hat, model_base*f_gap)
+    ytop_model = tophat(bc, model_base, model_hat,  gap_position, gap_width)
+    
+    chi_gap = np.sum((h_model - ytop_model)**2/(2*yerr)**2)/Nb
+    
+    # spur chi^2
+    top1 = np.percentile(dE[:N2], percentile1)
+    top2 = np.percentile(dE[N2:], percentile2)
+    ind_loop1 = np.where(dE[:N2]<top1)[0][0]
+    ind_loop2 = np.where(dE[N2:]>top2)[0][-1]
+    
+    f = scipy.interpolate.interp1d(spx, spy, kind='quadratic')
+    
+    aloop_mask = np.zeros(Nstream, dtype=bool)
+    aloop_mask[ind_loop1:ind_loop2+N2] = True
+    phi1_mask = (cg.phi1.wrap_at(wangle)>phi1_min) & (cg.phi1.wrap_at(wangle)<phi1_max)
+    loop_mask = aloop_mask & phi1_mask
+    Nloop = np.sum(loop_mask)
+
+    chi_spur = np.sum((cg.phi2[loop_mask].value - f(cg.phi1.wrap_at(wangle).value[loop_mask]))**2/phi2_err**2)/Nloop
+
+    loop_quadrant = (cg.phi1.wrap_at(wangle)[loop_mask]>quad_phi1) & (cg.phi2[loop_mask]>quad_phi2)
+    
+    isort = np.argsort(cg.phi1.wrap_at(wangle).value[~aloop_mask])
+    vr0 = np.interp(cg.phi1.wrap_at(wangle).value, cg.phi1.wrap_at(wangle).value[~aloop_mask][isort], cg.radial_velocity.to(u.km/u.s)[~aloop_mask][isort])*u.km/u.s
+    dvr = vr0 - cg.radial_velocity.to(u.km/u.s)
+    
+    mu10 = np.interp(cg.phi1.wrap_at(wangle).value, cg.phi1.wrap_at(wangle).value[~aloop_mask][isort], cg.pm_phi1_cosphi2.to(u.mas/u.yr)[~aloop_mask][isort])*u.mas/u.yr
+    dmu1 = mu10 - cg.pm_phi1_cosphi2.to(u.mas/u.yr)
+    
+    mu20 = np.interp(cg.phi1.wrap_at(wangle).value, cg.phi1.wrap_at(wangle).value[~aloop_mask][isort], cg.pm_phi2.to(u.mas/u.yr)[~aloop_mask][isort])*u.mas/u.yr
+    dmu2 = mu20 - cg.pm_phi2.to(u.mas/u.yr)
+    
+    res = {'stream': cg, 'dvr': dvr, 'dmu1': dmu1, 'dmu2': dmu2, 'all_loop': aloop_mask, 'phi1_loop': loop_mask, 'chi_gap': chi_gap, 'chi_spur': chi_spur, 'bincen': bc, 'nbin': h_model, 'nexp': ytop_model}
+    
+    return res
+
 def rs_hernquist(M):
     """Return Hernquist scale radius for a halo of mass M"""
     
@@ -2624,6 +2691,104 @@ def manual_fiducial():
     print(rs_diemer(M))
     cg, e = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, rs=rs, t_impact=t_impact, N=3000, fname='gd1_manfid', point_mass=False, fig_annotate=True, verbose=True, model_return=True)
 
+
+def orbit_fiducial(phi=0, theta=180):
+    """Find orbit alternative to the streakline fiducial"""
+    
+    bnorm = 15*u.pc
+    bx = bnorm * np.cos(np.radians(phi))
+    vnorm = 250*u.km/u.s
+    vx = vnorm * np.cos(np.radians(theta))
+    M = 5e6*u.Msun
+    t_impact = 0.495*u.Gyr
+    rs = 0.1*rs_diemer(M)
+    
+    cg, e = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, rs=rs, t_impact=t_impact, N=1000, fname='gd1_manfid', point_mass=False, fig_annotate=True, verbose=True, model_return=True)
+
+def model_examples(model=0, i=0, label='_v500w200', verbose=False):
+    """Pick several models that showcase the allowed diversity of impactor parameters"""
+    
+    if model==0:
+        phi = -20
+        theta = 170
+        bnorm = 15*u.pc
+        bx = bnorm * np.cos(np.radians(phi))
+        by = bnorm * np.sin(np.radians(phi))
+        vnorm = 250*u.km/u.s
+        vx = vnorm * np.cos(np.radians(theta))
+        vy = vnorm * np.sin(np.radians(theta))
+        M = 5e6*u.Msun
+        t_impact = 0.495*u.Gyr
+        rs = 0.1*rs_diemer(M)
+        Tgap = 29.176*u.Myr
+        i = -1
+        
+        params_list = [t_impact, bx, by, vx, vy, M, rs, Tgap]
+        params_units = [p_.unit for p_ in params_list]
+        x = [p_.value for p_ in params_list]
+        x[5] = np.log10(x[5])
+    else:
+        np.random.seed(4619)
+        chain = np.load('../data/unique_samples{}.npz'.format(label))['chain']
+        Nsample = np.shape(chain)[0]
+        ind = np.random.randint(Nsample, size=i+1)
+        x = chain[ind][-1]
+    
+    bnorm = np.sqrt(x[1]**2 + x[2]**2)
+    vnorm = np.sqrt(x[3]**2 + x[4]**2)
+    if verbose:
+        print(i, x)
+    
+    lnprob_args = get_lnprobargs()
+    spx = lnprob_args[-7]
+    spy = lnprob_args[-6]
+    
+    wangle = 180*u.deg
+    
+    res = lnprob_detailed(x, *lnprob_args)
+    res['x'] = x
+    pickle.dump(res, open('../data/predictions/model_{:03d}.pkl'.format(i), 'wb'))
+    cg = res['stream']
+    
+    plt.close()
+    fig, ax = plt.subplots(5,1,figsize=(8,10), sharex=True)
+    
+    plt.sca(ax[0])
+    plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, 'ko')
+    plt.plot(spx, spy, 'r-', alpha=0.5, lw=3)
+    
+    plt.xlim(-60, -20)
+    plt.ylim(-4,4)
+    plt.ylabel('$\phi_2$ [deg]')
+    plt.text(0.95, 0.15, '$\chi_{{spur}}$ = {:.2f}'.format(res['chi_spur']), transform=plt.gca().transAxes, ha='right', fontsize='small')
+    plt.title('log M/M$_\odot$ = {:.2f} | $r_s$ = {:.1f}pc | b = {:.1f}pc | V = {:.0f}km s$^{{-1}}$ | T = {:.2}Gyr'.format(np.log10(x[5]), x[6], bnorm, vnorm, x[0]), fontsize='small')
+    
+    plt.sca(ax[1])
+    plt.plot(res['bincen'], res['nbin'], 'ko')
+    plt.plot(res['bincen'], res['nexp'], 'r-', alpha=0.5, lw=3)
+    plt.ylabel('Number')
+    plt.text(0.95, 0.15, '$\chi_{{gap}}$ = {:.2f}'.format(res['chi_gap']), transform=plt.gca().transAxes, ha='right', fontsize='small')
+    
+    plt.sca(ax[2])
+    plt.plot(cg.phi1.wrap_at(wangle), res['dvr'], 'ko')
+    plt.ylim(-5, 5)
+    plt.ylabel('$\Delta$ $V_r$\n[km s$^{-1}$]')
+    
+    plt.sca(ax[3])
+    plt.plot(cg.phi1.wrap_at(wangle), res['dmu1'], 'ko')
+    plt.ylim(-0.5, 0.5)
+    plt.ylabel('$\Delta$ $\mu_{\phi_1}$\n[mas yr$^{-1}$]')
+    
+    plt.sca(ax[4])
+    plt.plot(cg.phi1.wrap_at(wangle), res['dmu2'], 'ko')
+    plt.ylim(-0.5, 0.5)
+    
+    plt.xlabel('$\phi_1$ [deg]')
+    plt.ylabel('$\Delta$ $\mu_{\phi_2}$\n[mas yr$^{-1}$]')
+    
+    plt.tight_layout(h_pad=0.06)
+    plt.savefig('../plots/predictions/model_{:03d}.png'.format(i))
+    
 
 ###################
 # Streakline stream
