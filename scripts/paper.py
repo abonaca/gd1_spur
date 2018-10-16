@@ -82,12 +82,12 @@ def param_search():
     
     gs0 = mpl.gridspec.GridSpec(1, 2, left=0.07, right=0.97, bottom=0.15, top=0.95, wspace=0.25)
 
-    gs_left = mpl.gridspec.GridSpecFromSubplotSpec(4, 2, subplot_spec=gs0[0], width_ratios=[1,2], wspace=0.4, hspace=0.1)
+    gs_left = mpl.gridspec.GridSpecFromSubplotSpec(4, 2, subplot_spec=gs0[0], width_ratios=[2,1], wspace=0.4, hspace=0.1)
     gs_right = mpl.gridspec.GridSpecFromSubplotSpec(4, 4, subplot_spec=gs0[1], hspace=0.1, wspace=0.1)
     
     # show gap and spur profiles
     for e in range(4):
-        ax = plt.Subplot(fig, gs_left[e,0])
+        ax = plt.Subplot(fig, gs_left[e,1])
         ax1 = fig.add_subplot(ax)
         
         plt.plot(gap_data[e][0], gap_data[e][1], 'o', ms=6, color=colors[e])
@@ -102,7 +102,7 @@ def param_search():
             plt.xlabel('$\phi_1$ [deg]')
         plt.ylabel('Number')
         
-        ax = plt.Subplot(fig, gs_left[e,1])
+        ax = plt.Subplot(fig, gs_left[e,0])
         ax2 = fig.add_subplot(ax)
         
         plt.plot(spur_data[e][0], spur_data[e][1], 'o', ms=sizes[e], color=colors[e])
@@ -138,7 +138,7 @@ def param_search():
     ax = [[[]*4]*4]*4
     
     symbols = ['*', 'o', 's']
-    sizes = [15, 8, 8]
+    sizes = [15, 8, 7]
     labels = ['Model A (fiducial)', 'Model B', 'Model C']
     
     for i in range(0,Nvar-1):
