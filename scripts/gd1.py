@@ -3211,6 +3211,8 @@ def fiducial_excursions():
     wangle = 180*u.deg
     color = '0.3'
     ms = 8
+    lw = 5
+    alpha = 0.7
     
     plt.close()
     fig, ax = plt.subplots(5,5,figsize=(12,12), sharex=True, sharey=True)
@@ -3237,7 +3239,7 @@ def fiducial_excursions():
         color = mpl.cm.Purples(1 - np.abs(e-2)/4)
         
         plt.sca(ax[e][0])
-        plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '.', color=color, ms=ms)
+        plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '-', color=color, ms=ms, lw=lw, alpha=alpha)
         
         plt.text(0.1,0.8, 'T = {:.0f} Myr'.format(t.value), transform=plt.gca().transAxes, fontsize='small', va='center', ha='left')
     
@@ -3250,7 +3252,7 @@ def fiducial_excursions():
         color = mpl.cm.Blues(1 - np.abs(e-2)/4)
 
         plt.sca(ax[e][1])
-        plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '.', color=color, ms=ms)
+        plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '-', color=color, ms=ms, lw=lw, alpha=alpha)
         
         if m<1e7*u.Msun:
             plt.text(0.1,0.8, 'M = {:.0f}$\cdot10^6$ M$_\odot$'.format(m.value*1e-6), transform=plt.gca().transAxes, fontsize='small', va='center', ha='left')
@@ -3266,7 +3268,7 @@ def fiducial_excursions():
         color = mpl.cm.Greens(1 - np.abs(e-2)/4)
 
         plt.sca(ax[e][2])
-        plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '.', color=color, ms=ms)
+        plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '-', color=color, ms=ms, lw=lw, alpha=alpha)
         
         plt.text(0.1,0.8, 'b = {:.0f} pc'.format(b.value), transform=plt.gca().transAxes, fontsize='small', va='center', ha='left')
     
@@ -3279,7 +3281,7 @@ def fiducial_excursions():
         color = mpl.cm.Oranges(1 - np.abs(e-2)/4)
         
         plt.sca(ax[e][3])
-        plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '.', color=color, ms=ms)
+        plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '-', color=color, ms=ms, lw=lw, alpha=alpha)
         
         plt.text(0.1,0.8, 'V = {:.0f} km s$^{{-1}}$'.format(v.value), transform=plt.gca().transAxes, fontsize='small', va='center', ha='left')
     
@@ -3292,7 +3294,7 @@ def fiducial_excursions():
         color = mpl.cm.Reds(0.7 - np.abs(e-2)/5)
 
         plt.sca(ax[e][4])
-        plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '.', color=color, ms=ms)
+        plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '-', color=color, ms=ms, lw=lw, alpha=alpha)
         
         plt.text(0.1,0.8, '$r_s$ = {:.0f} pc'.format(r.value), transform=plt.gca().transAxes, fontsize='small', va='center', ha='left')
 
