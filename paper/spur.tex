@@ -134,11 +134,8 @@ Galaxy:~kinematics~and~dynamics
 
 
 \section{Encounter of GD-1 with a massive perturber}
-% - present the fiducial model (fig 1)
-% - comparison with the data is qualitative, data is the following (cite pwb, here is what we did in addition to select likely members)
-% - define pseudo-likelihood and explain our high-level exploration of the parameter space (fig 2)
-% - comment on densities of known objects in the mass-radius plane (ie compare our pdf to molecular clouds, globular clusters, central densities of dwarf galaxies, cdm subhalo predictions) (I am thinking of this as an inset to fig 2, but could be a separate figure as well)
-\subsection{Features in the GD-1 stellar stream}
+% \section{Methods}
+\subsection{Features observed in the GD-1 stellar stream}
 \label{sec:data}
 GD-1 is the longest ($>100^\circ$, 10\,kpc) thin ($\sigma\approx12'$, 30\,pc) stellar stream discovered in the Galactic halo \citep{gd2006}.
 Based on its width and length, GD-1 is expected to be extremely informative about the global distribution of matter in the Galaxy \citep{lux2013, bh2018}.
@@ -179,7 +176,7 @@ The orbital structure of stars closest to the passing perturber is distorted int
 \label{fig:fiducial}
 \end{figure}
 
-\subsection{Perturbed model of GD-1}
+\subsection{Fiducial perturbed model of GD-1}
 \label{sec:model}
 Unlike the observed GD-1, a globular cluster disrupting on the GD-1 orbit in a simple --- analytic and smooth --- galaxy creates a stream that is also smooth \citep{pwb}.
 This model follows stars as they leave the progenitor, and accounts for their epicylic motion relative to the progenitor's orbit \citep{kupper2008, kupper2010, fardal2015}.
@@ -217,6 +214,7 @@ Furthermore, the model features a spur of the correct offset from the main strea
 It is not a perfect model, for example, the model stream extends past the observed extent of GD-1.
 Still, this model is a remarkably realistic rendition of the observed GD-1, so we next quantitatively explore the range of impact parameters that produce a good match to the observed stream.
 
+% \section{Results}
 \subsection{Properties of the GD-1 perturber}
 \label{sec:perturber_properties}
 In our fiducial model of the GD-1 stellar stream (Section~\ref{sec:model}), the encounter with a perturber introduced a gap in the stream and ejected a spur of GD-1 stars beyond the main stream.
@@ -224,26 +222,41 @@ In this section, we constrain the range in perturber's mass and size, its impact
 
 \begin{figure}
 \begin{center}
-% \includegraphics[width=\textwidth]{excursions.pdf}
+\includegraphics[width=\textwidth]{excursions.pdf}
 \end{center}
 \caption{}
 \label{fig:scalings}
 \end{figure}
 
-- assumption: stream==orbit
-- fiducial in this case becomes -> second row
-- same values, but different orientation
-- since stream-orbit misalignment is not negligible for GD-1 \citep{sb2013}, the orientation angles not the same
-- a few more examples
+To efficiently explore the allowed parameter space, in this section we assume that GD-1 stream stars share the orbit with their progenitor.
+This allows for even faster generation of a stream model, at the expense of less realistic density contrasts along the stream.
+In the third row of Figure~\ref{fig:scalings} we show our fiducial model of perturbed GD-1 under this assumption.
+The perturber parameters have the same normalization as a model presented in the previous section.
+However, since the stream is misaligned from the orbit \citep{sb2013}, the orientation angles between the GD-1 and perturber's orbit are different in the two cases.
+This model also features a loop of stars removed from their original orbit, which projects to the GD-1 spur location at $\phi_1\gtrsim-40^\circ$, opens a gap at $\phi_1\approx-40^\circ$ and reconnects to the leading tail at $\phi_1\lesssim-40^\circ$.
 
-- to understand where the constraints are coming from, we show the a grid of stream models that vary a single parameter at the time
-- fiducial in the middle row
-- from left to right: time, mass, impact parameter, velocity, size
+With a method at hand to quickly generate stream models that reproduce basic features observed in GD-1, we explore how the stream morphology depends on impactor's properties.
+We consider five parameters: time of impact, $T$, perturber's mass, $M$, its impact parameter, $b$, velocity, $V$, and size, $r_s$.
+Each column of Figure~\ref{fig:scalings} shows models where one of the parameters is changed, while the others are kept at their fiducial values.
+Parameter values are increasing from top to bottom (as labeled in top left of every panel), with the fiducial values shown in the middle row.
+Most of the presented models preserve the angle between the loop and the unperturbed stream, while the main differences are in the width of the gap and the extent of the loop.
 
-- analytical argument for a young spur?
-- slow v: no longer in the impulse approximation -- the exact degeneracy no longer holds there?
-- this is not a comprehensive search of the parameter space, so lower mass solutions may still exist
+As the mass of the perturber increases, imparted velocity kicks to stream stars are larger, and the resulting loop and gap also increase in size.
+The effects of other parameters are similar, for example, increasing the perturber's size (making it less dense) decreases the loop and gap sizes.
+Indeed, bottom right panel of Figure~\ref{fig:scalings} shows a model perturbed with an object following the $\Lambda$CDM concentration--mass relation \citep{diemer2018}, and it shows no signature of a loop.
+Given time, both the loop and the gap grow in size.
+However, older loops are more aligned with the stream (Figure~\ref{fig:scalings}, bottom left panel), and hence more difficult to detect observationally.
+The presence of a spur alone already implies that GD-1 had a recent encounter with a dense perturber.
 
+Decreasing the velocity of the perturber (which also increases the velocity kicks) produces larger loops and gaps, and this effect is nearly degenerate with an increase in perturber's mass at sufficiently large velocities.
+However, at very low velocities, the whole loop morphology is changed (top panel in fourth column, Figure~\ref{fig:scalings}), likely because the encounter is no longer impulsive.
+This means that the observed spur morphology cannot be explained by an object of an arbitrarily low mass moving slowly.
+Likewise, decreasing the impact parameter has a unique signature too: the resulting loop is larger, but the gap size remains constant.
+
+Different encounter parameters produce a unique impact on the GD-1 morphology, so we next search this space for parameter combinations allowed by the data.
+Ideally, we would like to create a model of the stream and compare it to the data directly.
+However, the adopted method for generating stream models is not sufficiently realistic for full forward-modeling.
+Instead, we devised a set of expert criteria that allow us to compare whether a conceptual stream model represents the observed structure of GD-1.
 
 \begin{figure}
 \begin{center}
@@ -253,28 +266,92 @@ In this section, we constrain the range in perturber's mass and size, its impact
 \label{fig:corner}
 \end{figure}
 
-Ideally, to find parameters allowed by the data, we would like to create a model of the stream and compare it to the data directly.
-However, generating a realistic stream model is expensive, so instead, we devised a set of expert criteria that allow us to compare whether a conceptual stream model represents the observed structure of GD-1.
-% - ABC
-In the top row of Figure~\ref{fig:corner} we show the data used to evaluate models:
-- describe data: gap == top hat; spur == spline through control points
-- pseudo-likelihood: $\chi^2_{gap}$ + $\chi^2_{spur}$
+First, we compare $\phi_2$ positions perpendicular to the stream of perturbed model stars to the position of observed stars in the spur, defined as a spline that goes through control points of the stream between $\phi_1=-50^\circ$ to $-39^\circ$, and control points on the spur between $\phi_1=-39^\circ$ to $-30^\circ$.
+Positions of likely GD-1 members and this spline are shown in the top left of Figure~\ref{fig:corner} as black points and gray line, respectively.
+Positions of stars in the fiducial model (A), and two other models (B and C) are shown in bottom rows, with darker colors marking stars with a significant change in energy due to the encounter (bracketed by the third percentile on the trailing end and the 92nd percentile of the energy difference on the leading end of the stream). 
+Quantitatively, we define the spur chi-square:
+\begin{equation}
+\chi^2_{spur} = \frac{1}{N}\sum_{i=1}^{N} \left(\frac{\phi_{2,\,i} - \phi_{2,\,spline}(\phi_{1,\,i})}{\sigma_{spur}}\right)^2 
+\end{equation}
+for $N$ model stars with positions $(\phi_{1,\,i}, \phi_{2,\,i})$, and adopted width of the spur as $\sigma_{spur} = 0.2^\circ$.
+To ensure that the model spur is long enough, we only consider models where at least one star has $\phi_1>-32^\circ$ and $\phi_2>0.8^\circ$.
 
-- sample the space
-- highly idealized, so we only provide plausible ranges
-- marginalized over orientation angles, impact location
+Next, we compare the location and width of the observed and model gaps.
+The observed gap profile is shown in the top panel of second column in Figure~\ref{fig:corner} (black points), and is well-represented by a top-hat profile centered on $\phi_{1,\,gap}=-40.5^\circ$ and $w_{gap}=8.5^\circ$ wide (gray line).
+Gap profiles of models A through C have similar positions and widths, however, the density contrast between the gap and the spur is much larger (bottom rows).
+As the predictions of our stream models regarding density are simplistic, we define the gap chi-square as:
+\begin{equation}
+\chi^2_{gap} = \frac{1}{N_{bin}}\sum_{i=1}^{N_{bin}} \left(\frac{N_{model}(\phi_{1,\,i}) - N_{top}(n_{base}, n_{hat}, \phi_{1,\,gap}, w_{gap} | \phi_{1,\,i})}{\sigma_{gap,\,i}}\right)^2
+\end{equation}
+where $i$ denotes $N_{bin}=29$ bins between $-60^\circ<\phi_1<-20^\circ$.
+$N_{model}(\phi_{1,\,i})$ is the number of model stars in bin $i$, and $\sigma_{gap,\,i}$ is the associated Poisson uncertainty.
+$N_{top}(n_{base}, n_{hat}, \phi_{1,\,gap}, w_{gap} | \phi_{1,\,i})$ is the number of stars expected in bin $i$ from a top-hat distribution with the position $\phi_{1,\,gap}$ and width $w_{gap}$ adopted from the observed profile, but with the base level, $n_{base}$, given by the median of the model profile outside of the gap ($-55^\circ<\phi_1<-45^\circ$ and $-35^\circ<\phi_1<-25^\circ$), and $n_{hat}$ is the median of the model profile in the gap ($-43^\circ<\phi_1<-37^\circ$).
+We further require the density contrast $n_{hat} / n_{base}$ at least 0.5.
 
-- takeaways from the corner plot: close encounter, recent encounter, solutions for a range of velocities, mass--velocity degeneracy, compact perturber
+We combine the spur and gap contributions to the log likelihood as $\ln\mathcal{L} = -(\chi^2_{spur} + \chi^2_{gap})$.
+Even though this likelihood is an approximation to the formal likelihood which would compare the positions of model stream stars to the observed ones, it is expected to favor models that reproduce well features (spur and gap) seen in the data (is this an instance of ABC?).
+Therefore, we use an ensemble MCMC sampler \citep{Foreman-Mackey:2013} to find the allowed range in parameters of interest: perturber's mass, size, velocity, impact parameter and impact time, while marginalizing over the orientation angles and impact location.
+We started 200 walkers and advanced them for 5000 steps, keeping the last 2000 steps for analysis.
+In principle, the resulting chain provides posterior samples, but since this is a highly idealized search of the parameter space, we only provide plausible ranges of parameters, instead of showing their two-dimensional distributions.
+Specifically, in each panel of the corner plot (Figure~\ref{fig:corner}, right) we show the two-dimensional convex hull of all models with likelihood above the 5th percentile (gray shaded regions).
+
+High-likelihood models of the GD-1 stream have encounter parameters expected from the stream's sensitivity to different parameters (explored in Figure~\ref{fig:scalings}).
+Recent encounters are favored, with most of the models having been perturbed within the last 1\,Gyr and none more than 2\,Gyr ago.
+The perturbing object itself is massive ($5.5\lesssim\log M/\rm M_\odot\lesssim8$) and dense ($r_s\lesssim20\,\rm pc$).
+A range of velocities are allowed, as the data dismiss only the slowest moving perturbers ($V\gtrsim50\,\rm km\,s^{-1}$).
+The closest approach was extremely close to the stream, with the largest impact parameter $b\approx50\rm\,pc$.
 
 
-\section{Predictions for the kinematic signatures of the encounter in GD-1}
+\subsection{Predictions for the kinematic signatures of the encounter in GD-1}
+- ranges here constrained by the spatial distribution of the debris
+- in this section we explore what further constrains on properties of the perturber could be placed with kinematics
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=\textwidth]{kinematic_predictions.pdf}
+\end{center}
+\caption{}
+\label{fig:predictions}
+\end{figure}
+
+- in Figure we introduced three models that reproduce the observed spur and gap morphologies, and have parameters in the allowed region
+% As expected from the good match of their spur and gap profiles to the observed ones, models A, B and C have parameters within the region allowed by the data (marked with stars, circles and squares, respectively, on all panels of the corner plot).
+- these particular models were selected to showcase the possibilities in kinematic signatures of the loop
+- since there are velocity gradients along the stream, we show differences in velocity components between the perturbed and unperturbed stream
+- models in columns, radial velocity in the top row and the two proper motion components in GD-1 coordinates in the following components
+
+- the largest variation is seen in radial velocities
+- focusing on the difference between the spur and the stream at $\phi_1\approx-30^\circ$, model A predicts the spur to move faster, model B the stream, and model C no difference
+- the other side of the loop has the opposite behavior
+- the maximal difference is on the order of a few km\,s$^{-1}$, easily within reach of current spectroscopic facilities
+- the baseline radial velocity in that part of the stream is $\sim100\,\rm km\,s^{-1}$ which allows for confident selection of GD-1 members out of the MW field population
+- this means that future followup observations will further narrow down the allowed range of parameter space, and more importantly, provide strong constraints on the encounter geometry
+
+- the loop appearance in proper motions is specific, and uniform across the models
+- this is expected: 
+
+- the spur is at positive $\phi_2$, so its component of the proper motion in the $\phi_2$ direction should be larger than that of the unperturbed stream stars.
+This is indeed the case for all of the models.
+- the other side of the loop hasn't appreciably moved away from the main stream track, and correspondingly, its $\mu_{\phi_2}$ is very small.
+- finally, the magnitude of $\Delta\mu_{\phi_2}$ is smaller than $\Delta\mu_{\phi_1}$, which makes sense because the gap is much wider than the distance between the stream and the spur
+
+- the encounter model makes falsifiable predictions for proper motion kinematics
+- velocity offsets are small, but precision proper motions have been demonstrated at this scale \citep{sohn2015}
+- future kinematic data should be able to validate the encounter as the origin of GD-1 features.
+- and if confirmed, also make strong predictions on the orbit and present-day position of the pertuber
 
 
 \section{Discussion}
 \label{sec:discussion}
 -recap
 
-\subsection{Perturbative origin of GD-1 structures}
+\subsection{Limitations of the current modeling setup}
+- single density profile assumed
+- not true N-body
+- stream==orbit (just track, no density)
+- pseudo-likelihood -- not a comprehensive search of the parameter space, different islands in the parameter space may still be allowed (say lower mass)
+
+\subsection{Origin of GD-1 structures}
 % - classes of objects: known satellite, unknown, disk
 % - integrate backwards to show that it can't be any known object.
 % - look at molecular cloud properties and show that they are all out.
@@ -291,27 +368,19 @@ In the top row of Figure~\ref{fig:corner} we show the data used to evaluate mode
 \label{fig:known_encounters}
 \end{figure}
 
+- perturbative:
 - known halo satellites
 - giant molecular clouds
 - black holes
 - dark matter subhalos
 
-
-\subsection{Non-perturbative origin of GD-1 structures}
+- non-perturbative:
 - structure in the progenitor
 - stream feather
 - chaos
 
-
-\subsection{Limitations of this work}
-- not true N-body
-- single profile assumed
-
-
-\subsection{Prospects}
+- future prospects:
 - network of streams
-
-
 
 
 % The stream perturbation models presented above show that the GD-1 stream spur and neighboring gap could plausibly be formed through a gravitational interaction between the stream and a dark, compact, massive perturber.
@@ -361,7 +430,7 @@ This work has made use of data from the European Space Agency (\acronym{ESA}) mi
 \package{emcee} \citep{Foreman-Mackey:2013},
 \package{IPython} \citep{Perez:2007},
 \package{matplotlib} \citep{Hunter:2007},
-\package{numpy} \citep{Van-der-Walt:2011},
+\package{numpy} \citep{Van-der-Walt:2011}
 }
 
 \bibliographystyle{aasjournal}
