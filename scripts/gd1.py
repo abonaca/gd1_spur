@@ -2032,7 +2032,7 @@ def lnprob_verbose(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstrea
     model_hat = np.minimum(model_hat, model_base*f_gap)
     ytop_model = tophat(bc, model_base, model_hat,  gap_position, gap_width)
     
-    chi_gap = np.sum((h_model - ytop_model)**2/(2*yerr)**2)/Nb
+    chi_gap = np.sum((h_model - ytop_model)**2/(yerr)**2)/Nb
     
     # spur chi^2
     top1 = np.percentile(dE[:N2], percentile1)
@@ -2157,13 +2157,15 @@ def lnprob_detailed(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstre
     model_hat = np.minimum(model_hat, model_base*f_gap)
     ytop_model = tophat(bc, model_base, model_hat,  gap_position, gap_width)
     
-    chi_gap = np.sum((h_model - ytop_model)**2/(2*yerr)**2)/Nb
+    chi_gap = np.sum((h_model - ytop_model)**2/(yerr)**2)/Nb
     
     # spur chi^2
     top1 = np.percentile(dE[:N2], percentile1)
     top2 = np.percentile(dE[N2:], percentile2)
     ind_loop1 = np.where(dE[:N2]<top1)[0][0]
     ind_loop2 = np.where(dE[N2:]>top2)[0][-1]
+    print(ind_loop1, cg.phi1.wrap_at(wangle).deg[ind_loop1])
+    print(ind_loop2, cg.phi1.wrap_at(wangle).deg[ind_loop2+N2])
     
     f = scipy.interpolate.interp1d(spx, spy, kind='quadratic')
     
@@ -2172,6 +2174,7 @@ def lnprob_detailed(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstre
     phi1_mask = (cg.phi1.wrap_at(wangle)>phi1_min) & (cg.phi1.wrap_at(wangle)<phi1_max)
     loop_mask = aloop_mask & phi1_mask
     Nloop = np.sum(loop_mask)
+    #print(np.min(cg.phi1.wrap_at(wangle).deg[loop]))
 
     chi_spur = np.sum((cg.phi2[loop_mask].value - f(cg.phi1.wrap_at(wangle).value[loop_mask]))**2/phi2_err**2)/Nloop
 
@@ -2179,13 +2182,13 @@ def lnprob_detailed(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstre
     
     isort = np.argsort(cg.phi1.wrap_at(wangle).value[~aloop_mask])
     vr0 = np.interp(cg.phi1.wrap_at(wangle).value, cg.phi1.wrap_at(wangle).value[~aloop_mask][isort], cg.radial_velocity.to(u.km/u.s)[~aloop_mask][isort])*u.km/u.s
-    dvr = vr0 - cg.radial_velocity.to(u.km/u.s)
+    dvr = cg.radial_velocity.to(u.km/u.s) - vr0
     
     mu10 = np.interp(cg.phi1.wrap_at(wangle).value, cg.phi1.wrap_at(wangle).value[~aloop_mask][isort], cg.pm_phi1_cosphi2.to(u.mas/u.yr)[~aloop_mask][isort])*u.mas/u.yr
-    dmu1 = mu10 - cg.pm_phi1_cosphi2.to(u.mas/u.yr)
+    dmu1 = cg.pm_phi1_cosphi2.to(u.mas/u.yr) - mu10
     
     mu20 = np.interp(cg.phi1.wrap_at(wangle).value, cg.phi1.wrap_at(wangle).value[~aloop_mask][isort], cg.pm_phi2.to(u.mas/u.yr)[~aloop_mask][isort])*u.mas/u.yr
-    dmu2 = mu20 - cg.pm_phi2.to(u.mas/u.yr)
+    dmu2 = cg.pm_phi2.to(u.mas/u.yr) - mu20
     
     res = {'stream': cg, 'dvr': dvr, 'dmu1': dmu1, 'dmu2': dmu2, 'all_loop': aloop_mask, 'phi1_loop': loop_mask, 'chi_gap': chi_gap, 'chi_spur': chi_spur, 'bincen': bc, 'nbin': h_model, 'nexp': ytop_model}
     
@@ -3211,7 +3214,7 @@ def fiducial_excursions():
     wangle = 180*u.deg
     color = '0.3'
     ms = 8
-    lw = 5
+    lw = 3.5
     alpha = 0.7
     
     plt.close()

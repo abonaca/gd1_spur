@@ -5,8 +5,9 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from gd1 import *
+wangle = 180*u.deg
 
-
+#########
 # figures
 
 def param_search():
@@ -49,14 +50,13 @@ def param_search():
     spy = sp['y']
     
     # lists with data points
-    wangle = 180*u.deg
     gap_data = [[bc, h_data]]
     gap_model = [[bc, ytop_data]]
     spur_data = [[g['phi1'], g['phi2']]]
     loops = []
     pfid = []
     
-    ids = [-1, 15, 16]
+    ids = [-1, 15, 48]
     for i in ids:
         pkl = pickle.load(open('../data/predictions/model_{:03d}.pkl'.format(i), 'rb'))
         cg = pkl['stream']
@@ -135,6 +135,7 @@ def param_search():
     Nvar = 5
     params = ['T [Gyr]', 'b [pc]', 'V [km s$^{-1}$]', '$r_s$ [pc]', 'log M/M$_\odot$']
     lims = [[0.,2], [1,70], [10,500], [1,40], [5,8.6]]
+    lims = [[0.,4.5], [1,145], [0,700], [1,100], [5,10]]
     ax = [[[]*4]*4]*4
     
     symbols = ['*', 'o', 's']
@@ -177,6 +178,59 @@ def param_search():
     
     plt.savefig('../paper/param_search.pdf')
 
+
+def kinematic_predictions():
+    """Show velocity offsets in three perturbed GD-1 models"""
+    
+    colors = ['orange', 'deepskyblue', 'limegreen']
+    accent_colors = ['orangered', 'navy', 'forestgreen']
+    labels = ['Model A (fiducial)', 'Model B', 'Model C']
+    
+    dvr = []
+    dmu1 = []
+    dmu2 = []
+    
+    ids = [-1, 15, 16, 19, 21]
+    ids = [-1, 15, 19]
+    for i in ids:
+        pkl = pickle.load(open('../data/predictions/model_{:03d}.pkl'.format(i), 'rb'))
+        cg = pkl['stream']
+
+        dvr += [[cg.phi1.wrap_at(wangle), pkl['dvr']]]
+        dmu1 += [[cg.phi1.wrap_at(wangle), pkl['dmu1']]]
+        dmu2 += [[cg.phi1.wrap_at(wangle), pkl['dmu2']]]
+        
+    
+    kinematics = [dvr, dmu1, dmu2]
+    ylabels = ['$\Delta$ $V_r$\n[km s$^{-1}$]', '$\Delta$ $\mu_{\phi_1}$\n[mas yr$^{-1}$]', '$\Delta$ $\mu_{\phi_2}$\n[mas yr$^{-1}$]']
+    
+    plt.close()
+    fig, ax = plt.subplots(3,3,figsize=(10,7), sharex=True, sharey='row')
+    
+    for i in range(3):
+        for j in range(3):
+            plt.sca(ax[i][j])
+            
+            #plt.plot(kinematics[i][j][0], kinematics[i][j][1], 'o', ms=8, color=colors[j], mec=accent_colors[j], mew=1)
+            plt.plot(kinematics[i][j][0], kinematics[i][j][1], 'o', ms=8, color=accent_colors[j])
+            plt.plot(kinematics[i][j][0], kinematics[i][j][1], 'o', ms=3.5, color=colors[j])
+            
+            if i==0:
+                plt.title(labels[j], fontsize='medium')
+            
+            if i==2:
+                plt.xlabel('$\phi_1$ [deg]')
+            
+            if j==0:
+                plt.ylabel(ylabels[i])
+            
+            plt.xlim(-60,-20)
+    
+    plt.tight_layout()
+    plt.savefig('../paper/kinematic_predictions.pdf')
+
+
+##############
 # calculations
 
 def gd1_width(sig=12*u.arcmin, d=8*u.kpc):
