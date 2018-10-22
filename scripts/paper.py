@@ -74,6 +74,10 @@ def param_search():
     
     colors = ['k', 'orange', 'deepskyblue', 'limegreen']
     accent_colors = ['k', 'orangered', 'navy', 'forestgreen']
+    colors = ['k', '#ff6600', '#2ca02c', '#37abc8']
+    accent_colors = ['k', '#aa4400', '#165016', '#164450']
+    colors = ['k', '#2c89a0', '#37abc8', '#5fbcd3']
+    accent_colors = ['k', '#164450', '#216778', '#2c89a0']
     sizes = [1, 4, 4, 4]
     labels = ['Data', 'Model A (fiducial)', 'Model B', 'Model C']
     
@@ -182,52 +186,169 @@ def param_search():
 def kinematic_predictions():
     """Show velocity offsets in three perturbed GD-1 models"""
     
+    labels = ['Model A (fiducial)', 'Model B', 'Model C']
+
     colors = ['orange', 'deepskyblue', 'limegreen']
     accent_colors = ['orangered', 'navy', 'forestgreen']
-    labels = ['Model A (fiducial)', 'Model B', 'Model C']
+    colors = ['#ff6600', '#2ca02c', '#37abc8']
+    accent_colors = ['#aa4400', '#165016', '#164450']
+    
+    colors = ['#2c89a0', '#37abc8', '#5fbcd3']
+    accent_colors = ['#164450', '#216778', '#2c89a0']
     
     dvr = []
     dmu1 = []
     dmu2 = []
+    ddist = []
+    loop = []
     
     ids = [-1, 15, 16, 19, 21]
     ids = [-1, 15, 19]
-    for i in ids:
+    for e, i in enumerate(ids):
         pkl = pickle.load(open('../data/predictions/model_{:03d}.pkl'.format(i), 'rb'))
         cg = pkl['stream']
 
         dvr += [[cg.phi1.wrap_at(wangle), pkl['dvr']]]
         dmu1 += [[cg.phi1.wrap_at(wangle), pkl['dmu1']]]
         dmu2 += [[cg.phi1.wrap_at(wangle), pkl['dmu2']]]
+        ddist += [[cg.phi1.wrap_at(wangle), pkl['ddist']]]
         
+        loop += [pkl['all_loop']]
+        loop[e][::8] = True
     
-    kinematics = [dvr, dmu1, dmu2]
+    kinematics = [dvr, dmu1, dmu2, ddist]
     ylabels = ['$\Delta$ $V_r$\n[km s$^{-1}$]', '$\Delta$ $\mu_{\phi_1}$\n[mas yr$^{-1}$]', '$\Delta$ $\mu_{\phi_2}$\n[mas yr$^{-1}$]']
+    ylabels = ['$\Delta$ $V_r$ [km s$^{-1}$]', '$\Delta$ $\mu_{\phi_1}$ [mas yr$^{-1}$]', '$\Delta$ $\mu_{\phi_2}$ [mas yr$^{-1}$]', '$\Delta$ d [pc]']
+    nrow = 3
     
     plt.close()
-    fig, ax = plt.subplots(3,3,figsize=(10,7), sharex=True, sharey='row')
+    fig, ax = plt.subplots(nrow,3,figsize=(7.5,7.5), sharex=True, sharey='row')
     
-    for i in range(3):
+    for i in range(nrow):
         for j in range(3):
             plt.sca(ax[i][j])
             
-            #plt.plot(kinematics[i][j][0], kinematics[i][j][1], 'o', ms=8, color=colors[j], mec=accent_colors[j], mew=1)
-            plt.plot(kinematics[i][j][0], kinematics[i][j][1], 'o', ms=8, color=accent_colors[j])
-            plt.plot(kinematics[i][j][0], kinematics[i][j][1], 'o', ms=3.5, color=colors[j])
+            plt.plot(kinematics[i][j][0][loop[j]], kinematics[i][j][1][loop[j]], 'o', ms=7, color=accent_colors[j])
+            plt.plot(kinematics[i][j][0][loop[j]], kinematics[i][j][1][loop[j]], 'o', ms=3, color=colors[j])
             
             if i==0:
                 plt.title(labels[j], fontsize='medium')
             
-            if i==2:
+            if i==nrow-1:
                 plt.xlabel('$\phi_1$ [deg]')
             
             if j==0:
                 plt.ylabel(ylabels[i])
             
-            plt.xlim(-60,-20)
+            plt.xlim(-55,-25)
+            plt.xticks([-50,-40,-30])
+    
+    plt.tight_layout(h_pad=-0.1, w_pad=0.4, rect=[-0.02,0,1,1])
+    plt.savefig('../paper/kinematic_predictions.pdf')
+
+
+def orbit_cross():
+    """Check if satellites crossed GD-1"""
+    
+    # potential
+    ham = gp.Hamiltonian(gp.MilkyWayPotential(nucleus=dict(m=0), halo=dict(c=0.95, m=7E11), bulge=dict(m=4E9), disk=dict(m=5.5e10)))
+    gc_frame = coord.Galactocentric(galcen_distance=8*u.kpc, z_sun=0*u.pc)
+    
+    # orbital solution
+    pos = np.load('/home/ana/projects/GD1-DR2/data/gd1_orbit.npy')
+    phi1, phi2, d, pm1, pm2, vr = pos
+
+    c = gc.GD1(phi1=phi1*u.deg, phi2=phi2*u.deg, distance=d*u.kpc, 
+            pm_phi1_cosphi2=pm1*u.mas/u.yr,
+            pm_phi2=pm2*u.mas/u.yr,
+            radial_velocity=vr*u.km/u.s)
+    w0 = gd.PhaseSpacePosition(c.transform_to(gc_frame).cartesian)
+    
+    dt = 0.5 * u.Myr
+    n_steps = 250
+    fit_orbit = ham.integrate_orbit(w0, dt=dt, n_steps=120)
+
+    # find gap 6D location at present
+    gap_phi0 = -40*u.deg
+    model_gd1 = fit_orbit.to_coord_frame(gc.GD1, galactocentric_frame=gc_frame)
+    gap_i = np.abs(model_gd1.phi1.wrap_at(180*u.deg) - gap_phi0).argmin()
+    gap_w0 = fit_orbit[gap_i]
+    
+    # gap orbit
+    t1 = 0*u.Myr
+    t2 = -1*u.Gyr
+    dt = -0.5
+    t = np.arange(t1.to(u.Myr).value, t2.to(u.Myr).value+dt, dt)
+    gap_orbit = ham.integrate_orbit(gap_w0, dt=dt, t1=t1, t2=t2)
+    
+    
+    # plot relative distances as a function of time
+    plt.close()
+    plt.figure(figsize=(10,6))
+    
+    # 3, 0.5
+    lw = 1.2
+    alpha = 0.8
+
+    # show classicals
+    tcls = Table.read('../data/positions_classical.fits')
+    ra, dec, d, pmra, pmdec, vr = tcls['ra'], tcls['dec'], tcls['distance'], tcls['pmra'], tcls['pmdec'], tcls['vr']
+    cs = coord.ICRS(ra=ra, dec=dec, distance=d, pm_ra_cosdec=pmra, pm_dec=pmdec, radial_velocity=vr)
+    ws = gd.PhaseSpacePosition(cs.transform_to(gc_frame).cartesian)
+    satellite_orbit = ham.integrate_orbit(ws, dt=dt, t1=t1, t2=t2)
+    for e in range(len(tcls)):
+        if e==0:
+            label = 'Classical\ndwarfs'
+        else:
+            label = ''
+        rel_distance = np.linalg.norm(gap_orbit.xyz - satellite_orbit.xyz[:,:,e], axis=0)*gap_orbit.xyz[0].unit
+        plt.plot(t, rel_distance.to(u.pc), '-', color=mpl.cm.Reds(0.9), alpha=alpha, label=label, lw=lw)
+    
+    # show ultrafaints
+    tufd = Table.read('../data/positions_ufd.fits')
+    ra, dec, d, pmra, pmdec, vr = tufd['ra'], tufd['dec'], tufd['distance'], tufd['pmra'], tufd['pmdec'], tufd['vr']
+    cs = coord.ICRS(ra=ra, dec=dec, distance=d, pm_ra_cosdec=pmra, pm_dec=pmdec, radial_velocity=vr)
+    ws = gd.PhaseSpacePosition(cs.transform_to(gc_frame).cartesian)
+    satellite_orbit = ham.integrate_orbit(ws, dt=dt, t1=t1, t2=t2)
+    for e in range(len(tufd)):
+        if e==0:
+            label = 'Ultra-faint\ndwarfs'
+        else:
+            label = ''
+        rel_distance = np.linalg.norm(gap_orbit.xyz - satellite_orbit.xyz[:,:,e], axis=0)*gap_orbit.xyz[0].unit
+        plt.plot(t, rel_distance.to(u.pc), '-', color=mpl.cm.Reds(0.7), alpha=alpha, label=label, lw=lw)
+    
+    # show globulars
+    tgc = Table.read('../data/positions_globular.fits')
+    ra, dec, d, pmra, pmdec, vr = tgc['ra'], tgc['dec'], tgc['distance'], tgc['pmra'], tgc['pmdec'], tgc['vr']
+    cs = coord.ICRS(ra=ra, dec=dec, distance=d, pm_ra_cosdec=pmra, pm_dec=pmdec, radial_velocity=vr)
+    ws = gd.PhaseSpacePosition(cs.transform_to(gc_frame).cartesian)
+    satellite_orbit = ham.integrate_orbit(ws, dt=dt, t1=t1, t2=t2)
+    for e in range(len(tgc)):
+        if e==0:
+            label = 'Globular\nclusters'
+        else:
+            label = ''
+        rel_distance = np.linalg.norm(gap_orbit.xyz - satellite_orbit.xyz[:,:,e], axis=0)*gap_orbit.xyz[0].unit
+        plt.plot(t, rel_distance.to(u.pc), '-', color=mpl.cm.Reds(0.5), alpha=alpha, label=label, lw=lw)
+
+    plt.plot(t, np.abs(gap_orbit.xyz[2]).to(u.pc), '-', color=mpl.cm.Reds(0.3), alpha=alpha, label='Disk', lw=lw, zorder=0)
+    #plt.plot(t, np.sqrt(gap_orbit.xyz[0]**2 + gap_orbit.xyz[1]**2), 'r-', alpha=0.2)
+
+    plt.axhline(60, ls='-', color='k', alpha=0.8, lw=1.5)
+    txt = plt.text(20, 63, 'Maximum impact parameter', va='bottom', ha='right', fontsize='small')
+    #txt.set_bbox(dict(facecolor='w', alpha=0.8, ec='none'))
+
+    plt.ylim(30,200000)
+    plt.gca().set_yscale('log')
+    
+    plt.legend(loc=2, fontsize='small', markerscale=2)
+    plt.xlabel('Time [Myr]')
+    plt.ylabel('Relative distance [pc]')
     
     plt.tight_layout()
-    plt.savefig('../paper/kinematic_predictions.pdf')
+    plt.savefig('../plots/satellite_distances.png', dpi=200)
+    plt.savefig('../paper/satellite_distances.pdf')
 
 
 ##############
@@ -245,3 +366,19 @@ def width_range():
     """Find width at different locations along the stream"""
     
     #pickles here: /home/ana/projects/GD1-DR2/notebooks/stream-probs/
+
+
+def velocity_angles():
+    """Check velocity angles for model examples"""
+    
+    ids = [-1, 15, 19]
+    for e, i in enumerate(ids):
+        pkl = pickle.load(open('../data/predictions/model_{:03d}.pkl'.format(i), 'rb'))
+        p = pkl['params']
+        phi = np.arctan2(p[2], p[1])
+        #print(phi.to(u.deg))
+        phi = np.arctan2(p[4], p[3])
+        print(phi.to(u.deg))
+        #print(p[3], p[4])
+
+

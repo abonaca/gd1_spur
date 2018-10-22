@@ -2190,7 +2190,10 @@ def lnprob_detailed(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstre
     mu20 = np.interp(cg.phi1.wrap_at(wangle).value, cg.phi1.wrap_at(wangle).value[~aloop_mask][isort], cg.pm_phi2.to(u.mas/u.yr)[~aloop_mask][isort])*u.mas/u.yr
     dmu2 = cg.pm_phi2.to(u.mas/u.yr) - mu20
     
-    res = {'stream': cg, 'dvr': dvr, 'dmu1': dmu1, 'dmu2': dmu2, 'all_loop': aloop_mask, 'phi1_loop': loop_mask, 'chi_gap': chi_gap, 'chi_spur': chi_spur, 'bincen': bc, 'nbin': h_model, 'nexp': ytop_model}
+    dist0 = np.interp(cg.phi1.wrap_at(wangle).value, cg.phi1.wrap_at(wangle).value[~aloop_mask][isort], cg.distance.to(u.pc)[~aloop_mask][isort])*u.pc
+    ddist = cg.distance.to(u.pc) - dist0
+    
+    res = {'params': params, 'stream': cg, 'dvr': dvr, 'dmu1': dmu1, 'dmu2': dmu2, 'ddist': ddist, 'all_loop': aloop_mask, 'phi1_loop': loop_mask, 'chi_gap': chi_gap, 'chi_spur': chi_spur, 'bincen': bc, 'nbin': h_model, 'nexp': ytop_model}
     
     return res
 
@@ -2745,6 +2748,9 @@ def model_examples(model=0, i=0, label='_v500w200', verbose=False):
     lnprob_args = get_lnprobargs()
     spx = lnprob_args[-7]
     spy = lnprob_args[-6]
+    #lnprob_args[7] = 3000
+    #lnprob_args[-12] = 10
+    #lnprob_args[-11] = 99
     
     wangle = 180*u.deg
     
@@ -3301,7 +3307,7 @@ def fiducial_excursions():
         
         plt.text(0.1,0.8, '$r_s$ = {:.0f} pc'.format(r.value), transform=plt.gca().transAxes, fontsize='small', va='center', ha='left')
 
-    plt.tight_layout(h_pad=0.0, w_pad=0.0)
+    plt.tight_layout(h_pad=-0.1, w_pad=0.4)
     plt.savefig('../paper/excursions.pdf')
     plt.savefig('../plots/excursions.png', dpi=150)
 
