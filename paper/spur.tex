@@ -306,7 +306,7 @@ The closest approach was extremely close to the stream, with the impact paramete
 
 
 \subsection{Predictions for the kinematic signatures of the encounter in GD-1}
-Perturber properties presented in previous section were constrained by the spatial distribution of the GD-1 debris alone.
+Perturber properties presented in the previous section were constrained by the spatial distribution of the GD-1 debris alone.
 We now explore kinematic signatures of the GD-1 encounter with such a perturber and discuss how to further constrain its properties with future kinematic observations.
 
 \begin{figure}
@@ -336,12 +336,12 @@ Focusing first on the $\phi_1$ direction, this behavior stems from the fact that
 As \citep{eb2015} showed, velocity kick along the stream (the $\phi_1$ direction) makes the affected stars on the leading side of the gap speed past the unperturbed stream.
 And indeed, loop stars at $\phi_1\lesssim-45^\circ$ have proper motion $\mu_{\phi_1}$ more negative than the unperturbed stream at the same $\phi_1$.
 The opposite behavior is expected, and seen, on the other side of the loop ($\phi_1\gtrsim-35^\circ$), where the affected stars lag behind the stream at less negative $\mu_{\phi_1}$.
-Details of the loop proper motion offsets still depend on the perturber's parameters, but the directions of offsets along the stream are universal in the encounter scenario.
+Details of the loop proper motion offsets still depend on the perturber's parameters, but the direction of offsets along the stream is universal in the encounter scenario.
 
 Because the spur is at positive $\phi_2$, its proper motion perpendicular to the stream (the $\phi_2$ direction) should be faster than that of the unperturbed stream stars.
 As expected, $\Delta\mu_{\phi_2}>0$ for all of the models at $\phi_1\gtrsim-35^\circ$.
 The other side of the loop is at most slightly offset from the main stream track, so $\Delta\mu_{\phi_2}$ is very small at $\phi_1\lesssim-45^\circ$.
-Finally, the magnitude of kinematic offsets across the stream ($\Delta\mu_{\phi_2}$) is universally smaller than along the stream ($\Delta\mu_{\phi_1}$).
+Finally, the magnitude of kinematic offsets perpendicular to the stream ($\Delta\mu_{\phi_2}$) is universally smaller than along the stream ($\Delta\mu_{\phi_1}$).
 This is also expected because the gap is much wider than the distance between the stream and the spur.
 
 The encounter model makes falsifiable predictions for proper motion kinematics in the affected region of the GD-1 stream.
@@ -351,16 +351,23 @@ Should the encounter scenario be confirmed, these new data will also make strong
 
 \section{Discussion}
 \label{sec:discussion}
--recap
+We presented a model of the GD-1 stream which experienced a recent encounter with a massive, dense object.
+This fly-by imparted significant velocity kicks to the closest stars both along the stream, which produced a gap in the stream, and perpendicular to the stream, which launched a spur of stars outside of the main stream.
+The qualitative and quantitative agreement between the observed and modeled gap and spur suggest that these GD-1 structures are the first dynamical evidence for dark halo substructure.
+Below we discuss how to ascertain this conclusion by suggesting improvements for future modeling of GD-1 (Section~\ref{sec:caveats}), reviewing possible origin scenarios of the observed features (Section~\ref{sec:origin}), and outline strategies to distinguish these scenarios with additional observations (Section~\ref{sec:future}).
 
 \subsection{Limitations of the current modeling setup}
-- single density profile assumed
-- not true N-body (last stage of disruption )
+\label{sec:caveats}
+- not true N-body (last stage of disruption can produce overdensities)
 - stream==orbit (just track, no density; don't expect to be very wrong as the same fiducial in streakline and orbit works)
+- single density profile assumed
+
 - pseudo-likelihood (conservative: accepting wider range of models, see model B other side of the loop sticking out), some things may be wrong if likelihood is wrong
-- not a comprehensive search of the parameter space, different islands in the parameter space may still be allowed (say lower mass); always true; low dimensional, could almost brute-force it (for future, with actual likelihood)
+- not a comprehensive search of the parameter space
+- different islands in the parameter space may still be allowed (say lower mass); always true; low dimensional, could almost brute-force it (for future, with actual likelihood)
 
 \subsection{Origin of GD-1 structures}
+\label{sec:origin}
 % - classes of objects: known satellite, unknown, disk
 % - integrate backwards to show that it can't be any known object.
 % - look at molecular cloud properties and show that they are all out.
@@ -369,12 +376,20 @@ Should the encounter scenario be confirmed, these new data will also make strong
 % - conclusion: dm substructure is the most plausible of the options.
 % - interesting point: The predictions about \lcdm\ substructure in the inner halo are controversial right now because of simulation differences. If this matters, this point should enter the abstract and modify the naturalness of the conclusion.
 
-\begin{figure*}
+\begin{figure}
 \begin{center}
-\includegraphics[width=0.9\textwidth]{satellite_distances.pdf}
+\includegraphics[width=\columnwidth]{satellite_distances.pdf}
 \end{center}
 \caption{Data from \citet{simon2018} and \citet{gdr2_satellites}.}
 \label{fig:known_encounters}
+\end{figure}
+
+\begin{figure*}
+\begin{center}
+\includegraphics[width=0.9\textwidth]{mass_size.pdf}
+\end{center}
+\caption{}
+\label{fig:mass_size}
 \end{figure*}
 
 - perturbative:
@@ -390,6 +405,7 @@ Should the encounter scenario be confirmed, these new data will also make strong
 - chaos
 
 \subsection{Future prospects}
+\label{sec:future}
 - need rv, mu
 - assemble all the predictions (bulleted list)
 - get better orbit of the plausible object 
@@ -441,11 +457,13 @@ This work has made use of data from the European Space Agency (\acronym{ESA}) mi
 
 \software{
 \package{Astropy} \citep{astropy:2013, astropy:2018},
+\package{colossus} \citep{},
 \package{gala} \citep{Price-Whelan:2017},
 \package{emcee} \citep{Foreman-Mackey:2013},
 \package{IPython} \citep{Perez:2007},
 \package{matplotlib} \citep{Hunter:2007},
-\package{numpy} \citep{Van-der-Walt:2011}
+\package{numpy} \citep{Van-der-Walt:2011},
+\package{scipy} \citep{}
 }
 
 \bibliographystyle{aasjournal}
