@@ -228,8 +228,8 @@ def kinematic_predictions():
         for j in range(3):
             plt.sca(ax[i][j])
             
-            plt.plot(kinematics[i][j][0][loop[j]], kinematics[i][j][1][loop[j]], 'o', ms=7, color=accent_colors[j])
-            plt.plot(kinematics[i][j][0][loop[j]], kinematics[i][j][1][loop[j]], 'o', ms=3, color=colors[j])
+            plt.plot(kinematics[i][j][0][loop[j]], kinematics[i][j][1][loop[j]], 'o', ms=6, color=accent_colors[j])
+            plt.plot(kinematics[i][j][0][loop[j]], kinematics[i][j][1][loop[j]], 'o', ms=3.5, color=colors[j])
             
             if i==0:
                 plt.title(labels[j], fontsize='medium')
@@ -243,7 +243,7 @@ def kinematic_predictions():
             plt.xlim(-55,-25)
             plt.xticks([-50,-40,-30])
     
-    plt.tight_layout(h_pad=-0.1, w_pad=0.4, rect=[-0.02,0,1,1])
+    plt.tight_layout(h_pad=-0.1, w_pad=0.0, rect=[-0.02,0,1,1])
     plt.savefig('../paper/kinematic_predictions.pdf')
 
 
@@ -284,10 +284,10 @@ def orbit_cross():
     
     # plot relative distances as a function of time
     plt.close()
-    plt.figure(figsize=(10,6))
+    plt.figure(figsize=(7,4.5))
     
     # 3, 0.5
-    lw = 1.2
+    lw = 0.9
     alpha = 0.8
 
     # show classicals
@@ -335,10 +335,10 @@ def orbit_cross():
     plt.plot(t, np.abs(gap_orbit.xyz[2]).to(u.pc), '-', color=mpl.cm.Reds(0.3), alpha=alpha, label='Disk', lw=lw, zorder=0)
     #plt.plot(t, np.sqrt(gap_orbit.xyz[0]**2 + gap_orbit.xyz[1]**2), 'r-', alpha=0.2)
 
-    plt.axhline(60, ls='-', color='k', alpha=0.8, lw=1.5)
-    txt = plt.text(20, 63, 'Maximum impact parameter', va='bottom', ha='right', fontsize='small')
-    #txt.set_bbox(dict(facecolor='w', alpha=0.8, ec='none'))
-
+    txt = plt.text(5, 63, 'Maximum impact parameter', va='bottom', ha='right', fontsize='small')
+    txt.set_bbox(dict(facecolor='w', alpha=0.8, ec='none'))
+    plt.axhline(60, ls='-', color='k', alpha=0.8, lw=1.5, zorder=10)
+    
     plt.ylim(30,200000)
     plt.gca().set_yscale('log')
     
@@ -349,6 +349,74 @@ def orbit_cross():
     plt.tight_layout()
     plt.savefig('../plots/satellite_distances.png', dpi=200)
     plt.savefig('../paper/satellite_distances.pdf')
+
+
+def mass_size():
+    """Compilation of masses and sizes of various objects"""
+    hull = np.load('../data/hull_points_v500w200.npz')
+    vertices = hull['vertices']
+    vertices[:,1] = 10**vertices[:,1]
+    pids = hull['panel']
+    params = ['T [Gyr]', 'b [pc]', 'V [km s$^{-1}$]', '$r_s$ [pc]', 'log M/M$_\odot$']
+    j = 4
+    i = 3
+
+    t = Table.read('../data/gmc.txt', format='cds')
+    rmin = 10
+    outer = t['Rgal']>rmin
+    
+    mrange = 10**np.linspace(4, 9, 20)*u.Msun
+    rsrange = rs_hernquist(mrange)
+    rsrange2 = rs_diemer(mrange)
+    rs_low = 0.85*rsrange2
+    rs_high = 1.15*rsrange2
+    
+    ts = Table.read('../data/dwarfs.txt', format='ascii.commented_header')
+    
+    tgc = Table.read('../data/result_tab.tex', format='latex')
+    #tgc.pprint()
+    gc_mass = np.array([float(tgc['mass'][x][1:5])*10**float(tgc['mass'][x][-2:-1]) for x in range(len(tgc))])
+    
+    
+    plt.close()
+    fig, ax = plt.subplots(1, 2, figsize=(11,6), gridspec_kw={'width_ratios':[1.7,1]})
+    plt.sca(ax[0])
+    
+    vert_id = (pids[:,0]==i) & (pids[:,1]==j)
+    xy_vert = vertices[vert_id]
+    p = mpl.patches.Polygon(xy_vert, closed=True, lw=2, ec='0.8', fc='0.9', zorder=0, label='GD-1 perturber\n(Bonaca et al. 2018)')
+    patch = plt.gca().add_patch(p)
+    
+    plt.plot(t['Rf'][outer], t['Mf'][outer], 'o', color='tab:orange', ms=8, mec='none', label='Outer disk molecular clouds\n(Miville-Desch$\^e$nes et al. 2017)'.format(rmin))
+    
+    plt.plot(ts['rh'], ts['mdyn'], 's', color='tab:blue', ms=8, label='Dwarf galaxies\n(McConnachie 2012)')
+    plt.plot(tgc['rh'], gc_mass, '^', color='tab:green', ms=8, label='Globular clusters\n(Baumgardt & Hilker 2018)')
+    
+    #plt.plot(rsrange2.to(u.pc), mrange.value, 'r-', label='$\Lambda$CDM halos\n(Diemer et al. 2017)')
+    plt.fill_betweenx(mrange.value, rs_high.to(u.pc).value, rs_low.to(u.pc).value, color='r', edgecolor='none', linewidth=0, alpha=0.4, label='$\Lambda$CDM halos\n(Diemer et al. 2017)')
+    
+    plt.xlim(1, 1e3)
+    plt.ylim(1e4,1e9)
+    plt.gca().set_xscale('log')
+    plt.gca().set_yscale('log')
+    
+    # customize the order of legend entries
+    handles, labels = plt.gca().get_legend_handles_labels()
+    print(labels)
+    order = [3,0,2,1,4]
+    handles = [handles[x] for x in order]
+    labels = [labels[x] for x in order]
+    plt.legend(handles, labels, frameon=False, loc=2, fontsize='medium', bbox_to_anchor=(1,1))
+    
+    plt.xlabel('Size [pc]')
+    plt.ylabel('Mass [M$_\odot$]')
+    
+    plt.sca(ax[1])
+    plt.axis('off')
+    
+    plt.tight_layout()
+    plt.savefig('../paper/mass_size.pdf')
+
 
 
 ##############
