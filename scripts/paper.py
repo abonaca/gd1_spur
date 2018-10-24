@@ -353,6 +353,10 @@ def orbit_cross():
 
 def mass_size():
     """Compilation of masses and sizes of various objects"""
+    
+    #mpl.rc('text', usetex=True)
+    #mpl.rc('text.latex', preamble='\usepackage{color}')
+    
     hull = np.load('../data/hull_points_v500w200.npz')
     vertices = hull['vertices']
     vertices[:,1] = 10**vertices[:,1]
@@ -377,6 +381,10 @@ def mass_size():
     #tgc.pprint()
     gc_mass = np.array([float(tgc['mass'][x][1:5])*10**float(tgc['mass'][x][-2:-1]) for x in range(len(tgc))])
     
+    colors = [mpl.cm.bone(x) for x in [0.15,0.3,0.5,0.7,0.8]]
+    accent_colors = [mpl.cm.bone(x-0.2) for x in [0.15,0.3,0.5,0.7,0.8]]
+    ms = 6
+    accent_ms = 8
     
     plt.close()
     fig, ax = plt.subplots(1, 2, figsize=(11,6), gridspec_kw={'width_ratios':[1.7,1]})
@@ -387,13 +395,16 @@ def mass_size():
     p = mpl.patches.Polygon(xy_vert, closed=True, lw=2, ec='0.8', fc='0.9', zorder=0, label='GD-1 perturber\n(Bonaca et al. 2018)')
     patch = plt.gca().add_patch(p)
     
-    plt.plot(t['Rf'][outer], t['Mf'][outer], 'o', color='tab:orange', ms=8, mec='none', label='Outer disk molecular clouds\n(Miville-Desch$\^e$nes et al. 2017)'.format(rmin))
+    plt.plot(t['Rf'][outer], t['Mf'][outer], 'o', color=colors[2], ms=accent_ms, mec=accent_colors[2], mew=1, label='Outer disk molecular clouds\n(Miville-Desch$\^e$nes et al. 2017)')
+    plt.plot(t['Rf'][outer], t['Mf'][outer], 'o', color=colors[2], ms=ms, mec='none', label='')
     
-    plt.plot(ts['rh'], ts['mdyn'], 's', color='tab:blue', ms=8, label='Dwarf galaxies\n(McConnachie 2012)')
-    plt.plot(tgc['rh'], gc_mass, '^', color='tab:green', ms=8, label='Globular clusters\n(Baumgardt & Hilker 2018)')
+    plt.plot(ts['rh'], ts['mdyn'], 's', color=colors[4], ms=accent_ms, mec=accent_colors[4], mew=1, label='Dwarf galaxies\n(McConnachie 2012)')
+    plt.plot(ts['rh'], ts['mdyn'], 's', color=colors[4], ms=ms, mec='none', label='')
+
+    plt.plot(tgc['rh'], gc_mass, '^', color=colors[3], ms=accent_ms, mec=accent_colors[3], mew=1, label='Globular clusters\n(Baumgardt & Hilker 2018)')
+    plt.plot(tgc['rh'], gc_mass, '^', color=colors[3], ms=ms, mec='none', label='')
     
-    #plt.plot(rsrange2.to(u.pc), mrange.value, 'r-', label='$\Lambda$CDM halos\n(Diemer et al. 2017)')
-    plt.fill_betweenx(mrange.value, rs_high.to(u.pc).value, rs_low.to(u.pc).value, color='r', edgecolor='none', linewidth=0, alpha=0.4, label='$\Lambda$CDM halos\n(Diemer et al. 2017)')
+    plt.fill_betweenx(mrange.value, rs_high.to(u.pc).value, rs_low.to(u.pc).value, color=colors[1], edgecolor='none', linewidth=0, alpha=0.4, label='$\Lambda$CDM halos\n(Diemer et al. 2017)')
     
     plt.xlim(1, 1e3)
     plt.ylim(1e4,1e9)
@@ -406,7 +417,7 @@ def mass_size():
     order = [3,0,2,1,4]
     handles = [handles[x] for x in order]
     labels = [labels[x] for x in order]
-    plt.legend(handles, labels, frameon=False, loc=2, fontsize='medium', bbox_to_anchor=(1,1))
+    plt.legend(handles, labels, frameon=False, loc=2, fontsize='medium', bbox_to_anchor=(1,1), markerscale=1.5, labelspacing=1)
     
     plt.xlabel('Size [pc]')
     plt.ylabel('Mass [M$_\odot$]')
@@ -416,7 +427,7 @@ def mass_size():
     
     plt.tight_layout()
     plt.savefig('../paper/mass_size.pdf')
-
+    #mpl.rc('text', usetex=False)
 
 
 ##############
