@@ -354,17 +354,39 @@ Should the encounter scenario be confirmed, these new data will also make strong
 We presented a model of the GD-1 stream which experienced a recent encounter with a massive, dense object.
 This fly-by imparted significant velocity kicks to the closest stars both along the stream, which produced a gap in the stream, and perpendicular to the stream, which launched a spur of stars outside of the main stream.
 The qualitative and quantitative agreement between the observed and modeled gap and spur suggest that these GD-1 structures are the first dynamical evidence for dark halo substructure.
-Below we discuss how to ascertain this conclusion by suggesting improvements for future modeling of GD-1 (Section~\ref{sec:caveats}), reviewing possible origin scenarios of the observed features (Section~\ref{sec:origin}), and outline strategies to distinguish these scenarios with additional observations (Section~\ref{sec:future}).
+Below we discuss how to ascertain this conclusion by suggesting improvements for future modeling of GD-1 (Section~\ref{sec:caveats}), reviewing possible origin scenarios of the observed features (Section~\ref{sec:origin}), and outlining strategies to distinguish these scenarios with additional observations (Section~\ref{sec:future}).
 
 \subsection{Limitations of the current modeling setup}
 \label{sec:caveats}
-- not true N-body (last stage of disruption can produce overdensities)
-- stream==orbit (just track, no density; don't expect to be very wrong as the same fiducial in streakline and orbit works)
-- single density profile assumed
+A number of simplifying assumptions were made to facilitate the initial modeling of complex features observed in the GD-1 stream.
+While we expect these assumptions to still produce unbiased inference, there is a lot more information available in the present data than was employed so far.
+We will need better models to fully explain these observations, so in this section we discuss areas for improvement in modeling of the GD-1 system.
 
-- pseudo-likelihood (conservative: accepting wider range of models, see model B other side of the loop sticking out), some things may be wrong if likelihood is wrong
-- not a comprehensive search of the parameter space
-- different islands in the parameter space may still be allowed (say lower mass); always true; low dimensional, could almost brute-force it (for future, with actual likelihood)
+Our fiducial model of GD-1 is built from test particles released by the disrupting progenitor directly from the Lagrange points, instead of particles dynamically ejected from the globular cluster progenitor itself.
+Stream models generated under this assumption match the distribution of tidal debris (including the intrinsic density variations along the tidal tails) from direct N-body simulations while the progenitor persists \citep[e.g.,][]{kupper2012,fardal2015}.
+However, the method is yet to be tested when the progenitor is completely disrupted, such as in the case of GD-1, and most of the known halo streams.
+Last stages of tidal disruption can result in enhanced density variations \citep[e.g., for an exoplanet disruption, see][]{}, so to fully account for all the structures observed in GD-1 we will need a full N-body model of the stream.
+
+Of course, the reason we decided against employing N-body models in this work is that they are computationally expensive, and prohibitively so for any kind of parameter space exploration.
+This is why we further focused only on the perturbed region of GD-1 when inferring properties of its perturber, and assumed that all stars are on the same orbit.
+Reassuringly, fiducial encounter parameters produce qualitatively similar features both in an idealized stream (Figure~\ref{fig:fiducial}) and in stars along a single orbit (Figure~\ref{fig:scalings}).
+As discussed in Section~\ref{sec:perturber_properties}, this choice limited us to only matching positions of stream features, and to disregard density along the stream.
+Since the density profile of the gap is also expected to contain information about the perturber \citep{eb2015b}, going forward we will need to have a proper generative model of the stream.
+
+Furthermore, our treatment of the GD-1 perturber is also simplistic.
+Although we explored perturbers of different masses and sizes, they all follow the \citet{hernquist1990} density profile.
+This profile reduces to the point mass case in the limit of vanishing scale size, and is similar to the profile of dark matter halos \citep[NFW,][]{navarro1997} at small radii, although at larger radii it falls off more steeply as $r^{-4}$, compared to $r^{-3}$ for NFW halos.
+While the inference of the perturber's scale radius should be robust to the details of its outer density profile, future work should explore whether any observables can be traced to the perturber's density structure, as it might hold additional clues to its origin.
+
+In the absence of a realistic stream model, our inference of the GD-1 perturber was based on a set of high-level criteria instead of directly calculating the likelihood of the observed spatial distribution of tidal debris for a given set of model parameters \citep[e.g., likelihood developed in][]{bonaca2014}.
+Spot-checking of the accepted models suggests we erred on the conservative side and accepted a wide range of models, some of which would likely be ruled out with the full likelihood.
+For example, model B in Figure~\ref{fig:corner} has both sides of its loop appreciably offset from the stream track, instead of just the trailing side coinciding with the spur.
+Because of that, with the current approach we only bound the allowed parameter space, and remain agnostic to the relative likelihood of models within the bounds.
+To find preferred regions of the parameter space and recover the posterior density, future inference will need to employ a more realistic model of GD-1 and a proper likelihood.
+
+And finally, our search of the parameter space has not been exhaustive, so different islands may still be allowed (for example, at a lower perturber mass or older encounter).
+This is, of course, always true when sampling a parameter space \citep[appropriate mcmc reference][]{}.
+However, ours is sufficiently low-dimensional that future studies employing the formal likelihood should be able to perform a brute-force sweep of the entire parameter volume and identify all classes of perturber properties that explain GD-1 features.
 
 \subsection{Origin of GD-1 structures}
 \label{sec:origin}
@@ -392,17 +414,58 @@ Below we discuss how to ascertain this conclusion by suggesting improvements for
 \label{fig:mass_size}
 \end{figure*}
 
-- perturbative:
-- known halo satellites
-- giant molecular clouds
-- black holes
-- dark matter subhalos
-- implications: black hole - bound stellar cluster, some evidence of accretion; dark matter - possible stellar cluster too, annihilation (dense); mass profile to distinguish the two if not accreting or annihilating (microlensing)
+Many massive objects are expected to orbit the Galaxy, and should any encounter a cold stream, the perturbation remains recorded in the stream's density profile.
+So, the presence of features in GD-1 is not surprising, but their intricacy is.
+In this section discuss what the observed structures suggest about their origin.
 
-- non-perturbative:
-- structure in the progenitor
-- stream feather
-- chaos
+- in the halo, there are known satellites (dwarf galaxies and globular cluster)
+- thanks to \gaia, most of them now are fully located in the 6D phase space \citep{simon2018, gdr2_satellites}
+- if we assume a potential, this means we can find their orbits and check if any came close to the gd-1 gap
+- in our fiducial galaxy, none of them do, as shown in Figure~\ref{fig:known_encounters}
+- true even after sampling uncertainties
+% We sample from the error distributions for each kinematic measurement of each satellite to assess whether any of the known Milky Way satellites could have come close to the location of the gap and spur location within the last 2\,Gyr.
+% We generate 2048 samples of the present-day 6D phase-space positions for each satellite and integrate these orbits in our assumed 3-component Milky Way mass model (Price-Whelan et al. 2017, Bovy et al. 2015).
+% We find that most satellites have no samples that come within 100 pc of the gap.
+% Two globular clusters, NGC 6496 and IC 4499, come within 100 pc in 0.6\% and 0.2\% of their orbit samples, respectively.
+% This suggests that none of the known Milky Way satellites with measured kinematics could be responsible for the observed density variations in GD-1, but we note that, for these two globular clusters, improved distance measurements would be needed to improve their orbits and definitely rule them out as perturbers.
+
+- the only thing that comes close is the Galactic disk
+- disk shocking can facilitate disruption \citep{dehnen2004}, but the density contrast in the disk is not high enough to produce sharp features such as the GD-1 gap and spur
+- \citet{amorisco2016} showed that gmcs in the disk can introduce 
+- to see if viable to have produced GD-1 features, in Figure~\ref{fig:mass_size} we the expected mass and size of the GD-1 perturber, and compare it to masses and sizes of dwarf galaxies, globular clusters and giant molecular clouds
+- while globular clusters and some compact dwarf galaxies have the right mass and size, gmcs are too fluffy
+- just to check a bit further, we created GD-1 models perturbed by a $10^7\,\rm M_\odot$ gmc moving on a circular orbit for the three most recent disk crossing times
+- none of the configurations result in a spur at the right location, thus disfavoring gmcs as the GD-1 perturber
+
+- most probable perturber: a dark object in the halo
+- could be a low luminosity, undiscovered satellite as they have approximately the required masses and sizes
+- it would have to be fortuitously hiding in the disk plane, or moving very fast to escape detection, as our best estimate is that the encounter was recent
+- alternatively, the perturber could be completely dark
+- cosmologically sound expectation would be a dark matter subhalo
+- but since we infer a dense perturber, it could also be a black hole
+- very massive black hole, typically found in centers of galaxies (GD-1 perturber is comparable in mass to Sgr A$^\star$)
+- given the abundance of massive primordial black holes from ? is low \citep{}, this encounter with GD-1 would be a rare event, and we would not expect to see similar features in other streams upon a comparable amount of scrutiny
+
+- on the other hand, many subhalos are expected
+- despite depletion \citep{gk2017}, GD-1 is expected to have encountered a few \citep{erkal}
+- with two prominent gaps, and ascribing one to the progenitor disruption, one due to the subhalo works out in terms of rates
+- however, inferred perturber a factor of a few more dense than the concentration for isolated halos (dark shaded region in Figure~\ref{fig:mass_size} with 0.15\,dex scatter)
+- would explain how it survived disruption in the tidal field of the inner galaxy, but is at the very limit of high concentration tail in low mass halos \citep{diemer2015}
+- even though they experience stripping, this should not really affect the rs \citep{arthur}
+- details of the profile would matter here, so further work required in modeling, but most likely, we will need additional data to fully constrain it
+- cosmological significance of a low-mass subhalo detection strongly motivates follow up, and we provide specific strategies in Section~\ref{sec:future}
+
+In this work we assumed that GD-1 was perturbed because of features in its density profile.
+However, N-body simulations of disrupting globular clusters show that a certain level of structure in the resulting stream is intrinsic to the disruption process \citep[e.g.,][]{kupper2008,kupper2010}.
+None of the present-day globular clusters would produce density variations as prominent as those observed in GD-1 \citep[see][]{pwb}, but if the GD-1 progenitor had a more complex internal structure than the known globular clusters, this might propagate to the morphology of its tidal tails and account for the observed features.
+Non-trivial morphologies in stellar streams can also be produced by chaotic dispersal \citep{pw2016}.
+For example, unexpectedly short lengths of the Ophiuchus and Palomar~5 streams have been attributed to chaos: in a chaotic potential featuring a rotating bar, large swaths of these streams can be dispersed to surface densities below our current detection threshold \citep{pw2016b,pearson2017}.
+GD-1, on a retrograde orbit and with a larger pericenter than either of these streams, is deemed less susceptible to the chaotic influence of the rotating bar \citep{bb2018}.
+Furthermore, the gap and spur features in GD-1 are much more localized than typical signatures of chaos in complex, time-dependent gravitational potentials, but there is still a lot of parameter space left to explore.
+
+Regardless of their origin, features seen in GD-1 are a result of an interesting event.
+The stream either encountered a likely exotic perturber, has been shaped by a curious dynamical effect, or originates from an unusual progenitor.
+The perturbation scenario presented in this work has a unique kinematic signature, so we next discuss how to direct future observations and definitively ascertain the origin of GD-1 features.
 
 \subsection{Future prospects}
 \label{sec:future}
@@ -410,6 +473,7 @@ Below we discuss how to ascertain this conclusion by suggesting improvements for
 - assemble all the predictions (bulleted list)
 - get better orbit of the plausible object 
 
+- implications: black hole - bound stellar cluster, some evidence of accretion; dark matter - possible stellar cluster too, annihilation (dense); mass profile to distinguish the two if not accreting or annihilating (microlensing)
 - if black hole:
 - network of streams: image dark matter in 3+1D
 
@@ -457,13 +521,13 @@ This work has made use of data from the European Space Agency (\acronym{ESA}) mi
 
 \software{
 \package{Astropy} \citep{astropy:2013, astropy:2018},
-\package{colossus} \citep{},
+\package{colossus} \citep{diemer2018},
 \package{gala} \citep{Price-Whelan:2017},
 \package{emcee} \citep{Foreman-Mackey:2013},
 \package{IPython} \citep{Perez:2007},
 \package{matplotlib} \citep{Hunter:2007},
 \package{numpy} \citep{Van-der-Walt:2011},
-\package{scipy} \citep{}
+\package{scipy} \citep{scipy}
 }
 
 \bibliographystyle{aasjournal}
