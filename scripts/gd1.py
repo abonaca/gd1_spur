@@ -1793,20 +1793,48 @@ def get_unique(label=''):
     models, ind = np.unique(sampler['chain'], axis=0, return_index=True)
     #print(np.shape(models), np.shape(ind))
     #print(np.shape(np.unique(sampler['lnp'])))
+    ifinite = np.isfinite(sampler['lnp'][ind])
     
-    np.savez('../data/unique_samples{}'.format(label), chain=models, lnp=sampler['lnp'][ind])
+    np.savez('../data/unique_samples{}'.format(label), chain=models[ifinite], lnp=sampler['lnp'][ind][ifinite])
 
-def check_chain(full=False, label=''):
+def choose_lnp_threshold(label='', p=10):
+    """"""
+    sampler = np.load('../data/samples{}.npz'.format(label))
+    ifinite = np.isfinite(sampler['lnp'])
+    lnp = sampler['lnp'][ifinite]
+    
+    pp = np.percentile(lnp, p)
+    print(pp)
+    
+    plt.close()
+    plt.figure(figsize=(8,5))
+    
+    plt.hist(lnp, bins=100, histtype='step', color='k', lw=2)
+    plt.axvline(pp, color='firebrick', lw=4, alpha=0.4)
+    
+    plt.gca().set_yscale('log')
+    
+    plt.tight_layout()
+
+def check_chain(full=False, label='', p=1):
     """"""
     sampler = np.load('../data/unique_samples{}.npz'.format(label))
     
     models = np.unique(sampler['chain'], axis=0)
+    models = sampler['chain']
+    lnp = sampler['lnp']
+    pp = np.percentile(lnp, p)
+    
+    ind = lnp>=pp
+    models = models[ind]
+    lnp = lnp[ind]
+    
     params = ['T', 'bx', 'by', 'vx', 'vy', 'logM', 'rs']
     print(np.shape(models), np.shape(models)[0]/np.shape(sampler['chain'])[0])
     Npar = np.shape(models)[1]
     
     if full==False:
-        abr = models[:,:-2]
+        abr = models[:,:-3]
         abr[:,1] = np.sqrt(models[:,1]**2 + models[:,2]**2)
         abr[:,2] = np.sqrt(models[:,3]**2 + models[:,4]**2)
         abr[:,0] = models[:,0]
@@ -1818,8 +1846,9 @@ def check_chain(full=False, label=''):
             abr[:,3] = models[:,6]
             abr[:,4] = models[:,5]
             params = ['T [Gyr]', 'B [pc]', 'V [km s$^{-1}$]', '$r_s$ [pc]', 'log M/M$_\odot$']
-            lims = [[0.,2], [0.1,100], [10,1000], [0.001,1000], [5,9]]
+            lims = [[0.,2], [0.1,75], [10,500], [0.001,40], [5,9]]
             logscale = [False, True, True, True, False]
+            logscale = [False, False, False, False, False]
         else:
             lims = [[0.,2], [0.1,100], [10,1000], [5,9]]
             logscale = [False, True, True, False]
@@ -1833,15 +1862,17 @@ def check_chain(full=False, label=''):
     np.random.seed(59)
     ind = np.random.randint(Nsample, size=Nc)
     hull_ids = np.empty(0, dtype=int)
+    panel_id = np.empty((0,2), dtype=int)
+    vertices = np.empty((0,2))
 
     plt.close()
-    fig, ax = plt.subplots(Nvar-1, Nvar-1, figsize=(dax*Nvar, dax*Nvar), sharex='col', sharey='row')
+    fig, ax = plt.subplots(Nvar-1, Nvar-1, figsize=(dax*Nvar, dax*Nvar), sharex='col', sharey='row' ,squeeze=False)
     
     for i in range(0,Nvar-1):
         for j in range(i+1,Nvar):
             plt.sca(ax[j-1][i])
             
-            plt.plot(models[:,i], models[:,j], '.', ms=1, alpha=0.1, color='0.2', rasterized=True)
+            #plt.plot(models[:,i], models[:,j], '.', ms=1, alpha=0.1, color='0.2', rasterized=True)
             
             #for k in range(Nc):
                 #plt.plot(models[ind[k]][i], models[ind[k]][j], 'o', ms=4, color='PaleVioletRed')
@@ -1850,17 +1881,36 @@ def check_chain(full=False, label=''):
             hull = scipy.spatial.ConvexHull(points)
             
             xy_vert = 10**np.array([points[hull.vertices,0], points[hull.vertices,1]]).T
+            vertices = np.concatenate([vertices, xy_vert])
             hull_ids = np.concatenate([hull_ids, hull.vertices])
             
-            p = mpl.patches.Polygon(xy_vert, closed=True, ec='0.3', fc='0.8', zorder=0)
+            #print(len(hull.vertices))
+            current_id = np.tile(np.array([i,j]), len(hull.vertices)).reshape(-1,2)
+            panel_id = np.concatenate([panel_id, current_id])
+            
+            p = mpl.patches.Polygon(xy_vert, closed=True, lw=2, ec='0.8', fc='0.9', zorder=0)
             plt.gca().add_artist(p)
             
             #for simplex in hull.simplices:
                 #plt.plot(points[simplex, 0], points[simplex, 1], 'k-')
     
-    hull_ids = np.unique(hull_ids)
-    print(np.size(hull_ids))
-    np.save('../data/hull_points{}'.format(label), hull_ids)
+    #hull_ids = np.unique(hull_ids)
+    #print(np.size(hull_ids))
+    np.savez('../data/hull_points{}'.format(label), all=hull_ids, unique=np.unique(hull_ids), panel=panel_id, vertices=vertices)
+    
+    t_impact = 0.495*u.Gyr
+    M = 5e6*u.Msun
+    rs = 0.1*rs_diemer(M)
+    bnorm = 15*u.pc
+    vnorm = 250*u.km/u.s
+    
+    pfid = [t_impact.to(u.Gyr).value, bnorm.to(u.pc).value, vnorm.to(u.km/u.s).value, (rs.to(u.pc).value), np.log10(M.to(u.Msun).value)]
+    
+    for i in range(Nvar-1):
+        for j in range(i+1, Nvar):
+            #ind = i + (j-1)*Nvar + Nvar
+            plt.sca(ax[j-1][i])
+            plt.plot(pfid[i], pfid[j], '*', ms=20, mec='orangered', mew=1.5, color='orange')
     
     for i in range(0,Nvar-1):
         for j in range(i+1,Nvar-1):
@@ -1883,23 +1933,17 @@ def check_chain(full=False, label=''):
                 plt.gca().set_yscale('log')
             plt.ylim(lims[k+1])
     
-    if Npar>6:
-        mrange = 10**np.linspace(np.min(models[:,4]), np.max(models[:,4]), 20)*u.Msun
-        rsrange = rs_hernquist(mrange)
-        rsrange2 = rs_diemer(mrange)
+    #if Npar>6:
+        #mrange = 10**np.linspace(np.min(models[:,4]), np.max(models[:,4]), 20)*u.Msun
+        #rsrange = rs_hernquist(mrange)
+        #rsrange2 = rs_diemer(mrange)
         
-        plt.sca(ax[3][3])
-        plt.plot(0.1*rsrange2.to(u.pc), np.log10(mrange.value), ':', color='DarkSlateBlue', lw=1.5)
-        plt.plot(0.3*rsrange2.to(u.pc), np.log10(mrange.value), '--', color='DarkSlateBlue', lw=1.5)
-        plt.plot(0.84*rsrange2.to(u.pc), np.log10(mrange.value), '-', color='DarkSlateBlue', lw=1.5)
-        plt.plot(1.16*rsrange2.to(u.pc), np.log10(mrange.value), '-', color='DarkSlateBlue', lw=1.5)
-        #plt.fill_betweenx(0.84*rsrange2.to(u.pc).value, 1.16*rsrange2.to(u.pc).value, np.log10(mrange.value), color='DarkSlateBlue')
+        #plt.sca(ax[3][3])
+        #plt.plot(0.1*rsrange2.to(u.pc), np.log10(mrange.value), ':', color='DarkSlateBlue', lw=1.5)
+        #plt.plot(0.3*rsrange2.to(u.pc), np.log10(mrange.value), '--', color='DarkSlateBlue', lw=1.5)
+        #plt.plot(0.84*rsrange2.to(u.pc), np.log10(mrange.value), '-', color='DarkSlateBlue', lw=1.5)
+        #plt.plot(1.16*rsrange2.to(u.pc), np.log10(mrange.value), '-', color='DarkSlateBlue', lw=1.5)
 
-        #plt.plot(0.1*rsrange.to(u.pc), np.log10(mrange.value), ':', color='SlateBlue', lw=1.5)
-        #plt.plot(0.3*rsrange.to(u.pc), np.log10(mrange.value), '--', color='SlateBlue', lw=1.5)
-        #plt.plot(0.84*rsrange.to(u.pc), np.log10(mrange.value), '-', color='SlateBlue', lw=1.5)
-        #plt.plot(1.16*rsrange.to(u.pc), np.log10(mrange.value), '-', color='SlateBlue', lw=1.5)
-        ##plt.plot(rsrange.to(u.pc), np.log10(mrange.value), '-', color='SlateBlue', lw=1.5)
     
     plt.tight_layout(h_pad=0, w_pad=0)
     plt.savefig('../plots/corner{}_f{:d}.png'.format(label, full))
@@ -1949,7 +1993,7 @@ def check_impulse(label=''):
     plt.tight_layout()
     plt.savefig('../plots/impulse{}.png'.format(label))
 
-def lnprob_verbose(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb, poly, wangle, delta_phi2, Nb, bins, bc, base_mask, hat_mask, f_gap, gap_position, gap_width, N2, percentile1, percentile2, phi1_min, phi1_max, phi2_err, spx, spy, quad_phi1, quad_phi2, Nquad, chigap_max, chispur_max):
+def lnprob_verbose(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb, poly, wangle, delta_phi2, Nb, bins, bc, base_mask, hat_mask, f_gap, gap_position, gap_width, N2, percentile1, percentile2, phi1_min, phi1_max, phi2_err, spx, spy, quad_phi1, quad_phi2, Nquad, chigap_max, chispur_max, colored=True, plot_comp=True, chi_label=True):
     """Check if a model is better than the fiducial"""
     
     if (x[0]<0) | (np.sqrt(x[3]**2 + x[4]**2)>1000):
@@ -1988,7 +2032,7 @@ def lnprob_verbose(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstrea
     model_hat = np.minimum(model_hat, model_base*f_gap)
     ytop_model = tophat(bc, model_base, model_hat,  gap_position, gap_width)
     
-    chi_gap = np.sum((h_model - ytop_model)**2/(2*yerr)**2)/Nb
+    chi_gap = np.sum((h_model - ytop_model)**2/(yerr)**2)/Nb
     
     # spur chi^2
     top1 = np.percentile(dE[:N2], percentile1)
@@ -2014,19 +2058,30 @@ def lnprob_verbose(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstrea
     
     plt.sca(ax[0][0])
     plt.plot(bc, h_model, 'o')
-    plt.plot(bc, ytop_model, 'k-')
+    if plot_comp:
+        plt.plot(bc, ytop_model, 'k-')
+
+    if chi_label:
+        plt.text(0.95, 0.15, '$\chi^2_{{gap}}$ = {:.2f}'.format(chi_gap), ha='right', transform=plt.gca().transAxes, fontsize='small')
     plt.ylabel('N')
+    plt.xlim(-60,-20)
     
     plt.sca(ax[1][0])
     plt.plot(cg.phi1.wrap_at(wangle).value, dE, 'o')
-    plt.plot(cg.phi1.wrap_at(wangle).value[aloop_mask], dE[aloop_mask], 'o')
+    if colored:
+        plt.plot(cg.phi1.wrap_at(wangle).value[aloop_mask], dE[aloop_mask], 'o')
     plt.ylabel('$\Delta$ E')
     
     plt.sca(ax[2][0])
     plt.plot(cg.phi1.wrap_at(wangle).value, cg.phi2.value, 'o')
-    plt.plot(cg.phi1.wrap_at(wangle).value[loop_mask], cg.phi2.value[loop_mask], 'o')
-    #plt.plot(cg.phi1.wrap_at(wangle).value[loop_mask], f(cg.phi1.wrap_at(wangle).value[loop_mask]), 'k.')
+    if colored:
+        plt.plot(cg.phi1.wrap_at(wangle).value[loop_mask], cg.phi2.value[loop_mask], 'o')
+    if plot_comp:
+        isort = np.argsort(cg.phi1.wrap_at(wangle).value[loop_mask])
+        plt.plot(cg.phi1.wrap_at(wangle).value[loop_mask][isort], f(cg.phi1.wrap_at(wangle).value[loop_mask])[isort], 'k-')
     
+    if chi_label:
+        plt.text(0.95, 0.15, '$\chi^2_{{spur}}$ = {:.2f}'.format(chi_spur), ha='right', transform=plt.gca().transAxes, fontsize='small')
     plt.xlabel('$\phi_1$ [deg]')
     plt.ylabel('$\phi_2$ [deg]')
     plt.xlim(-60,-20)
@@ -2034,7 +2089,8 @@ def lnprob_verbose(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstrea
     
     plt.sca(ax[0][1])
     plt.plot(c.x.to(u.kpc), c.y.to(u.kpc), 'o')
-    plt.plot(c.x.to(u.kpc)[loop_mask], c.y.to(u.kpc)[loop_mask], 'o') #, color='orange')
+    if colored:
+        plt.plot(c.x.to(u.kpc)[loop_mask], c.y.to(u.kpc)[loop_mask], 'o') #, color='orange')
     
     plt.xlabel('x [kpc]')
     plt.ylabel('y [kpc]')
@@ -2042,7 +2098,8 @@ def lnprob_verbose(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstrea
     plt.sca(ax[1][1])
     cr = np.sqrt(c.x**2 + c.y**2)
     plt.plot(cr.to(u.kpc), c.z.to(u.kpc), 'o')
-    plt.plot(cr.to(u.kpc)[loop_mask], c.z.to(u.kpc)[loop_mask], 'o') #, color='orange')
+    if colored:
+        plt.plot(cr.to(u.kpc)[loop_mask], c.z.to(u.kpc)[loop_mask], 'o') #, color='orange')
     
     plt.xlabel('R [kpc]')
     plt.ylabel('z [kpc]')
@@ -2055,7 +2112,8 @@ def lnprob_verbose(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstrea
     #plt.plot(cg.phi1.wrap_at(wangle).value[~aloop_mask], cg.radial_velocity.to(u.km/u.s)[~aloop_mask], 'o')
     #plt.plot(cg.phi1.wrap_at(wangle).value, vr0, 'o')
     plt.plot(cg.phi1.wrap_at(wangle).value, dvr, 'o')
-    plt.plot(cg.phi1.wrap_at(wangle).value[loop_mask], dvr[loop_mask], 'o')
+    if colored:
+        plt.plot(cg.phi1.wrap_at(wangle).value[loop_mask], dvr[loop_mask], 'o')
     
     plt.xlabel('$\phi_1$ [deg]')
     plt.ylabel('$\Delta$ $V_r$ [km s$^{-1}$]')
@@ -2065,6 +2123,79 @@ def lnprob_verbose(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstrea
     plt.tight_layout()
     
     return fig, ax, chi_gap, chi_spur, np.sum(loop_quadrant), -(chi_gap + chi_spur)
+
+def lnprob_detailed(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstream, par_pot, potential, potential_perturb, poly, wangle, delta_phi2, Nb, bins, bc, base_mask, hat_mask, f_gap, gap_position, gap_width, N2, percentile1, percentile2, phi1_min, phi1_max, phi2_err, spx, spy, quad_phi1, quad_phi2, Nquad, chigap_max, chispur_max, colored=True, plot_comp=True, chi_label=True):
+    """Check if a model is better than the fiducial"""
+    
+    if (x[0]<0) | (np.sqrt(x[3]**2 + x[4]**2)>1000):
+        return -np.inf
+    
+    x[5] = 10**x[5]
+    params = [x_*u_ for x_, u_ in zip(x, params_units)]
+
+    if potential_perturb==1:
+        t_impact, bx, by, vx, vy, M, Tgap = params
+        par_perturb = np.array([M.si.value, 0., 0., 0.])
+        par_noperturb = np.array([0., 0., 0., 0.])
+    else:
+        t_impact, bx, by, vx, vy, M, rs, Tgap = params
+        par_perturb = np.array([M.si.value, rs.si.value, 0., 0., 0.])
+        par_noperturb = np.array([0., rs.si.value, 0., 0., 0.])
+    
+    # calculate model
+    x1, x2, x3, v1, v2, v3, dE = interact.abinit_interaction(xend, vend, dt_coarse.si.value, dt_fine.si.value, t_impact.si.value, Tenc.si.value, Tstream.si.value, Tgap.si.value, Nstream, par_pot, potential, par_perturb, potential_perturb, bx.si.value, by.si.value, vx.si.value, vy.si.value)
+    c = coord.Galactocentric(x=x1*u.m, y=x2*u.m, z=x3*u.m, v_x=v1*u.m/u.s, v_y=v2*u.m/u.s, v_z=v3*u.m/u.s, **gc_frame_dict)
+    cg = c.transform_to(gc.GD1)
+    
+    # gap chi^2
+    phi2_mask = np.abs(cg.phi2.value - poly(cg.phi1.wrap_at(wangle).value))<delta_phi2
+    h_model, be = np.histogram(cg.phi1[phi2_mask].wrap_at(wangle).value, bins=bins)
+    yerr = np.sqrt(h_model+1)
+    
+    model_base = np.median(h_model[base_mask])
+    model_hat = np.median(h_model[hat_mask])
+    model_hat = np.minimum(model_hat, model_base*f_gap)
+    ytop_model = tophat(bc, model_base, model_hat,  gap_position, gap_width)
+    
+    chi_gap = np.sum((h_model - ytop_model)**2/(yerr)**2)/Nb
+    
+    # spur chi^2
+    top1 = np.percentile(dE[:N2], percentile1)
+    top2 = np.percentile(dE[N2:], percentile2)
+    ind_loop1 = np.where(dE[:N2]<top1)[0][0]
+    ind_loop2 = np.where(dE[N2:]>top2)[0][-1]
+    print(ind_loop1, cg.phi1.wrap_at(wangle).deg[ind_loop1])
+    print(ind_loop2, cg.phi1.wrap_at(wangle).deg[ind_loop2+N2])
+    
+    f = scipy.interpolate.interp1d(spx, spy, kind='quadratic')
+    
+    aloop_mask = np.zeros(Nstream, dtype=bool)
+    aloop_mask[ind_loop1:ind_loop2+N2] = True
+    phi1_mask = (cg.phi1.wrap_at(wangle)>phi1_min) & (cg.phi1.wrap_at(wangle)<phi1_max)
+    loop_mask = aloop_mask & phi1_mask
+    Nloop = np.sum(loop_mask)
+    #print(np.min(cg.phi1.wrap_at(wangle).deg[loop]))
+
+    chi_spur = np.sum((cg.phi2[loop_mask].value - f(cg.phi1.wrap_at(wangle).value[loop_mask]))**2/phi2_err**2)/Nloop
+
+    loop_quadrant = (cg.phi1.wrap_at(wangle)[loop_mask]>quad_phi1) & (cg.phi2[loop_mask]>quad_phi2)
+    
+    isort = np.argsort(cg.phi1.wrap_at(wangle).value[~aloop_mask])
+    vr0 = np.interp(cg.phi1.wrap_at(wangle).value, cg.phi1.wrap_at(wangle).value[~aloop_mask][isort], cg.radial_velocity.to(u.km/u.s)[~aloop_mask][isort])*u.km/u.s
+    dvr = cg.radial_velocity.to(u.km/u.s) - vr0
+    
+    mu10 = np.interp(cg.phi1.wrap_at(wangle).value, cg.phi1.wrap_at(wangle).value[~aloop_mask][isort], cg.pm_phi1_cosphi2.to(u.mas/u.yr)[~aloop_mask][isort])*u.mas/u.yr
+    dmu1 = cg.pm_phi1_cosphi2.to(u.mas/u.yr) - mu10
+    
+    mu20 = np.interp(cg.phi1.wrap_at(wangle).value, cg.phi1.wrap_at(wangle).value[~aloop_mask][isort], cg.pm_phi2.to(u.mas/u.yr)[~aloop_mask][isort])*u.mas/u.yr
+    dmu2 = cg.pm_phi2.to(u.mas/u.yr) - mu20
+    
+    dist0 = np.interp(cg.phi1.wrap_at(wangle).value, cg.phi1.wrap_at(wangle).value[~aloop_mask][isort], cg.distance.to(u.pc)[~aloop_mask][isort])*u.pc
+    ddist = cg.distance.to(u.pc) - dist0
+    
+    res = {'params': params, 'stream': cg, 'dvr': dvr, 'dmu1': dmu1, 'dmu2': dmu2, 'ddist': ddist, 'all_loop': aloop_mask, 'phi1_loop': loop_mask, 'chi_gap': chi_gap, 'chi_spur': chi_spur, 'bincen': bc, 'nbin': h_model, 'nexp': ytop_model}
+    
+    return res
 
 def rs_hernquist(M):
     """Return Hernquist scale radius for a halo of mass M"""
@@ -2187,11 +2318,14 @@ def get_lnprobargs():
     
     return lnprob_args
 
-def check_model(fiducial=False, label='', rand=False, Nc=10):
+def check_model(fiducial=False, label='', rand=False, Nc=10, fast=True):
     """"""
     chain = np.load('../data/unique_samples{}.npz'.format(label))['chain']
-    vnorm = np.sqrt(chain[:,3]*82 + chain[:,4]**2)
-    ind = vnorm>450
+    vnorm = np.sqrt(chain[:,3]**2 + chain[:,4]**2)
+    if fast:
+        ind = vnorm>490
+    else:
+        ind = vnorm<350
     chain = chain[ind]
     Nsample = np.shape(chain)[0]
     if rand:
@@ -2330,7 +2464,7 @@ def check_model(fiducial=False, label='', rand=False, Nc=10):
         plt.suptitle('  '.join(['{:.2g} {}'.format(x_, u_) for x_, u_ in zip(x,params_units)]), fontsize='medium')
         plt.tight_layout(rect=[0,0,1,0.96])
         
-        plt.savefig('../plots/likelihood_r{:d}_{}.png'.format(rand, k))
+        plt.savefig('../plots/likelihood_f{:d}_r{:d}_{}.png'.format(fast, rand, k))
     
 
 ########################
@@ -2564,6 +2698,107 @@ def manual_fiducial():
     cg, e = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, rs=rs, t_impact=t_impact, N=3000, fname='gd1_manfid', point_mass=False, fig_annotate=True, verbose=True, model_return=True)
 
 
+def orbit_fiducial(phi=0, theta=180):
+    """Find orbit alternative to the streakline fiducial"""
+    
+    bnorm = 15*u.pc
+    bx = bnorm * np.cos(np.radians(phi))
+    vnorm = 250*u.km/u.s
+    vx = vnorm * np.cos(np.radians(theta))
+    M = 5e6*u.Msun
+    t_impact = 0.495*u.Gyr
+    rs = 0.1*rs_diemer(M)
+    
+    cg, e = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, rs=rs, t_impact=t_impact, N=1000, fname='gd1_manfid', point_mass=False, fig_annotate=True, verbose=True, model_return=True)
+
+def model_examples(model=0, i=0, label='_v500w200', verbose=False):
+    """Pick several models that showcase the allowed diversity of impactor parameters"""
+    
+    if model==0:
+        phi = -20
+        theta = 170
+        bnorm = 15*u.pc
+        bx = bnorm * np.cos(np.radians(phi))
+        by = bnorm * np.sin(np.radians(phi))
+        vnorm = 250*u.km/u.s
+        vx = vnorm * np.cos(np.radians(theta))
+        vy = vnorm * np.sin(np.radians(theta))
+        M = 5e6*u.Msun
+        t_impact = 0.495*u.Gyr
+        rs = 0.1*rs_diemer(M)
+        Tgap = 29.176*u.Myr
+        i = -1
+        
+        params_list = [t_impact, bx, by, vx, vy, M, rs, Tgap]
+        params_units = [p_.unit for p_ in params_list]
+        x = [p_.value for p_ in params_list]
+        x[5] = np.log10(x[5])
+    else:
+        np.random.seed(4619)
+        chain = np.load('../data/unique_samples{}.npz'.format(label))['chain']
+        Nsample = np.shape(chain)[0]
+        ind = np.random.randint(Nsample, size=i+1)
+        x = chain[ind][-1]
+    
+    bnorm = np.sqrt(x[1]**2 + x[2]**2)
+    vnorm = np.sqrt(x[3]**2 + x[4]**2)
+    if verbose:
+        print(i, x)
+    
+    lnprob_args = get_lnprobargs()
+    spx = lnprob_args[-7]
+    spy = lnprob_args[-6]
+    #lnprob_args[7] = 3000
+    #lnprob_args[-12] = 10
+    #lnprob_args[-11] = 99
+    
+    wangle = 180*u.deg
+    
+    res = lnprob_detailed(x, *lnprob_args)
+    res['x'] = x
+    pickle.dump(res, open('../data/predictions/model_{:03d}.pkl'.format(i), 'wb'))
+    cg = res['stream']
+    
+    plt.close()
+    fig, ax = plt.subplots(5,1,figsize=(8,10), sharex=True)
+    
+    plt.sca(ax[0])
+    plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, 'ko')
+    plt.plot(spx, spy, 'r-', alpha=0.5, lw=3)
+    
+    plt.xlim(-60, -20)
+    plt.ylim(-4,4)
+    plt.ylabel('$\phi_2$ [deg]')
+    plt.text(0.95, 0.15, '$\chi_{{spur}}$ = {:.2f}'.format(res['chi_spur']), transform=plt.gca().transAxes, ha='right', fontsize='small')
+    plt.title('log M/M$_\odot$ = {:.2f} | $r_s$ = {:.1f}pc | b = {:.1f}pc | V = {:.0f}km s$^{{-1}}$ | T = {:.2}Gyr'.format(np.log10(x[5]), x[6], bnorm, vnorm, x[0]), fontsize='small')
+    
+    plt.sca(ax[1])
+    plt.plot(res['bincen'], res['nbin'], 'ko')
+    plt.plot(res['bincen'], res['nexp'], 'r-', alpha=0.5, lw=3)
+    plt.ylabel('Number')
+    plt.text(0.95, 0.15, '$\chi_{{gap}}$ = {:.2f}'.format(res['chi_gap']), transform=plt.gca().transAxes, ha='right', fontsize='small')
+    
+    plt.sca(ax[2])
+    plt.plot(cg.phi1.wrap_at(wangle), res['dvr'], 'ko')
+    plt.ylim(-5, 5)
+    plt.ylabel('$\Delta$ $V_r$\n[km s$^{-1}$]')
+    
+    plt.sca(ax[3])
+    plt.plot(cg.phi1.wrap_at(wangle), res['dmu1'], 'ko')
+    plt.ylim(-0.5, 0.5)
+    plt.ylabel('$\Delta$ $\mu_{\phi_1}$\n[mas yr$^{-1}$]')
+    
+    plt.sca(ax[4])
+    plt.plot(cg.phi1.wrap_at(wangle), res['dmu2'], 'ko')
+    plt.ylim(-0.5, 0.5)
+    
+    plt.xlabel('$\phi_1$ [deg]')
+    plt.ylabel('$\Delta$ $\mu_{\phi_2}$\n[mas yr$^{-1}$]')
+    
+    plt.tight_layout(h_pad=0.06)
+    plt.savefig('../plots/predictions/model_{:03d}.png'.format(i))
+    
+
 ###################
 # Streakline stream
 from gala.dynamics import mockstream
@@ -2605,6 +2840,7 @@ def streakline_input():
     
     dt_orbit = 0.5*u.Myr
     nstep_impact = np.int64(t_impact / dt_orbit)
+    #prog_orbit = ham.integrate_orbit(prog_w0, dt=-dt_orbit, t1=0*u.Myr, t2=-3*u.Gyr)
     prog_orbit = ham.integrate_orbit(prog_w0, dt=-dt_orbit, t1=0*u.Myr, t2=-3*u.Gyr)
     impact_orbit = prog_orbit[nstep_impact:]
     impact_orbit = impact_orbit[::-1]
@@ -2984,6 +3220,8 @@ def fiducial_excursions():
     wangle = 180*u.deg
     color = '0.3'
     ms = 8
+    lw = 3.5
+    alpha = 0.7
     
     plt.close()
     fig, ax = plt.subplots(5,5,figsize=(12,12), sharex=True, sharey=True)
@@ -3010,7 +3248,7 @@ def fiducial_excursions():
         color = mpl.cm.Purples(1 - np.abs(e-2)/4)
         
         plt.sca(ax[e][0])
-        plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '.', color=color, ms=ms)
+        plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '-', color=color, ms=ms, lw=lw, alpha=alpha)
         
         plt.text(0.1,0.8, 'T = {:.0f} Myr'.format(t.value), transform=plt.gca().transAxes, fontsize='small', va='center', ha='left')
     
@@ -3023,7 +3261,7 @@ def fiducial_excursions():
         color = mpl.cm.Blues(1 - np.abs(e-2)/4)
 
         plt.sca(ax[e][1])
-        plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '.', color=color, ms=ms)
+        plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '-', color=color, ms=ms, lw=lw, alpha=alpha)
         
         if m<1e7*u.Msun:
             plt.text(0.1,0.8, 'M = {:.0f}$\cdot10^6$ M$_\odot$'.format(m.value*1e-6), transform=plt.gca().transAxes, fontsize='small', va='center', ha='left')
@@ -3039,7 +3277,7 @@ def fiducial_excursions():
         color = mpl.cm.Greens(1 - np.abs(e-2)/4)
 
         plt.sca(ax[e][2])
-        plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '.', color=color, ms=ms)
+        plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '-', color=color, ms=ms, lw=lw, alpha=alpha)
         
         plt.text(0.1,0.8, 'b = {:.0f} pc'.format(b.value), transform=plt.gca().transAxes, fontsize='small', va='center', ha='left')
     
@@ -3052,7 +3290,7 @@ def fiducial_excursions():
         color = mpl.cm.Oranges(1 - np.abs(e-2)/4)
         
         plt.sca(ax[e][3])
-        plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '.', color=color, ms=ms)
+        plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '-', color=color, ms=ms, lw=lw, alpha=alpha)
         
         plt.text(0.1,0.8, 'V = {:.0f} km s$^{{-1}}$'.format(v.value), transform=plt.gca().transAxes, fontsize='small', va='center', ha='left')
     
@@ -3065,11 +3303,11 @@ def fiducial_excursions():
         color = mpl.cm.Reds(0.7 - np.abs(e-2)/5)
 
         plt.sca(ax[e][4])
-        plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '.', color=color, ms=ms)
+        plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, '-', color=color, ms=ms, lw=lw, alpha=alpha)
         
         plt.text(0.1,0.8, '$r_s$ = {:.0f} pc'.format(r.value), transform=plt.gca().transAxes, fontsize='small', va='center', ha='left')
 
-    plt.tight_layout(h_pad=0.0, w_pad=0.0)
+    plt.tight_layout(h_pad=-0.1, w_pad=0.4)
     plt.savefig('../paper/excursions.pdf')
     plt.savefig('../plots/excursions.png', dpi=150)
 
@@ -3102,6 +3340,7 @@ def fancy_corner(label='', full=False, nstart=2000):
     vnorm = 250*u.km/u.s
     
     pfid = [t_impact.to(u.Gyr).value, bnorm.to(u.pc).value, vnorm.to(u.km/u.s).value, np.log10(rs.to(u.pc).value), np.log10(M.to(u.Msun).value)]
+    
     
     plt.close()
     fig = corner.corner(chain, bins=50, labels=params, plot_datapoints=False, range=lims, smooth=2, smooth1d=2, color='0.1')

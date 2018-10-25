@@ -380,3 +380,29 @@ def gmc_perturbation(pot='mw', nimpact=0):
     plt.tight_layout()
     plt.savefig('../plots/gd1_gmc_{}_{}.png'.format(pot, nimpact))
 
+def size_mass():
+    """Show sizes and masses of known GMCs"""
+    
+    t = Table.read('../data/gmc.txt', format='cds')
+    
+    rmin = 12
+    outer = t['Rgal']>rmin
+    
+    plt.close()
+    plt.figure(figsize=(6,5))
+    
+    plt.plot(t['Mf'], t['Rf'], 'o', color='0.5', label='All')
+    plt.plot(t['Mf'][outer], t['Rf'][outer], 'ko', label='R > {} kpc'.format(rmin))
+    
+    #plt.plot(t['Mn'], t['Rn'], 'o', color='0.5', label='All')
+    #plt.plot(t['Mn'][outer], t['Rn'][outer], 'ko', label='R > {} kpc'.format(rmin))
+    
+    plt.legend(frameon=False, loc=2, fontsize='small')
+    plt.gca().set_xscale('log')
+    plt.xlabel('Mass [$M_\odot$]')
+    plt.ylabel('Size [pc]')
+    
+    
+    plt.tight_layout()
+    plt.savefig('../plots/gmc_size_mass.png', dpi=200)
+
