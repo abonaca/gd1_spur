@@ -289,6 +289,7 @@ def orbit_cross():
     # 3, 0.5
     lw = 0.9
     alpha = 0.8
+    t = -t
 
     # show classicals
     tcls = Table.read('../data/positions_classical.fits')
@@ -341,9 +342,10 @@ def orbit_cross():
     
     plt.ylim(30,200000)
     plt.gca().set_yscale('log')
+    plt.gca().invert_xaxis()
     
-    plt.legend(loc=2, fontsize='small', markerscale=2)
-    plt.xlabel('Time [Myr]')
+    plt.legend(loc=2, fontsize='small', markerscale=2, handlelength=1)
+    plt.xlabel('Lookback time [Myr]')
     plt.ylabel('Relative distance [pc]')
     
     plt.tight_layout()
@@ -392,6 +394,8 @@ def mass_size():
     
     vert_id = (pids[:,0]==i) & (pids[:,1]==j)
     xy_vert = vertices[vert_id]
+    #plt.rc('text', usetex=True)
+    #plt.rcParams['text.latex.preamble']=[r'\usepackage{xcolor}']
     p = mpl.patches.Polygon(xy_vert, closed=True, lw=2, ec='0.8', fc='0.9', zorder=0, label='GD-1 perturber\n(Bonaca et al. 2018)')
     patch = plt.gca().add_patch(p)
     
@@ -417,7 +421,7 @@ def mass_size():
     order = [3,0,2,1,4]
     handles = [handles[x] for x in order]
     labels = [labels[x] for x in order]
-    plt.legend(handles, labels, frameon=False, loc=2, fontsize='medium', bbox_to_anchor=(1,1), markerscale=1.5, labelspacing=1)
+    plt.legend(handles, labels, frameon=False, loc=6, fontsize='medium', bbox_to_anchor=(1.03,0.5), markerscale=1.5, labelspacing=1)
     
     plt.xlabel('Size [pc]')
     plt.ylabel('Mass [M$_\odot$]')
