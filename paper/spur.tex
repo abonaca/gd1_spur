@@ -414,15 +414,20 @@ However, ours is sufficiently low-dimensional that future studies employing the 
 \label{fig:mass_size}
 \end{figure*}
 
-Many massive objects are expected to orbit the Galaxy, and should any encounter a cold stream, the perturbation remains recorded in the stream's density profile.
-So, the presence of features in GD-1 is not surprising, but their intricacy is.
+Many massive objects are known, or expected, to orbit the Galaxy, and if any should have encountered a cold stream, the perturbation would remain recorded in the stream's density profile.
+So, the presence of perturbed features in GD-1 is not surprising, but their intricacy is.
 In this section discuss what the observed structures suggest about their origin.
 
-- in the halo, there are known satellites (dwarf galaxies and globular cluster)
-- thanks to \gaia, most of them now are fully located in the 6D phase space \citep{simon2018, gdr2_satellites}
-- if we assume a potential, this means we can find their orbits and check if any came close to the gd-1 gap
-- in our fiducial galaxy, none of them do, as shown in Figure~\ref{fig:known_encounters}
-- true even after sampling uncertainties
+The Milky Way is surrounded by $\sim60$ dwarf galaxies \citep{mcconnachie2012,etal} and $\sim160$ globular clusters \citep{harris2010,etal}, most of which, same as GD-1, are residing in the halo.
+Thanks to the \gaia\ mission, a significant fraction of these satellites are now fully located in the 6D phase space \citep{simon2018, gdr2_satellites}.
+To test whether any of these objects could have perturbed GD-1, we integrated their orbits in a fiducial Milky Way potential \citep{pw2017} and show their relative distance from the GD-1 gap at $\phi_1=-40^\circ$ during the past Gyr in Figure~\ref{fig:known_encounters}.
+Darker shades represent more massive satellites, from the most massive classical dwarfs, over ultra-faint dwarfs to globular clusters.
+- nothing comes closer than 1\,kpc
+Relative distances shown in Figure~\ref{fig:known_encounters} were calculated for fiducial positions and velocities of satellites.
+Since the associated measurement uncertainties can be substantial, we also sampled the error distribution and found that no satellite comes closer than x\,pc in any of the orbital samples.
+Maximum impact parameter inferred is y\,pc, thus disfavoring known satellites as a source of GD-1 perturbation.
+
+% but none of the satellites comes close enough even after sampling uncertainties
 % We sample from the error distributions for each kinematic measurement of each satellite to assess whether any of the known Milky Way satellites could have come close to the location of the gap and spur location within the last 2\,Gyr.
 % We generate 2048 samples of the present-day 6D phase-space positions for each satellite and integrate these orbits in our assumed 3-component Milky Way mass model (Price-Whelan et al. 2017, Bovy et al. 2015).
 % We find that most satellites have no samples that come within 100 pc of the gap.
@@ -437,7 +442,7 @@ In this section discuss what the observed structures suggest about their origin.
 - just to check a bit further, we created GD-1 models perturbed by a $10^7\,\rm M_\odot$ gmc moving on a circular orbit for the three most recent disk crossing times
 - none of the configurations result in a spur at the right location, thus disfavoring gmcs as the GD-1 perturber
 
-- most probable perturber: a dark object in the halo
+Having ruled out known objects, we find that the most probable GD-1 perturber is a dark object in the Milky Way halo.
 - could be a low luminosity, undiscovered satellite as they have approximately the required masses and sizes
 - it would have to be fortuitously hiding in the disk plane, or moving very fast to escape detection, as our best estimate is that the encounter was recent
 - alternatively, the perturber could be completely dark
@@ -522,7 +527,7 @@ This work has made use of data from the European Space Agency (\acronym{ESA}) mi
 \software{
 \package{Astropy} \citep{astropy:2013, astropy:2018},
 \package{colossus} \citep{diemer2018},
-\package{gala} \citep{Price-Whelan:2017},
+\package{gala} \citep{pw2017},
 \package{emcee} \citep{Foreman-Mackey:2013},
 \package{IPython} \citep{Perez:2007},
 \package{matplotlib} \citep{Hunter:2007},
