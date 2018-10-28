@@ -336,9 +336,9 @@ def orbit_cross():
     plt.plot(t, np.abs(gap_orbit.xyz[2]).to(u.pc), '-', color=mpl.cm.Reds(0.3), alpha=alpha, label='Disk', lw=lw, zorder=0)
     #plt.plot(t, np.sqrt(gap_orbit.xyz[0]**2 + gap_orbit.xyz[1]**2), 'r-', alpha=0.2)
 
-    txt = plt.text(5, 63, 'Maximum impact parameter', va='bottom', ha='right', fontsize='small')
+    txt = plt.text(5, 60, 'Maximum impact parameter', va='bottom', ha='right', fontsize='small')
     txt.set_bbox(dict(facecolor='w', alpha=0.8, ec='none'))
-    plt.axhline(60, ls='-', color='k', alpha=0.8, lw=1.5, zorder=10)
+    plt.axhline(57, ls='-', color='k', alpha=0.8, lw=1.5, zorder=10)
     
     plt.ylim(30,200000)
     plt.gca().set_yscale('log')
@@ -353,7 +353,7 @@ def orbit_cross():
     plt.savefig('../paper/satellite_distances.pdf')
 
 
-def mass_size():
+def mass_size(nsigma=1):
     """Compilation of masses and sizes of various objects"""
     
     #mpl.rc('text', usetex=True)
@@ -374,8 +374,12 @@ def mass_size():
     mrange = 10**np.linspace(4, 9, 20)*u.Msun
     rsrange = rs_hernquist(mrange)
     rsrange2 = rs_diemer(mrange)
-    rs_low = 0.85*rsrange2
-    rs_high = 1.15*rsrange2
+    
+    scatter = 0.16
+    rs_low = 10**(-nsigma*scatter) * rsrange2
+    rs_high = 10**(nsigma*scatter) * rsrange2
+    
+    print(10**0.15, 10**-0.15)
     
     ts = Table.read('../data/dwarfs.txt', format='ascii.commented_header')
     
@@ -405,10 +409,13 @@ def mass_size():
     plt.plot(ts['rh'], ts['mdyn'], 's', color=colors[4], ms=accent_ms, mec=accent_colors[4], mew=1, label='Dwarf galaxies\n(McConnachie 2012)')
     plt.plot(ts['rh'], ts['mdyn'], 's', color=colors[4], ms=ms, mec='none', label='')
 
-    plt.plot(tgc['rh'], gc_mass, '^', color=colors[3], ms=accent_ms, mec=accent_colors[3], mew=1, label='Globular clusters\n(Baumgardt & Hilker 2018)')
-    plt.plot(tgc['rh'], gc_mass, '^', color=colors[3], ms=ms, mec='none', label='')
+    plt.plot(tgc['rhlp'], gc_mass, '^', color=colors[3], ms=accent_ms, mec=accent_colors[3], mew=1, label='Globular clusters\n(Baumgardt & Hilker 2018)')
+    plt.plot(tgc['rhlp'], gc_mass, '^', color=colors[3], ms=ms, mec='none', label='')
     
-    plt.fill_betweenx(mrange.value, rs_high.to(u.pc).value, rs_low.to(u.pc).value, color=colors[1], edgecolor='none', linewidth=0, alpha=0.4, label='$\Lambda$CDM halos\n(Diemer et al. 2017)')
+    #ind = (tgc['Name']=='NGC 6496') | (tgc['Name']=='IC 4499')
+    #plt.plot(tgc['rhlp'][ind], gc_mass[ind], '^', color='r', ms=ms, mec='none', label='')
+    
+    plt.fill_betweenx(mrange.value, rs_high.to(u.pc).value, rs_low.to(u.pc).value, color=colors[1], edgecolor='none', linewidth=0, alpha=0.4, label='$\Lambda$CDM halos ({:.0f} $\sigma$)\n(Diemer & Joyce 2018)'.format(nsigma))
     
     plt.xlim(1, 1e3)
     plt.ylim(1e4,1e9)
@@ -464,4 +471,48 @@ def velocity_angles():
         print(phi.to(u.deg))
         #print(p[3], p[4])
 
+def max_b(p=1):
+    """Find maximum impact parameter allowed"""
+    
+    sampler = np.load('../data/unique_samples_v500w200.npz')
+    models = sampler['chain']
+    lnp = sampler['lnp']
+    pp = np.percentile(lnp, p)
+    
+    ind = lnp>=pp
+    models = models[ind]
+    lnp = lnp[ind]
+    
+    b = np.sqrt(models[:,1]**2 + models[:,2]**2)*u.pc
+    
+    print('Max b: {:.2f}'.format(np.max(b)))
+
+
+def einasto():
+    """Plot Einasto profile for several values of the shape parameter n"""
+    
+    r = np.logspace(-2,1.5,100)
+    lw = 2
+    
+    plt.close()
+    plt.figure()
+    
+    for n in [1.7,5]:
+        rho = np.exp(-2*n*(r**(1/n)-1))
+        plt.plot(r, rho, '-', label='Einasto, n = {}'.format(n), lw=lw)
+    
+    rho = 4/(r*(1+r)**2)
+    plt.plot(r, rho, '-', label='NFW', lw=lw)
+    
+    rho = 4/(r*(1+r)**3)
+    plt.plot(r, rho, '-', label='Hernquist', lw=lw)
+    
+    plt.gca().set_xscale('log')
+    plt.gca().set_yscale('log')
+    
+    plt.legend(frameon=False, fontsize='small')
+    plt.xlabel('r / r$_{-2}$')
+    plt.ylabel('$\\rho$ / $\\rho_{-2}$')
+    
+    plt.tight_layout()
 

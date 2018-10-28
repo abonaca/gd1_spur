@@ -58,7 +58,7 @@ Dynamical evidence of a dark substructure in the Milky Way halo
 \author[0000-0003-0872-7098]{Adrian~M.~Price-Whelan}
 \affil{Department of Astrophysical Sciences, Princeton University, Princeton, NJ 08544, USA}
 
-\author{Charlie Conroy}
+\author[0000-0002-1590-8551]{Charlie Conroy}
 \affil{Harvard--Smithsonian Center for Astrophysics, 60 Garden St, Cambridge, MA 02138, USA}
 
 \begin{abstract}\noindent
@@ -390,75 +390,9 @@ However, ours is sufficiently low-dimensional that future studies employing the 
 
 \subsection{Origin of GD-1 structures}
 \label{sec:origin}
-% - classes of objects: known satellite, unknown, disk
-% - integrate backwards to show that it can't be any known object.
-% - look at molecular cloud properties and show that they are all out.
-% - give some typical dm substructure numbers for the whole galaxy and for this radius range in the nearby halo.
-% - also something about the mass-size relationship for these dm structures.
-% - conclusion: dm substructure is the most plausible of the options.
-% - interesting point: The predictions about \lcdm\ substructure in the inner halo are controversial right now because of simulation differences. If this matters, this point should enter the abstract and modify the naturalness of the conclusion.
-
-\begin{figure}
-\begin{center}
-\includegraphics[width=\columnwidth]{satellite_distances.pdf}
-\end{center}
-\caption{Data from \citet{simon2018} and \citet{gdr2_satellites}.}
-\label{fig:known_encounters}
-\end{figure}
-
-\begin{figure*}
-\begin{center}
-\includegraphics[width=0.9\textwidth]{mass_size.pdf}
-\end{center}
-\caption{}
-\label{fig:mass_size}
-\end{figure*}
-
 Many massive objects are known, or expected, to orbit the Galaxy, and if any should have encountered a cold stream, the perturbation would remain recorded in the stream's density profile.
 So, the presence of perturbed features in GD-1 is not surprising, but their intricacy is.
 In this section discuss what the observed structures suggest about their origin.
-
-The Milky Way is surrounded by $\sim60$ dwarf galaxies \citep{mcconnachie2012,etal} and $\sim160$ globular clusters \citep{harris2010,etal}, most of which, same as GD-1, are residing in the halo.
-Thanks to the \gaia\ mission, a significant fraction of these satellites are now fully located in the 6D phase space \citep{simon2018, gdr2_satellites}.
-To test whether any of these objects could have perturbed GD-1, we integrated their orbits in a fiducial Milky Way potential \citep{pw2017} and show their relative distance from the GD-1 gap at $\phi_1=-40^\circ$ during the past Gyr in Figure~\ref{fig:known_encounters}.
-Darker shades represent more massive satellites, from the most massive classical dwarfs, over ultra-faint dwarfs to globular clusters.
-- nothing comes closer than 1\,kpc
-Relative distances shown in Figure~\ref{fig:known_encounters} were calculated for fiducial positions and velocities of satellites.
-Since the associated measurement uncertainties can be substantial, we also sampled the error distribution and found that no satellite comes closer than x\,pc in any of the orbital samples.
-Maximum impact parameter inferred is y\,pc, thus disfavoring known satellites as a source of GD-1 perturbation.
-
-% but none of the satellites comes close enough even after sampling uncertainties
-% We sample from the error distributions for each kinematic measurement of each satellite to assess whether any of the known Milky Way satellites could have come close to the location of the gap and spur location within the last 2\,Gyr.
-% We generate 2048 samples of the present-day 6D phase-space positions for each satellite and integrate these orbits in our assumed 3-component Milky Way mass model (Price-Whelan et al. 2017, Bovy et al. 2015).
-% We find that most satellites have no samples that come within 100 pc of the gap.
-% Two globular clusters, NGC 6496 and IC 4499, come within 100 pc in 0.6\% and 0.2\% of their orbit samples, respectively.
-% This suggests that none of the known Milky Way satellites with measured kinematics could be responsible for the observed density variations in GD-1, but we note that, for these two globular clusters, improved distance measurements would be needed to improve their orbits and definitely rule them out as perturbers.
-
-- the only thing that comes close is the Galactic disk
-- disk shocking can facilitate disruption \citep{dehnen2004}, but the density contrast in the disk is not high enough to produce sharp features such as the GD-1 gap and spur
-- \citet{amorisco2016} showed that gmcs in the disk can introduce 
-- to see if viable to have produced GD-1 features, in Figure~\ref{fig:mass_size} we the expected mass and size of the GD-1 perturber, and compare it to masses and sizes of dwarf galaxies, globular clusters and giant molecular clouds
-- while globular clusters and some compact dwarf galaxies have the right mass and size, gmcs are too fluffy
-- just to check a bit further, we created GD-1 models perturbed by a $10^7\,\rm M_\odot$ gmc moving on a circular orbit for the three most recent disk crossing times
-- none of the configurations result in a spur at the right location, thus disfavoring gmcs as the GD-1 perturber
-
-Having ruled out known objects, we find that the most probable GD-1 perturber is a dark object in the Milky Way halo.
-- could be a low luminosity, undiscovered satellite as they have approximately the required masses and sizes
-- it would have to be fortuitously hiding in the disk plane, or moving very fast to escape detection, as our best estimate is that the encounter was recent
-- alternatively, the perturber could be completely dark
-- cosmologically sound expectation would be a dark matter subhalo
-- but since we infer a dense perturber, it could also be a black hole
-- very massive black hole, typically found in centers of galaxies (GD-1 perturber is comparable in mass to Sgr A$^\star$)
-- given the abundance of massive primordial black holes from ? is low \citep{}, this encounter with GD-1 would be a rare event, and we would not expect to see similar features in other streams upon a comparable amount of scrutiny
-
-- on the other hand, many subhalos are expected
-- despite depletion \citep{gk2017}, GD-1 is expected to have encountered a few \citep{erkal}
-- with two prominent gaps, and ascribing one to the progenitor disruption, one due to the subhalo works out in terms of rates
-- however, inferred perturber a factor of a few more dense than the concentration for isolated halos (dark shaded region in Figure~\ref{fig:mass_size} with 0.15\,dex scatter)
-- would explain how it survived disruption in the tidal field of the inner galaxy, but is at the very limit of high concentration tail in low mass halos \citep{diemer2015}
-- even though they experience stripping, this should not really affect the rs \citep{arthur}
-- details of the profile would matter here, so further work required in modeling, but most likely, we will need additional data to fully constrain it
-- cosmological significance of a low-mass subhalo detection strongly motivates follow up, and we provide specific strategies in Section~\ref{sec:future}
 
 In this work we assumed that GD-1 was perturbed because of features in its density profile.
 However, N-body simulations of disrupting globular clusters show that a certain level of structure in the resulting stream is intrinsic to the disruption process \citep[e.g.,][]{kupper2008,kupper2010}.
@@ -468,19 +402,117 @@ For example, unexpectedly short lengths of the Ophiuchus and Palomar~5 streams h
 GD-1, on a retrograde orbit and with a larger pericenter than either of these streams, is deemed less susceptible to the chaotic influence of the rotating bar \citep{bb2018}.
 Furthermore, the gap and spur features in GD-1 are much more localized than typical signatures of chaos in complex, time-dependent gravitational potentials, but there is still a lot of parameter space left to explore.
 
-Regardless of their origin, features seen in GD-1 are a result of an interesting event.
-The stream either encountered a likely exotic perturber, has been shaped by a curious dynamical effect, or originates from an unusual progenitor.
-The perturbation scenario presented in this work has a unique kinematic signature, so we next discuss how to direct future observations and definitively ascertain the origin of GD-1 features.
+\begin{figure}
+\begin{center}
+\includegraphics[width=\columnwidth]{satellite_distances.pdf}
+\end{center}
+\caption{Data from \citet{simon2018} and \citet{gdr2_satellites}.}
+\label{fig:known_encounters}
+\end{figure}
+
+Getting back to the perturbation scenario: the Milky Way is surrounded by $\sim60$ dwarf galaxies \citep{mcconnachie2012} and $\sim160$ globular clusters \citep{harris2010}, most of which, same as GD-1, are residing in the halo.
+Thanks to the \gaia\ mission, a significant fraction of these satellites are now fully located in the 6D phase space \citep{simon2018, gdr2_satellites}.
+To test whether any of these objects could have perturbed GD-1, we integrated their orbits in a fiducial Milky Way potential \citep{pw2017} and show their relative distance from the GD-1 gap at $\phi_1=-40^\circ$ during the past billion years in Figure~\ref{fig:known_encounters}.
+Lines are shaded according to the object's mass, with the classical dwarfs being the darkest, ultra-faints medium, and globular clusters lighter.
+All of them have kept at least 1\,kpc away from GD-1.
+Relative distances shown in Figure~\ref{fig:known_encounters} were calculated for fiducial present-day positions and velocities of satellites.
+Since the associated measurement uncertainties can be substantial, we also sampled the error distribution and found that no satellite comes closer than x\,pc in any of the orbital samples.
+The maximum impact parameter inferred for GD-1 perturbation is 57\,pc, thus disfavoring known satellites as perturbers of GD-1.
+
+% We sample from the error distributions for each kinematic measurement of each satellite to assess whether any of the known Milky Way satellites could have come close to the location of the gap and spur location within the last 2\,Gyr.
+% We generate 2048 samples of the present-day 6D phase-space positions for each satellite and integrate these orbits in our assumed 3-component Milky Way mass model (Price-Whelan et al. 2017, Bovy et al. 2015).
+% We find that most satellites have no samples that come within 100 pc of the gap.
+% Two globular clusters, NGC 6496 and IC 4499, come within 100 pc in 0.6\% and 0.2\% of their orbit samples, respectively.
+% This suggests that none of the known Milky Way satellites with measured kinematics could be responsible for the observed density variations in GD-1, but we note that, for these two globular clusters, improved distance measurements would be needed to improve their orbits and definitely rule them out as perturbers.
+
+\begin{figure*}
+\begin{center}
+\includegraphics[width=0.9\textwidth]{mass_size.pdf}
+\end{center}
+\caption{}
+\label{fig:mass_size}
+\end{figure*}
+
+As it orbits the Galaxy, GD-1 crosses the disk at timescales comparable to the inferred time of perturbation (the lightest line in Figure~\ref{fig:known_encounters} is the distance from the Galactic plane).
+While strong disk shocking can facilitate disruption of a diffuse globular cluster \citep{dehnen2004}, GD-1 disk crossings are between 13\,kpc and 23\,kpc from the Galactic center, where the disk density is too low to significantly impact the stream, or produce sharp features such as the gap and the spur.
+Still, giant molecular clouds (GMCs) that are orbiting in the disk plane can perturb cold stellar streams \citep{amorisco2016}.
+To test whether GMCs are viable candidates for the GD-1 perturber, in Figure~\ref{fig:mass_size} we compare the inferred mass and size of the GD-1 perturber (gray shaded region) to known objects in the Milky Way, including molecular clouds.
+Dwarf galaxies are shown as light squares \citep{mcconnachie2012}, globular clusters as medium triangles \citep{baumgardt2018}, and outer-disk molecular clouds (beyond 10\,kpc) as dark circles \citep{md2017}.
+This comparison is rather conceptual as different classes of objects have different density profiles: for the GD-1 perturber we show the mass and scale radius assuming a Hernquist profile, for dwarf galaxies and globular clusters we show the total dynamical mass and half-light radius, and the total (high) mass and full size for molecular clouds.
+Keeping these caveats in mind, the most massive globular clusters and the most compact dwarf galaxies have masses and sizes comparable to the preferred values of the GD-1 perturber, but GMCs are in general too diffuse.
+To additionally test for extremely dense, yet undiscovered class of GMCs, we also created GD-1 models perturbed by a $10^7\,\rm M_\odot$ point mass moving on a circular disk orbit for the three most recent disk crossing times.
+These configurations result in a spur that is below the stream at $\phi_2<0$, rather than above at $\phi_2>0$ as observed in GD-1, so we conclude that GMCs are unlikely to have perturbed GD-1.
+
+Having ruled out known objects, we find that the most probable GD-1 perturber is a dark object in the Milky Way halo.
+As luminous satellites can have approximately the required masses and sizes, a low luminosity unknown satellite might be the culprit.
+To avoid detection, it would have to be fortuitously hiding in the disk plane, or moving very fast, as our best estimate is that the encounter was recent.
+Near-future and upcoming surveys of the plane \citep{schlafly2018} and the halo \citep{lsst} should provide a complete census of objects in the Milky Way and find a perturber of low luminosity.
+
+Alternatively, the GD-1 perturber could be completely dark.
+A dense pertuber in the mass range $10^5-10^8\,\rm M_\odot$ is required, so we next discuss black holes -- the densest dark objects in the Universe.
+Baryonic black holes of similar masses typically reside in centers of galaxies \citep[the mass of Milky Way's supermassive black hole, Sgr A$^\star$, is $\approx4\times10^6\,\rm M_\odot$][]{boehle2016}.
+A population of non-baryonic, primordial black hole is hypothesized to have formed in the early universe \citep{carr1974}, and has sparked a renewed interest as a dark matter candidate following the LIGO detections \citep{bird2016}.
+Several lines of inquiry have limited the contribution of massive ($\gtrsim10^3\,\rm M_\odot$) primordial black holes to the dark matter budget to less than $\lesssim0.1\,\%$ \citep[and references within]{carr2016}.
+So if GD-1 encountered a primordial black hole, this would have been an extremely rare event, and we would not expect to see similar features in other streams upon a comparable amount of scrutiny.
+
+On the other hand, $\Lambda$CDM cosmological simulations predict scores of dark matter subhalos orbiting Milky Way-like galaxies.
+Even after accounting for the destruction of subhalos due to the stellar disk \citep{donghia2010,gk2017}, their density in the inner 20\,kpc is high enough that a stream on a GD-1-like orbit is expected to have encountered at least one $10^6-10^7\rm\, M_\odot$ subhalo within the last $\sim8$\,Gyr \citep{erkal2016}.
+Of the two prominent gaps in GD-1, our fiducial model ascribes one to the site of the progenitor's disruption, and one to the encounter with a perturber.
+Thus, a dark matter subhalo is a plausible GD-1 perturber in terms of encounter rates expected in the $\Lambda$CDM universe.
+
+The high inferred density of the GD-1 perturber makes it more resilient to disruption in the tidal field of the inner galaxy, but preferred values are on the high end of dark matter halo concentrations.
+The dark shaded band in Figure~\ref{fig:mass_size} shows the $3\,\sigma$ scatter in masses ($M_{200,c}$) and sizes (NFW scale radii, $r_s$) of isolated dark matter halos \citep{diemer2018}.
+There is minimal overlap between dark matter halo properties and the GD-1 perturber under the assumption of constant scatter, but the fraction of high-concentration halos increases at low masses \citep{diemer2015}, and has not been quantified below $<10^{10}\,\rm M_\odot$.
+Furthermore, studies of subhalos at higher masses show that subhalos in dense environments are more concentrated than field halos of the same mass \citep[e.g.,][]{avilareese2005}.
+Although more theoretical work is needed to fully establish properties of low-mass subhalos in the inner Galaxy, a dark matter subhalo is a plausible candidate for the GD-1 perturber based on structural parameters as well.
+
+% Current $\Lambda$CDM simulations can easily be extended to the relevant spatial ($r\lesssim30\,kpc$) and mass scales ($10^5<M/\rm M_\odot<10^8$) to establish 
+% further motivated by the changes in the density profile of subhalos upon accretion \citep{dicintio2013}.
+% - and as details of the profile would matter here, further work required in modeling, but most likely, we will need additional data to fully constrain it
+% Cosmological significance of a low-mass dark matter subhalo detection implores follow-up of these GD-1 features, and we provide specific strategies in the next section.
+
+% Regardless of their origin, features seen in GD-1 are a result of an interesting event.
+% The stream either originates from an unusual progenitor, has been shaped by a curious dynamical effect, or encountered an unknown perturber.
+% The perturbation scenario presented in this work has a unique kinematic signature, so we next discuss how to direct future observations and definitively ascertain the origin of GD-1 features.
+
+% - give some typical dm substructure numbers for the whole galaxy and for this radius range in the nearby halo.
+% - also something about the mass-size relationship for these dm structures.
+% - conclusion: dm substructure is the most plausible of the options.
+% - interesting point: The predictions about \lcdm\ substructure in the inner halo are controversial right now because of simulation differences. If this matters, this point should enter the abstract and modify the naturalness of the conclusion.
 
 \subsection{Future prospects}
 \label{sec:future}
-- need rv, mu
-- assemble all the predictions (bulleted list)
-- get better orbit of the plausible object 
+- we think perturbation by a dm subhalo is the most likely, however inferred properties not entirely expected
+- 
 
-- implications: black hole - bound stellar cluster, some evidence of accretion; dark matter - possible stellar cluster too, annihilation (dense); mass profile to distinguish the two if not accreting or annihilating (microlensing)
-- if black hole:
-- network of streams: image dark matter in 3+1D
+
+% - a puzzle, with no explanation that readily explains all facets of the data, so more theoretical work needed, as outlined in Section~\ref{sec:caveats}
+% Here we turn our mind to additional observational tests and imagine what might be possible.
+% 
+% We propose to:
+% \begin{enumerate}
+% \item{
+% \emph{Measure radial velocities:}
+% - this will constrain the orbit of the perturber, narrow down search area
+% - a large relative energy between the spur and the stream would argue for an external influence, rather than a feature in the progenitor
+% }
+% \item{
+% \emph{Measure precise proper motions:}
+% - encounter has a unique signature, scenario can be falsified
+% }
+% \item{
+% \emph{Search for perturber via other means:}
+% - perturber massive, should have signatures, for example can have a few stars bound, microlensing signal
+% - if black hole, perhaps some evidence of accretion, for some types of dark matter we might have annihilation
+% - if perturber found, ultimately can distinguish between these from the detailed density profile (with microlensing), independent of the accretion state and the nature of dark matter
+% }
+% \end{enumerate}
+
+% GD-1 stream is a beautiful display of information encoded in cold stellar streams, whether it be on their progenitor or their environment.
+% - enabled by gaia
+% - and this is just the beginning, there are more than 40 streams (and also the blob feature in GD-1!), orbiting between 5 and 40\,kpc
+% - unparalleled opportunity to map matter in the 3 spatial dimensions and time
+% - signal that dark matter mass function extension to masses below $10^8\,\rm M_\odot$ might be around the corner
 
 
 % The stream perturbation models presented above show that the GD-1 stream spur and neighboring gap could plausibly be formed through a gravitational interaction between the stream and a dark, compact, massive perturber.
@@ -515,7 +547,7 @@ The perturbation scenario presented in this work has a unique kinematic signatur
 
 
 \acknowledgements
-It is a pleasure to thank Vasily Belokurov, Benedikt Diemer, Elena D'Onghia, Adrienne Erickcek, Douglas Finkbeiner, Lars Hernquist, Kathryn Johnston, Sergey Koposov, Doug Lin, Erica Nelson, Sarah Pearson, Hans-Walter Rix, and Josh Speagle + someone from CUNY for valuable discussions and input.
+It is a pleasure to thank Vasily Belokurov, Warren Brown, Benedikt Diemer, Elena D'Onghia, Adrienne Erickcek, Douglas Finkbeiner, Lars Hernquist, Kathryn Johnston, Sergey Koposov, Doug Lin, Barry McKernan, Erica Nelson, Sarah Pearson, Hans-Walter Rix, and Josh Speagle for valuable discussions and input.
 
 This project was developed in part at the 2018 \acronym{NYC} \Gaia\ \acronym{DR2} Workshop at the Center for Computational Astrophysics of the Flatiron Institute in New York City in 2018 April.
 
