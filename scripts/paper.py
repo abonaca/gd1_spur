@@ -415,7 +415,7 @@ def mass_size(nsigma=1):
     #ind = (tgc['Name']=='NGC 6496') | (tgc['Name']=='IC 4499')
     #plt.plot(tgc['rhlp'][ind], gc_mass[ind], '^', color='r', ms=ms, mec='none', label='')
     
-    plt.fill_betweenx(mrange.value, rs_high.to(u.pc).value, rs_low.to(u.pc).value, color=colors[1], edgecolor='none', linewidth=0, alpha=0.4, label='$\Lambda$CDM halos ({:.0f} $\sigma$)\n(Diemer & Joyce 2018)'.format(nsigma))
+    plt.fill_betweenx(mrange.value, rs_high.to(u.pc).value, rs_low.to(u.pc).value, color=colors[1], edgecolor='none', linewidth=0, alpha=0.4, label='$\Lambda$CDM halos ({:.0f}$\,\sigma$ scatter)\n(Diemer & Joyce 2018)'.format(nsigma))
     
     plt.xlim(1, 1e3)
     plt.ylim(1e4,1e9)
