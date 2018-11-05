@@ -336,7 +336,7 @@ def orbit_cross():
     plt.plot(t, np.abs(gap_orbit.xyz[2]).to(u.pc), '-', color=mpl.cm.Reds(0.3), alpha=alpha, label='Disk', lw=lw, zorder=0)
     #plt.plot(t, np.sqrt(gap_orbit.xyz[0]**2 + gap_orbit.xyz[1]**2), 'r-', alpha=0.2)
 
-    txt = plt.text(5, 60, 'Maximum impact parameter', va='bottom', ha='right', fontsize='small')
+    txt = plt.text(5, 60, 'Maximum permitted impact parameter', va='bottom', ha='right', fontsize='small')
     txt.set_bbox(dict(facecolor='w', alpha=0.8, ec='none'))
     plt.axhline(57, ls='-', color='k', alpha=0.8, lw=1.5, zorder=10)
     
@@ -379,7 +379,13 @@ def mass_size(nsigma=1):
     rs_low = 10**(-nsigma*scatter) * rsrange2
     rs_high = 10**(nsigma*scatter) * rsrange2
     
-    print(10**0.15, 10**-0.15)
+    Mhost = 1e12 * u.Msun
+    rmin = 13*u.kpc
+    rmax = 25*u.kpc
+    rs_low = 10**(-nsigma*scatter) * rs_moline(mrange, r=rmin, Mhost=Mhost)
+    rs_high = 10**(nsigma*scatter) * rs_moline(mrange, r=rmax, Mhost=Mhost)
+    
+    #print(10**0.15, 10**-0.15)
     
     ts = Table.read('../data/dwarfs.txt', format='ascii.commented_header')
     
@@ -415,7 +421,8 @@ def mass_size(nsigma=1):
     #ind = (tgc['Name']=='NGC 6496') | (tgc['Name']=='IC 4499')
     #plt.plot(tgc['rhlp'][ind], gc_mass[ind], '^', color='r', ms=ms, mec='none', label='')
     
-    plt.fill_betweenx(mrange.value, rs_high.to(u.pc).value, rs_low.to(u.pc).value, color=colors[1], edgecolor='none', linewidth=0, alpha=0.4, label='$\Lambda$CDM halos ({:.0f}$\,\sigma$ scatter)\n(Diemer & Joyce 2018)'.format(nsigma))
+    #plt.fill_betweenx(mrange.value, rs_high.to(u.pc).value, rs_low.to(u.pc).value, color=colors[1], edgecolor='none', linewidth=0, alpha=0.4, label='$\Lambda$CDM halos ({:.0f}$\,\sigma$ scatter)\n(Diemer & Joyce 2018)'.format(nsigma))
+    plt.fill_betweenx(mrange.value, rs_high.to(u.pc).value, rs_low.to(u.pc).value, color=colors[1], edgecolor='none', linewidth=0, alpha=0.4, label='$\Lambda$CDM subhalos ({:.0f}$\,\sigma$ scatter)\n(Molin$\\\'e$ et al. 2017)'.format(nsigma))
     
     plt.xlim(1, 1e3)
     plt.ylim(1e4,1e9)
@@ -451,11 +458,6 @@ def gd1_width(sig=12*u.arcmin, d=8*u.kpc):
 
 def gd1_length():
     """Calculate stream length in physical units"""
-
-def width_range():
-    """Find width at different locations along the stream"""
-    
-    #pickles here: /home/ana/projects/GD1-DR2/notebooks/stream-probs/
 
 
 def velocity_angles():

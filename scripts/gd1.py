@@ -2219,6 +2219,31 @@ def rs_diemer(M):
     
     return rs
 
+def rs_moline(M, r=20*u.kpc, Mhost=1e12*u.Msun):
+    """Return NFW scale radius for subhalo of mass M at radius r from the center of the host halo of mass Mhost, assuming Moline+2017 mass-concentration relation"""
+    
+    cosmology.setCosmology('planck15')
+    csm = cosmology.getCurrent()
+    
+    z_ = 0
+    rho_c = csm.rho_c(z_)
+    h_ = csm.Hz(z_) * 1e-2
+    delta = 200
+    
+    c0 = 19.9
+    a = np.array([-0.195, 0.089, 0.089])
+    b = -0.54
+    i = np.array([1, 2, 3])
+    
+    Rhost = ((3*Mhost.to(u.Msun).value/h_)/(4*np.pi*delta*rho_c))**(1/3) * h_ * u.kpc
+    rrel = (r / Rhost).decompose()
+
+    c = c0 * (1 + np.sum( (a[:,np.newaxis] * np.log10((M[np.newaxis,:]).to(u.Msun).value*1e-8))**i[:,np.newaxis], axis=0 )) * (1 + b*np.log10(rrel))
+    R = ((3*M.to(u.Msun).value/h_)/(4*np.pi*delta*rho_c))**(1/3) * h_
+    rs = R / c * 1e3 * u.pc
+    
+    return rs
+
 def get_lnprobargs():
     """"""
     pkl = pickle.load(open('../data/gap_present.pkl', 'rb'))
