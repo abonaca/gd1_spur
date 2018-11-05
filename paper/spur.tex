@@ -192,7 +192,7 @@ The orbital structure of stars closest to the passing perturber is distorted int
 
 Recently, \citet{pwb} used proper motions from the \gaia\ mission \citep{gdr2} and photometry from PanSTARRS \citep{ps} to confidently separate GD-1 stars from the Milky Way field stars.
 This contamination-free view of GD-1 enabled the first unambiguous detection of gaps in a stellar stream, which remain evident in deeper imaging \citep{deboer2018}.
-Additionally, the combined astrometric and photometric selection reveals GD-1 stars offset from the main stream track: an extended spur at $(\phi_1, \phi_2)\approx(-33^\circ,1^\circ)$ and a diffuse blob at $(\phi_1, \phi_2)\approx(-14^\circ,-1^\circ)$ in GD-1 coordinates.
+Additionally, the combined astrometric and photometric selection reveals GD-1 stars offset from the main stream track: an extended spur at $(\phi_1, \phi_2)\approx(-33^\circ,1^\circ)$ and a diffuse blob at $(\phi_1, \phi_2)\approx(-14^\circ,-1^\circ)$ in GD-1 coordinates \citep[see Figure~1 of ][]{pwb}.
 Patterns imparted by the complex selection function, confusion by background galaxies, or foreground dust do not coincide with these GD-1 features; instead, they are inherent properties of the stream itself.
 
 To highlight the complex structure of the GD-1 stream, we present the distribution of likely stream members at the top of Figure~\ref{fig:fiducial}.
@@ -201,7 +201,7 @@ The spatial distribution of these stars in the $\phi_2$ direction (i.e. perpendi
 We solved for the normalization, position and width of every component by exploring the parameter space with an ensemble MCMC sampler \citep{Foreman-Mackey:2013}.
 We used 256 walkers that ran for a total of 1280 steps, and kept the final 256 steps to generate posterior samples in these parameters.
 The above procedure is a full-stream generalization of the calculation in \citep{pwb} that quantified the fraction of stars in the additional components at the locations of the spur and the blob.
-Finally, we define stream membership probability, $p_{mem}$, as the joint probability of a star belonging either to the main stream or the additional feature, and evaluate these probabilities using MCMC samples for every star.
+Finally, we define a stream membership probability, $p_{mem}$, as the joint probability of a star belonging either to the main stream or the additional feature, and evaluate these probabilities using MCMC samples for every star.
 Figure~\ref{fig:fiducial} shows stars with $p_{mem}>0.5$, with larger and darker points representing stars with a higher membership probability.
 
 Most likely GD-1 members trace a thin stream, whose width varies between $\sigma\approx'$ and $'$.
