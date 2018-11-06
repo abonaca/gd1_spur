@@ -228,6 +228,7 @@ def kinematic_predictions():
         for j in range(3):
             plt.sca(ax[i][j])
             
+            #plt.plot(kinematics[i][j][0][loop[j]], kinematics[i][j][1][loop[j]], '-', lw=1, color='0.7')
             plt.plot(kinematics[i][j][0][loop[j]], kinematics[i][j][1][loop[j]], 'o', ms=6, color=accent_colors[j])
             plt.plot(kinematics[i][j][0][loop[j]], kinematics[i][j][1][loop[j]], 'o', ms=3.5, color=colors[j])
             
