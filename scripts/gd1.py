@@ -3042,6 +3042,24 @@ def fiducial_params():
     
     return (t_impact, M, rs, bnorm, bx, vnorm, vx)
 
+def streak2orbit_fiducial():
+    """"""
+    
+    phi = -20
+    theta = 170
+    bnorm = 15*u.pc
+    bx = bnorm * np.cos(np.radians(phi))
+    by = bnorm * np.sin(np.radians(phi))
+    vnorm = 250*u.km/u.s
+    vx = vnorm * np.cos(np.radians(theta))
+    vy = vnorm * np.sin(np.radians(theta))
+    M = 5e6*u.Msun
+    t_impact = 0.495*u.Gyr
+    rs = 0.1*rs_diemer(M)
+    Tgap = 29.176*u.Myr
+    
+    return (t_impact, bx, by, vx, vy, M, rs, Tgap)
+
 def generate_fiducial():
     """"""
     
@@ -3050,6 +3068,21 @@ def generate_fiducial():
     cg, e = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, rs=rs, t_impact=t_impact, N=2000, fname='gd1_manfid', point_mass=False, verbose=False, model_return=True, fig_plot=False)
     
     outdict = {'cg': cg, 'e': e}
+    pickle.dump(outdict, open('../data/fiducial.pkl', 'wb'))
+
+def generate_streak2orbit_fiducial():
+    """"""
+    
+    params_list = streak2orbit_fiducial()
+    params_units = [p_.unit for p_ in params_list]
+    x = [p_.value for p_ in params_list]
+    x[5] = np.log10(x[5])
+    
+    lnprob_args = get_lnprobargs()
+    res = lnprob_detailed(x, *lnprob_args)
+
+    cg = res['stream']
+    outdict = {'cg': cg}
     pickle.dump(outdict, open('../data/fiducial.pkl', 'wb'))
 
 def plot_fiducial(generate=False):
@@ -3238,6 +3271,78 @@ def generate_excursions():
         out = {'cg': cg, 'e': e}
         pickle.dump(out, open('../data/ex_r{:d}.pkl'.format(e), 'wb'))
 
+def generate_streak2orbit_excursions():
+    """Generate models by varying one parameter at a time"""
+    
+    # params
+    phi = -20
+    theta = 170
+    params_list = streak2orbit_fiducial()
+    params_units = [p_.unit for p_ in params_list]
+    x0 = [p_.value for p_ in params_list]
+    x0[5] = np.log10(x0[5])
+    
+    wangle = 180*u.deg
+    N = 2000
+    #print(params_list)
+    
+    times = np.array([25,150,495,700,1200]) * u.Myr
+    for e, t in enumerate(times):
+        x = x0[:]
+        x[0] = t.to(params_units[0]).value
+        lnprob_args = get_lnprobargs()
+
+        res = lnprob_detailed(x, *lnprob_args)
+        cg = res['stream']
+        out = {'cg': cg}
+        pickle.dump(out, open('../data/ex_t{:d}.pkl'.format(e), 'wb'))
+    
+    masses = np.array([1,2,5,7,10])*1e6 * u.Msun
+    for e, m in enumerate(masses):
+        x = x0[:]
+        x[5] = np.log10(m.to(params_units[5]).value)
+        lnprob_args = get_lnprobargs()
+
+        res = lnprob_detailed(x, *lnprob_args)
+        cg = res['stream']
+        out = {'cg': cg}
+        pickle.dump(out, open('../data/ex_m{:d}.pkl'.format(e), 'wb'))
+
+    bees = np.array([1,5,15,25,50]) * u.pc
+    for e, b in enumerate(bees):
+        x = x0[:]
+        x[1] = (b * np.cos(np.radians(phi))).to(params_units[1]).value
+        x[2] = (b * np.sin(np.radians(phi))).to(params_units[2]).value
+        lnprob_args = get_lnprobargs()
+
+        res = lnprob_detailed(x, *lnprob_args)
+        cg = res['stream']
+        out = {'cg': cg}
+        pickle.dump(out, open('../data/ex_b{:d}.pkl'.format(e), 'wb'))
+    
+    vees = np.array([30,150,250,500,800]) * u.km/u.s
+    for e, v in enumerate(vees):
+        x = x0[:]
+        x[3] = (v * np.cos(np.radians(theta))).to(params_units[3]).value
+        x[4] = (v * np.sin(np.radians(theta))).to(params_units[4]).value
+        lnprob_args = get_lnprobargs()
+
+        res = lnprob_detailed(x, *lnprob_args)
+        cg = res['stream']
+        out = {'cg': cg}
+        pickle.dump(out, open('../data/ex_v{:d}.pkl'.format(e), 'wb'))
+
+    rses = np.array([0, 5, 10, 30, 100]) * u.pc
+    for e, r in enumerate(rses):
+        x = x0[:]
+        x[6] = r.to(params_units[6]).value
+        lnprob_args = get_lnprobargs()
+
+        res = lnprob_detailed(x, *lnprob_args)
+        cg = res['stream']
+        out = {'cg': cg}
+        pickle.dump(out, open('../data/ex_r{:d}.pkl'.format(e), 'wb'))
+
 def fiducial_excursions():
     """Loop appearance under different impact parameters"""
     
@@ -3275,7 +3380,8 @@ def fiducial_excursions():
         plt.gca().spines['top'].set_linewidth(2.3)
         plt.gca().spines['top'].set_edgecolor('0.2')
     
-    times = np.array([25,150,530,700,1000]) * u.Myr
+    #times = np.array([25,150,530,700,1000]) * u.Myr
+    times = np.array([25,150,495,700,1200]) * u.Myr
     for e, t in enumerate(times):
         pkl = pickle.load(open('../data/ex_t{:d}.pkl'.format(e), 'rb'))
         cg = pkl['cg']
@@ -3288,7 +3394,8 @@ def fiducial_excursions():
         
         plt.text(0.1,0.8, 'T = {:.0f} Myr'.format(t.value), transform=plt.gca().transAxes, fontsize='small', va='center', ha='left')
     
-    masses = np.array([1,2,4,7,10])*1e6 * u.Msun
+    #masses = np.array([1,2,4,7,10])*1e6 * u.Msun
+    masses = np.array([1,2,5,7,10])*1e6 * u.Msun
     for e, m in enumerate(masses):
         pkl = pickle.load(open('../data/ex_m{:d}.pkl'.format(e), 'rb'))
         cg = pkl['cg']
@@ -3304,7 +3411,8 @@ def fiducial_excursions():
         else:
             plt.text(0.1,0.8, 'M = {:.1f}$\cdot10^7$ M$_\odot$'.format(m.value*1e-7), transform=plt.gca().transAxes, fontsize='small', va='center', ha='left')
     
-    bees = np.array([1,5,10,20,50]) * u.pc
+    #bees = np.array([1,5,10,20,50]) * u.pc
+    bees = np.array([1,5,15,25,50]) * u.pc
     for e, b in enumerate(bees):
         pkl = pickle.load(open('../data/ex_b{:d}.pkl'.format(e), 'rb'))
         cg = pkl['cg']
@@ -3317,7 +3425,8 @@ def fiducial_excursions():
         
         plt.text(0.1,0.8, 'b = {:.0f} pc'.format(b.value), transform=plt.gca().transAxes, fontsize='small', va='center', ha='left')
     
-    vees = np.array([50,150,300,500,800]) * u.km/u.s
+    #vees = np.array([50,150,300,500,800]) * u.km/u.s
+    vees = np.array([30,150,250,500,800]) * u.km/u.s
     for e, v in enumerate(vees):
         pkl = pickle.load(open('../data/ex_v{:d}.pkl'.format(e), 'rb'))
         cg = pkl['cg']
