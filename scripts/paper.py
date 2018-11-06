@@ -118,7 +118,7 @@ def param_search():
         plt.plot(spx, spy, '-', color='k', alpha=0.5, lw=3)
         
         plt.xlim(-55,-25)
-        plt.ylim(-6,6)
+        plt.ylim(-4,4)
         txt = plt.text(0.07,0.75, labels[e], transform=plt.gca().transAxes, fontsize='small')
         txt.set_bbox(dict(facecolor='w', alpha=0.8, ec='none'))
         
