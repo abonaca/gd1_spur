@@ -418,11 +418,21 @@ def mass_size(nsigma=1):
     plt.plot(tgc['rhlp'], gc_mass, '^', color=colors[3], ms=accent_ms, mec=accent_colors[3], mew=1, label='Globular clusters\n(Baumgardt & Hilker 2018)')
     plt.plot(tgc['rhlp'], gc_mass, '^', color=colors[3], ms=ms, mec='none', label='')
     
-    #ind = (tgc['Name']=='NGC 6496') | (tgc['Name']=='IC 4499')
-    #plt.plot(tgc['rhlp'][ind], gc_mass[ind], '^', color='r', ms=ms, mec='none', label='')
-    
-    #plt.fill_betweenx(mrange.value, rs_high.to(u.pc).value, rs_low.to(u.pc).value, color=colors[1], edgecolor='none', linewidth=0, alpha=0.4, label='$\Lambda$CDM halos ({:.0f}$\,\sigma$ scatter)\n(Diemer & Joyce 2018)'.format(nsigma))
+    # lcdm predictions for subhalos
+    #plt.fill_betweenx(mrange.value, rs_high.to(u.pc).value, rs_low.to(u.pc).value, color=colors[1], edgecolor='none', linewidth=0, alpha=0.2, label='$\Lambda$CDM subhalos\n(Molin$\\\'e$ et al. 2017)'.format(nsigma))
     plt.fill_betweenx(mrange.value, rs_high.to(u.pc).value, rs_low.to(u.pc).value, color=colors[1], edgecolor='none', linewidth=0, alpha=0.4, label='$\Lambda$CDM subhalos ({:.0f}$\,\sigma$ scatter)\n(Molin$\\\'e$ et al. 2017)'.format(nsigma))
+    
+    lstyles = [':', ':']
+    dashes = [(1,4), (1,8)]
+    lw = 1
+    alpha = 0.8
+    for e, nsigma in enumerate([1, 2]):
+        rs_low = 10**(-nsigma*scatter) * rs_moline(mrange, r=rmin, Mhost=Mhost)
+        rs_high = 10**(nsigma*scatter) * rs_moline(mrange, r=rmax, Mhost=Mhost)
+
+        plt.plot(rs_low.to(u.pc).value, mrange.value, ls=lstyles[e], color=colors[1], lw=lw, alpha=alpha, label='', dashes=dashes[e], zorder=0)
+        plt.plot(rs_high.to(u.pc).value, mrange.value, ls=lstyles[e], color=colors[1], lw=lw, alpha=alpha, label='', dashes=dashes[e], zorder=0)
+        #plt.fill_betweenx(mrange.value, rs_high.to(u.pc).value, rs_low.to(u.pc).value, color=colors[1], edgecolor='none', linewidth=0, alpha=0.2, label='')
     
     plt.xlim(1, 1e3)
     plt.ylim(1e4,1e9)
