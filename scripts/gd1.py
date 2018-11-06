@@ -3266,7 +3266,14 @@ def fiducial_excursions():
         plt.ylabel('$\phi_2$ [deg]')
         
         plt.sca(ax[2][i])
-        plt.text(0.9,0.2, 'fiducial', transform=plt.gca().transAxes, fontsize='x-small', va='center', ha='right')
+        plt.text(0.9,0.2, 'fiducial', transform=plt.gca().transAxes, fontsize='small', va='center', ha='right')
+        for axis in ['top','bottom','left','right']:
+            plt.gca().spines[axis].set_linewidth(2.3)
+            plt.gca().spines[axis].set_edgecolor('0.2')
+            
+        plt.sca(ax[3][i])
+        plt.gca().spines['top'].set_linewidth(2.3)
+        plt.gca().spines['top'].set_edgecolor('0.2')
     
     times = np.array([25,150,530,700,1000]) * u.Myr
     for e, t in enumerate(times):
