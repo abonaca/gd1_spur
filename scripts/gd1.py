@@ -715,6 +715,10 @@ def visualize_gap_ages():
 
     for t in times[:]:
         cg, de = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, t_impact=t, N=N, fig_plot=False, model_return=True)
+        
+        cgal = cg.transform_to(gc_frame)
+        outdict = {'stream': cg, 'phi1': cg.phi1.wrap_at(180*u.deg), 'phi2': cg.phi2, 'x': cgal.x, 'y': cgal.y, 'z': cgal.z, 'vx': cgal.v_x, 'vy': cgal.v_y, 'vz': cgal.v_z}
+        pickle.dump(outdict, open('../data/snaps/snapshot_{:03.0f}.pkl'.format(t.value), 'wb'))
     
         plt.close()
         fig, ax = plt.subplots(2, 1, figsize=(12, 5.5), sharex=True, sharey=True)
