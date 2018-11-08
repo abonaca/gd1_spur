@@ -2971,7 +2971,7 @@ def streakline_input():
     plt.subplots_adjust(hspace=0)
 
     plt.sca(ax[0])
-    plt.scatter(g['phi1'], g['phi2'], s=g['pmem']*2, c=g['pmem'], cmap=mpl.cm.binary, vmin=0.5, vmax=1.1)
+    plt.scatter(g['phi1'], g['phi2'], s=g['pmem']*2, c=g['pmem'], cmap=mpl.cm.binary, vmin=0.5, vmax=1.1, rasterized=True)
     #plt.plot(g['phi1'], g['phi2'], 'ko', ms=2, alpha=0.7, mec='none')
     #plt.gca().set_aspect('equal')
     plt.ylabel('$\phi_2$ [deg]')
@@ -2982,7 +2982,7 @@ def streakline_input():
     
     
     plt.sca(ax[1])
-    plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, 'k.', ms=3, alpha=0.2)
+    plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, 'k.', ms=3, alpha=0.2, rasterized=True)
     #plt.plot(model_gd1.phi1.wrap_at(wangle), model_gd1.phi2, 'k.', ms=1)
     #plt.plot(model_gd1.phi1.wrap_at(wangle)[Nstar:], model_gd1.phi2[Nstar:], 'k.', ms=1)
 
@@ -3019,6 +3019,7 @@ V = {:.0f} km s$^{{-1}}$""".format(t_impact.to(u.Myr).value, M.to(u.Msun).value*
     
     plt.tight_layout(h_pad=0)
     plt.savefig('../plots/stream_encounter.png', dpi=200)
+    plt.savefig('../paper/stream_encounter.pdf', dpi=200)
 
 ####################
 # Plot paper figures
