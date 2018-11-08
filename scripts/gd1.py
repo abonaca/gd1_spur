@@ -2223,7 +2223,7 @@ def rs_diemer(M):
     
     return rs
 
-def rs_moline(M, r=20*u.kpc, Mhost=1e12*u.Msun):
+def rs_moline(M, r=20*u.kpc, Mhost=1e12*u.Msun, verbose=False):
     """Return NFW scale radius for subhalo of mass M at radius r from the center of the host halo of mass Mhost, assuming Moline+2017 mass-concentration relation"""
     
     cosmology.setCosmology('planck15')
@@ -2241,6 +2241,8 @@ def rs_moline(M, r=20*u.kpc, Mhost=1e12*u.Msun):
     
     Rhost = ((3*Mhost.to(u.Msun).value/h_)/(4*np.pi*delta*rho_c))**(1/3) * h_ * u.kpc
     rrel = (r / Rhost).decompose()
+    
+    if verbose: print(rrel, r, Rhost)
 
     c = c0 * (1 + np.sum( (a[:,np.newaxis] * np.log10((M[np.newaxis,:]).to(u.Msun).value*1e-8))**i[:,np.newaxis], axis=0 )) * (1 + b*np.log10(rrel))
     R = ((3*M.to(u.Msun).value/h_)/(4*np.pi*delta*rho_c))**(1/3) * h_

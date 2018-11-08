@@ -383,8 +383,9 @@ def mass_size(nsigma=1):
     Mhost = 1e12 * u.Msun
     rmin = 13*u.kpc
     rmax = 25*u.kpc
-    rs_low = 10**(-nsigma*scatter) * rs_moline(mrange, r=rmin, Mhost=Mhost)
-    rs_high = 10**(nsigma*scatter) * rs_moline(mrange, r=rmax, Mhost=Mhost)
+    rs_low = 10**(-nsigma*scatter) * rs_moline(mrange, r=rmin, Mhost=Mhost, verbose=True)
+    rs_high = 10**(nsigma*scatter) * rs_moline(mrange, r=rmax, Mhost=Mhost, verbose=True)
+    
     
     #print(10**0.15, 10**-0.15)
     
