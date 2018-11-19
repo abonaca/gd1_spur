@@ -3,6 +3,22 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# 
+*pkl
+*npz
+*fits
+*csv
+*bin
+*txt
+*zip
+*backup
+*npy
+*dat
+*yml
+
+*bbl
+*blg
+
 # C extensions
 *.so
 
