@@ -354,7 +354,7 @@ def orbit_cross():
     plt.savefig('../paper/satellite_distances.pdf')
 
 
-def mass_size(nsigma=1):
+def mass_size(nsigma=3):
     """Compilation of masses and sizes of various objects"""
     
     #mpl.rc('text', usetex=True)
@@ -383,8 +383,10 @@ def mass_size(nsigma=1):
     Mhost = 1e12 * u.Msun
     rmin = 13*u.kpc
     rmax = 25*u.kpc
-    rs_low = 10**(-nsigma*scatter) * rs_moline(mrange, r=rmin, Mhost=Mhost, verbose=True)
-    rs_high = 10**(nsigma*scatter) * rs_moline(mrange, r=rmax, Mhost=Mhost, verbose=True)
+    rs_low = 10**(-nsigma*scatter) * rs_moline(mrange, r=rmin, Mhost=Mhost, verbose=False)
+    rs_high = 10**(nsigma*scatter) * rs_moline(mrange, r=rmax, Mhost=Mhost, verbose=False)
+    
+    print(rs_moline(np.array([1e6])*u.Msun, r=rmin, Mhost=Mhost, verbose=True))
     
     
     #print(10**0.15, 10**-0.15)
