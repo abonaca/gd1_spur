@@ -2230,8 +2230,8 @@ def rs_moline(M, r=20*u.kpc, Mhost=1e12*u.Msun, verbose=False):
     csm = cosmology.getCurrent()
     
     z_ = 0
-    rho_c = csm.rho_c(z_)
     h_ = csm.Hz(z_) * 1e-2
+    rho_c = csm.rho_c(z_)*h_**2
     delta = 200
     
     c0 = 19.9
@@ -2239,14 +2239,16 @@ def rs_moline(M, r=20*u.kpc, Mhost=1e12*u.Msun, verbose=False):
     b = -0.54
     i = np.array([1, 2, 3])
     
-    Rhost = ((3*Mhost.to(u.Msun).value/h_)/(4*np.pi*delta*rho_c))**(1/3) * h_ * u.kpc
+    Rhost = ((3*Mhost.to(u.Msun).value)/(4*np.pi*delta*rho_c))**(1/3) * u.kpc
     rrel = (r / Rhost).decompose()
     
     if verbose: print(rrel, r, Rhost)
 
     c = c0 * (1 + np.sum( (a[:,np.newaxis] * np.log10((M[np.newaxis,:]).to(u.Msun).value*1e-8))**i[:,np.newaxis], axis=0 )) * (1 + b*np.log10(rrel))
-    R = ((3*M.to(u.Msun).value/h_)/(4*np.pi*delta*rho_c))**(1/3) * h_
+    R = ((3*M.to(u.Msun).value)/(4*np.pi*delta*rho_c))**(1/3)
     rs = R / c * 1e3 * u.pc
+    
+    if verbose: print(rho_c, R, c)
     
     return rs
 
@@ -2962,6 +2964,8 @@ def streakline_input():
     c = coord.Galactocentric(x=stream['x'][0], y=stream['x'][1], z=stream['x'][2], v_x=stream['v'][0], v_y=stream['v'][1], v_z=stream['v'][2], **gc_frame_dict)
     cg = c.transform_to(gc.GD1)
     wangle = 180*u.deg
+    outdict = {'cg': cg}
+    pickle.dump(outdict, open('../data/fiducial.pkl', 'wb'))
     
     # load data
     g = Table(fits.getdata('/home/ana/projects/GD1-DR2/output/gd1_members.fits'))
