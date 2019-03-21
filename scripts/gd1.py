@@ -28,7 +28,11 @@ import corner
 from colossus.cosmology import cosmology
 from colossus.halo import concentration
 
-import interact
+import sys
+if sys.version_info < (3, 0, 0):
+    import interact
+else:
+    import interact3 as interact
 import myutils
 
 import pickle
@@ -67,7 +71,7 @@ def gd1_model(pot='log'):
     phi1_gap = coord.Angle(-40*u.deg)
     i_gap = np.argmin(np.abs(model_x - phi1_gap))
     out = {'x_gap': fit_orbit.pos.get_xyz()[:,i_gap], 'v_gap': fit_orbit.vel.get_d_xyz()[:,i_gap], 'frame': gc_frame}
-    pickle.dump(out, open('../data/gap_present_{}.pkl'.format(pot), 'wb'))
+    pickle.dump(out, open('../data/gap_present_{}_python3.pkl'.format(pot), 'wb'))
     print('{} {}\n{}\n{}'.format(i_gap, fit_orbit[i_gap], fit_orbit[0], w0))
     print('dt {}'.format(i_gap*dt.to(u.s)))
     
@@ -214,13 +218,13 @@ def encounter(bnorm=0.06*u.kpc, bx=0.06*u.kpc, vnorm=200*u.km/u.s, vx=200*u.km/u
     ########################
     # Perturber at encounter
     
-    pkl = pickle.load(open('../data/gap_present.pkl', 'rb'))
+    pkl = pickle.load(open('../data/gap_present_log_python3.pkl', 'rb'))
     c = coord.Galactocentric(x=pkl['x_gap'][0], y=pkl['x_gap'][1], z=pkl['x_gap'][2], v_x=pkl['v_gap'][0], v_y=pkl['v_gap'][1], v_z=pkl['v_gap'][2], **gc_frame_dict)
     w0 = gd.PhaseSpacePosition(c.transform_to(gc_frame).cartesian)
     
     # best-fitting orbit
     dt = 0.5*u.Myr
-    n_steps = np.int64(t_impact / dt)
+    n_steps = np.int64((t_impact / dt).decompose())
 
     # integrate back in time
     fit_orbit = ham.integrate_orbit(w0, dt=-dt, n_steps=n_steps)
@@ -274,7 +278,8 @@ def encounter(bnorm=0.06*u.kpc, bx=0.06*u.kpc, vnorm=200*u.km/u.s, vx=200*u.km/u
     
     # best-fitting orbit
     dt = 0.5*u.Myr
-    n_steps = np.int64(t_impact / dt)
+    n_steps = np.int64((t_impact / dt).decompose())
+
 
     # integrate back in time
     fit_orbit = ham.integrate_orbit(w0, dt=-dt, n_steps=n_steps)
@@ -2217,7 +2222,7 @@ def rs_diemer(M):
     h_ = csm.Hz(z_) * 1e-2
     delta = 200
     
-    c, mask = concentration.concentration(M.to(u.Msun).value/h_, '200c', 0.0, model='diemer18', range_return=True)
+    c, mask = concentration.concentration(M.to(u.Msun).value/h_, '200c', 0.0, model='diemer19', range_return=True)
     R = ((3*M.to(u.Msun).value/h_)/(4*np.pi*delta*rho_c))**(1/3) * h_
     rs = R / c * 1e3 * u.pc
     
@@ -2254,7 +2259,7 @@ def rs_moline(M, r=20*u.kpc, Mhost=1e12*u.Msun, verbose=False):
 
 def get_lnprobargs():
     """"""
-    pkl = pickle.load(open('../data/gap_present.pkl', 'rb'))
+    pkl = pickle.load(open('../data/gap_present_log_python3.pkl', 'rb'))
     c = coord.Galactocentric(x=pkl['x_gap'][0], y=pkl['x_gap'][1], z=pkl['x_gap'][2], v_x=pkl['v_gap'][0], v_y=pkl['v_gap'][1], v_z=pkl['v_gap'][2], **gc_frame_dict)
     w0 = gd.PhaseSpacePosition(c.transform_to(gc_frame).cartesian)
     xgap = np.array([w0.pos.x.si.value, w0.pos.y.si.value, w0.pos.z.si.value])
@@ -2509,7 +2514,7 @@ def model_time(T, bnorm=0.03*u.kpc, bx=0.03*u.kpc, vnorm=225*u.km/u.s, vx=225*u.
     ########################
     # Perturber at encounter
     
-    pkl = pickle.load(open('../data/gap_present.pkl', 'rb'))
+    pkl = pickle.load(open('../data/gap_present_log_python3.pkl', 'rb'))
     c = coord.Galactocentric(x=pkl['x_gap'][0], y=pkl['x_gap'][1], z=pkl['x_gap'][2], v_x=pkl['v_gap'][0], v_y=pkl['v_gap'][1], v_z=pkl['v_gap'][2], **gc_frame_dict)
     w0 = gd.PhaseSpacePosition(c.transform_to(gc_frame).cartesian)
     
@@ -2789,7 +2794,7 @@ def model_examples(model=0, i=0, label='_v500w200', verbose=False):
     
     res = lnprob_detailed(x, *lnprob_args)
     res['x'] = x
-    pickle.dump(res, open('../data/predictions/model_{:03d}.pkl'.format(i), 'wb'))
+    pickle.dump(res, open('../data/predictions/model3_{:03d}.pkl'.format(i), 'wb'))
     cg = res['stream']
     
     plt.close()
@@ -2836,6 +2841,159 @@ def model_examples(model=0, i=0, label='_v500w200', verbose=False):
 # Streakline stream
 from gala.dynamics import mockstream
 
+def generate_streakline_fiducial():
+    """"""
+    
+    np.random.seed(143531)
+    
+    t_impact, M, rs, bnorm, bx, vnorm, vx = fiducial_params()
+    t_impact = 0.495*u.Gyr
+    M = 5e6*u.Msun
+    #rs = 0.1*rs_diemer(M)
+    rs = 10*u.pc
+    bnorm = 15*u.pc
+    bx = 6*u.pc
+    vnorm = 250*u.km/u.s
+    vx = -25*u.km/u.s
+
+    # load one orbital point
+    pos = np.load('../data/log_orbit.npy')
+    phi1, phi2, d, pm1, pm2, vr = pos
+
+    c = gc.GD1(phi1=phi1*u.deg, phi2=phi2*u.deg, distance=d*u.kpc, pm_phi1_cosphi2=pm1*u.mas/u.yr, pm_phi2=pm2*u.mas/u.yr, radial_velocity=vr*u.km/u.s)
+    w0 = gd.PhaseSpacePosition(c.transform_to(gc_frame).cartesian)
+    
+    # best-fitting orbit
+    dt = 0.5*u.Myr
+    n_steps = 120
+    wangle = 180*u.deg
+
+    # integrate back in time
+    fit_orbit = ham.integrate_orbit(w0, dt=dt, n_steps=n_steps)
+    
+    prog_phi0 = -20*u.deg
+
+    model_gd1 = fit_orbit.to_coord_frame(gc.GD1, galactocentric_frame=gc_frame)
+    prog_i = np.abs(model_gd1.phi1.wrap_at(180*u.deg) - prog_phi0).argmin()
+    prog_w0 = fit_orbit[prog_i]
+    
+    dt_orbit = 0.5*u.Myr
+    nstep_impact = np.int64((t_impact / dt_orbit).decompose())
+    #prog_orbit = ham.integrate_orbit(prog_w0, dt=-dt_orbit, t1=0*u.Myr, t2=-3*u.Gyr)
+    prog_orbit = ham.integrate_orbit(prog_w0, dt=-dt_orbit, t1=0*u.Myr, t2=-3*u.Gyr)
+    impact_orbit = prog_orbit[nstep_impact:]
+    impact_orbit = impact_orbit[::-1]
+    prog_orbit = prog_orbit[::-1]
+    
+    t_disrupt = -300*u.Myr
+    minit = 7e4
+    mfin = 1e3
+    nrelease = 1
+    n_times = (prog_orbit.t < t_disrupt).sum()
+    prog_mass = np.linspace(minit, mfin, n_times)
+    prog_mass = np.concatenate((prog_mass, np.zeros(len(prog_orbit.t) - n_times))) * u.Msun
+    model_present = mockstream.dissolved_fardal_stream(ham, prog_orbit, prog_mass=prog_mass, t_disrupt=t_disrupt, release_every=nrelease)
+    
+    n_steps_disrupt = int(abs(t_disrupt / (prog_orbit.t[1]-prog_orbit.t[0])))
+    model_present = model_present[:-2*n_steps_disrupt]
+    
+    model_gd1 = model_present.to_coord_frame(gc.GD1, galactocentric_frame=gc_frame)
+    ind_gap = np.where((model_gd1.phi1.wrap_at(wangle)>-43*u.deg) & (model_gd1.phi1.wrap_at(wangle)<-33*u.deg))[0]
+
+    n_times = (impact_orbit.t < t_disrupt).sum()
+    prog_mass = np.linspace(minit, mfin, n_times)
+    prog_mass = np.concatenate((prog_mass, np.zeros(len(impact_orbit.t) - n_times))) * u.Msun
+    model = mockstream.dissolved_fardal_stream(ham, impact_orbit, prog_mass=prog_mass, t_disrupt=t_disrupt, release_every=nrelease)
+
+    n_steps_disrupt = int(abs(t_disrupt / (impact_orbit.t[1]-impact_orbit.t[0])))
+    model = model[:-2*n_steps_disrupt]
+
+    Nstar = np.shape(model)[0]
+    ivalid = ind_gap < Nstar
+    ind_gap = ind_gap[ivalid]
+    
+    xgap = np.median(model.xyz[:,ind_gap], axis=1)
+    vgap = np.median(model.v_xyz[:,ind_gap], axis=1)
+    
+    
+    ########################
+    # Perturber at encounter
+    
+    i = np.array([1,0,0], dtype=float)
+    j = np.array([0,1,0], dtype=float)
+    k = np.array([0,0,1], dtype=float)
+    
+    # find positional plane
+    bi = np.cross(j, vgap)
+    bi = bi/np.linalg.norm(bi)
+    
+    bj = np.cross(vgap, bi)
+    bj = bj/np.linalg.norm(bj)
+    
+    # pick b
+    by = np.sqrt(bnorm**2 - bx**2)
+    b = bx*bi + by*bj
+    xsub = xgap + b
+    
+    # find velocity plane
+    vi = np.cross(vgap, b)
+    vi = vi/np.linalg.norm(vi)
+    
+    vj = np.cross(b, vi)
+    vj = vj/np.linalg.norm(vj)
+    
+    # pick v
+    vy = np.sqrt(vnorm**2 - vx**2)
+    vsub = vx*vi + vy*vj
+    
+    # impact parameters
+    Tenc = 0.01*u.Gyr
+    dt = 0.05*u.Myr
+    
+    # potential parameters
+    potential = 3
+    Vh = 225*u.km/u.s
+    q = 1*u.Unit(1)
+    rhalo = 0*u.pc
+    par_pot = np.array([Vh.si.value, q.value, rhalo.si.value])
+    
+    # generate unperturbed stream model
+    potential_perturb = 2
+    par_perturb = np.array([0*M.si.value, rs.si.value, 0, 0, 0])
+    
+    x1, x2, x3, v1, v2, v3 = interact.general_interact(par_perturb, xsub.si.value, vsub.si.value, Tenc.si.value, t_impact.si.value, dt.si.value, par_pot, potential, potential_perturb, model.x.si.value, model.y.si.value, model.z.si.value, model.v_x.si.value, model.v_y.si.value, model.v_z.si.value)
+    stream = {}
+    stream['x'] = (np.array([x1, x2, x3])*u.m).to(u.pc)
+    stream['v'] = (np.array([v1, v2, v3])*u.m/u.s).to(u.km/u.s)
+    
+    c = coord.Galactocentric(x=stream['x'][0], y=stream['x'][1], z=stream['x'][2], v_x=stream['v'][0], v_y=stream['v'][1], v_z=stream['v'][2], **gc_frame_dict)
+    cg = c.transform_to(gc.GD1)
+    wangle = 180*u.deg
+    outdict = {'cg': cg}
+    #pickle.dump(outdict, open('../data/fiducial_noperturb_python3.pkl', 'wb'))
+    
+    # generate perturbed stream model
+    potential_perturb = 2
+    par_perturb = np.array([M.si.value, rs.si.value, 0, 0, 0])
+    
+    x1, x2, x3, v1, v2, v3 = interact.general_interact(par_perturb, xsub.si.value, vsub.si.value, Tenc.si.value, t_impact.si.value, dt.si.value, par_pot, potential, potential_perturb, model.x.si.value, model.y.si.value, model.z.si.value, model.v_x.si.value, model.v_y.si.value, model.v_z.si.value)
+    stream = {}
+    stream['x'] = (np.array([x1, x2, x3])*u.m).to(u.pc)
+    stream['v'] = (np.array([v1, v2, v3])*u.m/u.s).to(u.km/u.s)
+    
+    c = coord.Galactocentric(x=stream['x'][0], y=stream['x'][1], z=stream['x'][2], v_x=stream['v'][0], v_y=stream['v'][1], v_z=stream['v'][2], **gc_frame_dict)
+    cg = c.transform_to(gc.GD1)
+    wangle = 180*u.deg
+    outdict = {'cg': cg}
+    #pickle.dump(outdict, open('../data/fiducial_perturb_python3.pkl', 'wb'))
+    
+    plt.close()
+    plt.figure(figsize=(10,5))
+    plt.plot(cg.phi1.wrap_at(180*u.deg), cg.phi2, 'k.')
+    plt.xlim(-80,0)
+    plt.ylim(-10,10)
+    plt.tight_layout()
+
 def streakline_input():
     """Create streakline model of a correct age"""
     
@@ -2844,7 +3002,8 @@ def streakline_input():
     t_impact, M, rs, bnorm, bx, vnorm, vx = fiducial_params()
     t_impact = 0.495*u.Gyr
     M = 5e6*u.Msun
-    rs = 0.1*rs_diemer(M)
+    #rs = 0.1*rs_diemer(M)
+    rs = 10*u.pc
     bnorm = 15*u.pc
     bx = 6*u.pc
     vnorm = 250*u.km/u.s
@@ -2965,7 +3124,7 @@ def streakline_input():
     cg = c.transform_to(gc.GD1)
     wangle = 180*u.deg
     outdict = {'cg': cg}
-    pickle.dump(outdict, open('../data/fiducial.pkl', 'wb'))
+    #pickle.dump(outdict, open('../data/fiducial.pkl', 'wb'))
     
     # load data
     g = Table(fits.getdata('/home/ana/projects/GD1-DR2/output/gd1_members.fits'))
@@ -2986,8 +3145,8 @@ def streakline_input():
     
     
     plt.sca(ax[1])
-    plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, 'k.', ms=3, alpha=0.2, rasterized=True)
-    #plt.plot(model_gd1.phi1.wrap_at(wangle), model_gd1.phi2, 'k.', ms=1)
+    #plt.plot(cg.phi1.wrap_at(wangle), cg.phi2, 'k.', ms=3, alpha=0.2, rasterized=True)
+    plt.plot(model_gd1.phi1.wrap_at(wangle), model_gd1.phi2, 'k.', ms=3, alpha=0.2, rasterized=True)
     #plt.plot(model_gd1.phi1.wrap_at(wangle)[Nstar:], model_gd1.phi2[Nstar:], 'k.', ms=1)
 
     plt.xlim(-70, -10)
@@ -3022,8 +3181,8 @@ V = {:.0f} km s$^{{-1}}$""".format(t_impact.to(u.Myr).value, M.to(u.Msun).value*
     #plt.ylabel('z [kpc]')
     
     plt.tight_layout(h_pad=0)
-    plt.savefig('../plots/stream_encounter.png', dpi=200)
-    plt.savefig('../paper/stream_encounter.pdf', dpi=200)
+    #plt.savefig('../plots/stream_encounter.png', dpi=200)
+    #plt.savefig('../paper/stream_encounter.pdf', dpi=200)
 
 ####################
 # Plot paper figures
@@ -3252,31 +3411,31 @@ def generate_excursions():
     for e, t in enumerate(times):
         cg, en = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, rs=rs, t_impact=t, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
         out = {'cg': cg, 'e': e}
-        pickle.dump(out, open('../data/ex_t{:d}.pkl'.format(e), 'wb'))
+        pickle.dump(out, open('../data/ex3_t{:d}.pkl'.format(e), 'wb'))
     
     masses = np.array([1,2,4,7,10])*1e6 * u.Msun
     for e, m in enumerate(masses):
         cg, en = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=m, rs=rs, t_impact=t_impact, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
         out = {'cg': cg, 'e': e}
-        pickle.dump(out, open('../data/ex_m{:d}.pkl'.format(e), 'wb'))
+        pickle.dump(out, open('../data/ex3_m{:d}.pkl'.format(e), 'wb'))
     
     bees = np.array([1,5,10,20,50]) * u.pc
     for e, b in enumerate(bees):
         cg, en = encounter(bnorm=b, bx=0.5*b, vnorm=vnorm, vx=vx, M=M, rs=rs, t_impact=t_impact, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
         out = {'cg': cg, 'e': e}
-        pickle.dump(out, open('../data/ex_b{:d}.pkl'.format(e), 'wb'))
+        pickle.dump(out, open('../data/ex3_b{:d}.pkl'.format(e), 'wb'))
     
     vees = np.array([50,150,300,500,800]) * u.km/u.s
     for e, v in enumerate(vees):
         cg, en = encounter(bnorm=bnorm, bx=bx, vnorm=v, vx=-v, M=M, rs=rs, t_impact=t_impact, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
         out = {'cg': cg, 'e': e}
-        pickle.dump(out, open('../data/ex_v{:d}.pkl'.format(e), 'wb'))
+        pickle.dump(out, open('../data/ex3_v{:d}.pkl'.format(e), 'wb'))
     
     rses = np.array([0, 5, 10, 30, 100]) * u.pc
     for e, r in enumerate(rses):
         cg, en = encounter(bnorm=bnorm, bx=bx, vnorm=vnorm, vx=vx, M=M, rs=r, t_impact=t_impact, N=N, point_mass=False, verbose=False, model_return=True, fig_plot=False)
         out = {'cg': cg, 'e': e}
-        pickle.dump(out, open('../data/ex_r{:d}.pkl'.format(e), 'wb'))
+        pickle.dump(out, open('../data/ex3_r{:d}.pkl'.format(e), 'wb'))
 
 def generate_streak2orbit_excursions():
     """Generate models by varying one parameter at a time"""

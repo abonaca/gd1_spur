@@ -220,10 +220,14 @@ static PyObject *interact_general_interact(PyObject *self, PyObject *args)
     v2 = (double*)PyArray_DATA(v2_array);
     v3 = (double*)PyArray_DATA(v3_array);
     
+	printf("%e %e %e\n", x1[0], x2[0], x3[0]);
+    printf("%e %e %e\n", v1[0], v2[0], v3[0]);
 	// Call the external C function to calculate the interaction
 	int err; 
     err = general_interact(par_perturb, x0, v0, Tenc, T, dt_, par_pot, potential, potential_perturb, Nstar, x1, x2, x3, v1, v2, v3);
     
+	printf("%e %e %e\n", x1[0], x2[0], x3[0]);
+    printf("%e %e %e\n", v1[0], v2[0], v3[0]);
 	// Check if error raised
 	if(err!=0) {
 		PyErr_SetString(PyExc_RuntimeError, "Error occured in the leapfrog integrator.");
