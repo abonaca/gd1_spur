@@ -36,6 +36,7 @@ else:
 import myutils
 
 import pickle
+import h5py
 
 gc_frame_dict = {'galcen_distance':8*u.kpc, 'z_sun':0*u.pc}
 gc_frame = coord.Galactocentric(**gc_frame_dict)
@@ -70,10 +71,24 @@ def gd1_model(pot='log'):
     # gap location at the present
     phi1_gap = coord.Angle(-40*u.deg)
     i_gap = np.argmin(np.abs(model_x - phi1_gap))
-    out = {'x_gap': fit_orbit.pos.get_xyz()[:,i_gap], 'v_gap': fit_orbit.vel.get_d_xyz()[:,i_gap], 'frame': gc_frame}
+    out = {'x_gap': fit_orbit.pos.get_xyz()[:,i_gap].si, 'v_gap': fit_orbit.vel.get_d_xyz()[:,i_gap].to(u.m/u.s), 'frame': gc_frame}
+    print(out['v_gap'].unit.__dict__)
     pickle.dump(out, open('../data/gap_present_{}_python3.pkl'.format(pot), 'wb'))
     print('{} {}\n{}\n{}'.format(i_gap, fit_orbit[i_gap], fit_orbit[0], w0))
     print('dt {}'.format(i_gap*dt.to(u.s)))
+    
+    out = {'x_gap': fit_orbit.pos.get_xyz()[:,i_gap].si, 'v_gap': fit_orbit.vel.get_d_xyz()[:,i_gap].to(u.m/u.s)}
+    tout = Table(out)
+    tout.pprint()
+    tout.write('../data/gap_present.fits', overwrite=True)
+    #h5file = h5py.File('../data/gap_present.h5', 'w')
+    #h5file.create_dataset('x_gap', data=fit_orbit.pos.get_xyz()[:,i_gap].si)
+    #h5file.create_dataset('v_gap', data=fit_orbit.vel.get_d_xyz()[:,i_gap].si)
+    ##h5file.create_dataset("Table2", data=table2, compression=True)
+    ## add attributes
+    ##h5file["Table2"].attrs["attribute1"] = "some info"
+    ##h5file["Table2"].attrs["attribute2"] = 42
+    #h5file.close()
     
     plt.close()
     fig, ax = plt.subplots(1, 1, figsize=(12, 5), sharex=True)
@@ -2789,7 +2804,6 @@ def model_examples(model=0, i=0, label='_v500w200', verbose=False):
     #lnprob_args[7] = 3000
     #lnprob_args[-12] = 10
     #lnprob_args[-11] = 99
-    
     wangle = 180*u.deg
     
     res = lnprob_detailed(x, *lnprob_args)

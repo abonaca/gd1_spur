@@ -321,7 +321,7 @@ def orbit_cross():
         plt.plot(t, rel_distance.to(u.pc), '-', color=mpl.cm.Reds(0.7), alpha=alpha, label=label, lw=lw)
     
     # show globulars
-    tgc = Table.read('../data/positions_globular.fits')
+    tgc = Table.read('../data/positions_globular_baumgardt.fits')
     ra, dec, d, pmra, pmdec, vr = tgc['ra'], tgc['dec'], tgc['distance'], tgc['pmra'], tgc['pmdec'], tgc['vr']
     cs = coord.ICRS(ra=ra, dec=dec, distance=d, pm_ra_cosdec=pmra, pm_dec=pmdec, radial_velocity=vr)
     ws = gd.PhaseSpacePosition(cs.transform_to(gc_frame).cartesian)
@@ -403,7 +403,8 @@ def mass_size(nsigma=3):
     accent_ms = 8
     
     plt.close()
-    fig, ax = plt.subplots(1, 2, figsize=(11,6), gridspec_kw={'width_ratios':[1.7,1]})
+    #fig, ax = plt.subplots(1, 2, figsize=(11,6), gridspec_kw={'width_ratios':[1.7,1]})
+    fig, ax = plt.subplots(1, 2, figsize=(11,6), gridspec_kw={'width_ratios':[10,1]})
     plt.sca(ax[0])
     
     vert_id = (pids[:,0]==i) & (pids[:,1]==j)
@@ -413,8 +414,8 @@ def mass_size(nsigma=3):
     p = mpl.patches.Polygon(xy_vert, closed=True, lw=2, ec='0.8', fc='0.9', zorder=0, label='GD-1 perturber\n(Bonaca et al. 2018)')
     patch = plt.gca().add_patch(p)
     
-    plt.plot(t['Rf'][outer], t['Mf'][outer], 'o', color=colors[2], ms=accent_ms, mec=accent_colors[2], mew=1, label='Outer disk molecular clouds\n(Miville-Desch$\^e$nes et al. 2017)')
-    plt.plot(t['Rf'][outer], t['Mf'][outer], 'o', color=colors[2], ms=ms, mec='none', label='')
+    plt.plot(0.333*t['Rf'][outer], t['Mf'][outer], 'o', color=colors[2], ms=accent_ms, mec=accent_colors[2], mew=1, label='Outer disk molecular clouds\n(Miville-Desch$\^e$nes et al. 2017)')
+    plt.plot(0.333*t['Rf'][outer], t['Mf'][outer], 'o', color=colors[2], ms=ms, mec='none', label='')
     
     plt.plot(ts['rh'], ts['mdyn'], 's', color=colors[4], ms=accent_ms, mec=accent_colors[4], mew=1, label='Dwarf galaxies\n(McConnachie 2012)')
     plt.plot(ts['rh'], ts['mdyn'], 's', color=colors[4], ms=ms, mec='none', label='')
@@ -458,7 +459,7 @@ def mass_size(nsigma=3):
     plt.axis('off')
     
     plt.tight_layout()
-    plt.savefig('../paper/mass_size.pdf')
+    #plt.savefig('../paper/mass_size.pdf')
     #mpl.rc('text', usetex=False)
 
 
@@ -531,4 +532,143 @@ def einasto():
     plt.ylabel('$\\rho$ / $\\rho_{-2}$')
     
     plt.tight_layout()
+
+
+#########################
+# response to the referee
+
+def satellites():
+    """"""
+    
+    tgc = Table.read('../data/result_tab.tex', format='latex')
+    #tgc = Table.read('../data/Baumgardt-globclust.fits')
+    print(tgc.colnames)
+    #print(tgc['Name'])
+    
+    tv = Table.read('../data/Vasiliev-globclust_space.txt', format='ascii')
+    #print(tv.colnames)
+    #print(tv['Name'])
+    
+    tb = Table.read('../data/gc_cat_bersavosh.fits')
+    #print(tb.colnames)
+    #print(tb['Name'])
+    
+    vnames = [x.split('(')[0] for x in tv['Name']]
+    vaux = [x.split('(')[1][:-1] for x in tv['Name'] if '(' in x]
+    
+    remain = np.zeros(len(tb), dtype=bool)
+    for e, n in enumerate(tb['Name']):
+        if n not in vnames and n not in vaux:
+            remain[e] = True
+    
+    cnt = np.sum(remain)
+    print(len(tv), len(tb), cnt, len(tb)-cnt)
+    print(np.array(tb['Name'][remain]))
+    
+    rh = np.array([float(x) if len(x)>0 else np.nan for x in tb['rh']])
+    mv = np.array([float(x) if len(x)>0 else np.nan for x in tb['M_V,t']])
+    rgal = np.array([float(x) if len(x)>0 else np.nan for x in tb['R_galcen']])
+    
+    missing = ['2MS-GC01', 'GLIMPSE02']
+    ind_missing = [True if x in missing else False for x in tb['Name']]
+    print(tb['Name'][ind_missing], rh[ind_missing], mv[ind_missing])
+
+
+def full_gcs():
+    """Globular clusters in Gaia, only missing GLIMPSE C02 and 2MASS-GC01 -- both faint/low mass and in the bulge -> unlikely perturbers of GD-1"""
+    t = Table.read('../data/baumgardt_position.txt', format='ascii', delimiter=' ')
+    t.pprint()
+    print(t.colnames)
+    
+    # store observables
+    data = {'name': t['Cluster'], 'ra': t['RA']*u.deg, 'dec': t['DEC']*u.deg, 'distance': t['Rsun']*u.kpc, 'pmra': t['mualpha']*u.mas/u.yr, 'pmdec': t['mu_delta']*u.mas/u.yr, 'vr': t['<RV>']*u.km/u.s}
+    
+    tout = Table(data=data, names=('name', 'ra', 'dec', 'distance', 'pmra', 'pmdec', 'vr'))
+    tout.pprint()
+    tout.write('../data/positions_globular_baumgardt.fits', overwrite=True)
+    
+def audit_satellites():
+    """"""
+    tcls = Table.read('../data/positions_classical.fits')
+    print(len(tcls))
+    print(np.sort(np.array(tcls['name'])))
+    
+    tufd = Table.read('../data/positions_ufd.fits')
+    print(len(tufd))
+    print(np.sort(np.array(tufd['name'])))
+
+def full_satellites():
+    """"""
+    t = Table.read('../data/NearbyGalaxies.dat', format='ascii', data_start=31, delimiter=' ')
+    t.pprint()
+
+    colnames = ['name', 'rah', 'ram', 'ras', 'decd', 'decm', 'decs', 'ebv', 'dm', 'dm_errm', 'dm_errp', 'vh', 'vh_errm', 'vh_errp', 'vmag', 'vmag_errm', 'vmag_errp', 'pa', 'pa_errm', 'pa_errp', 'e', 'e_errm', 'e_errp', 'mu', 'mu_errm', 'mu_errp', 'rh', 'rh_errm', 'rh_errp', 'sig', 'sig_errm', 'sig_errp', 'vrot', 'vrot_errm', 'vrot_errp', 'mhi', 'sigg', 'sigg_errm', 'sigg_errp', 'vrotg', 'vrotg_errm', 'vrotg_errp', 'feh', 'feh_errm', 'feh_errp', 'flag', 'reference']
+    
+    for i in range(47):
+        t['col{:d}'.format(i+1)].name = colnames[i]
+        
+    fgc = np.zeros(len(t), dtype=bool)
+    for i in range(len(t)):
+        if t['name'][i][1]=='*':
+            fgc[i] = True
+            t['name'][i] = t['name'][i][2:-1]
+        else:
+            t['name'][i] = t['name'][i][1:-1]
+    
+    t['flag_gc'] = fgc
+    
+    t.pprint()
+    t.write('../data/dwarfs_mcconnachie.fits', overwrite=True)
+
+def noorbit_satellites():
+    """Satellites without an orbit determination"""
+    
+    tall = Table.read('../data/dwarfs_mcconnachie.fits')
+    tcls = Table.read('../data/positions_classical.fits')
+    tufd = Table.read('../data/positions_ufd.fits')
+    
+    remain = np.zeros(len(tall), dtype=bool)
+    for e, n in enumerate(tall['name']):
+        if n not in tcls['name'] and n not in tufd['name']:
+            remain[e] = True
+    
+    print(np.sort(np.array(tall['name'][remain])))
+    print(np.sum(remain))
+    tr = tall[remain]
+    
+    Mv = tall['vmag'] - tall['dm']
+    d = 10**(0.2*tall['dm']+1)*u.pc
+    rh_angle = tall['rh']*u.arcmin
+    rh = np.tan(rh_angle.to(u.rad))*d
+    
+    d0 = 25*u.kpc
+    t = 1*u.Gyr
+    s = (d - d0)/t
+    #print(s[remain].to(u.km/u.s))
+    
+    plt.close()
+    fig, ax = plt.subplots(1,2,figsize=(15,6), sharey=True)
+    
+    plt.sca(ax[0])
+    plt.plot(rh, Mv, 'ko', alpha=0.5)
+    plt.plot(rh[remain], Mv[remain], 'ko')
+    
+    for i in range(len(tr)):
+        if rh[remain][i]<1e3*u.pc:
+            plt.text(rh[remain][i].value, Mv[remain][i], tall['name'][remain][i], fontsize='small')
+    
+    plt.axvline(30, ls='-', lw=2, alpha=0.5, color='k')
+    
+    plt.gca().set_xscale('log')
+    plt.xlim(10,1e3)
+    plt.gca().invert_yaxis()
+    
+    plt.sca(ax[1])
+    plt.plot(d[remain].to(u.kpc), Mv[remain], 'ko')
+    for i in range(len(tr)):
+        #if rh[remain][i]<1e3*u.pc:
+        plt.text(d[remain][i].to(u.kpc).value, Mv[remain][i], tall['name'][remain][i], fontsize='small')
+    
+    plt.tight_layout()
+
 

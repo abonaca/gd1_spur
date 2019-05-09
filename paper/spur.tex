@@ -12,6 +12,8 @@
 \newcommand{\kpc}{\textrm{kpc}}
 \newcommand{\msun}{\textrm{M}_\odot}
 
+\newcommand{\changes}[1]{{\textbf{#1}}}
+
 \shorttitle{dynamical evidence of a dark halo substructure}
 \shortauthors{bonaca et al.}
 %@arxiver{stream_encounter.pdf}
@@ -79,17 +81,18 @@ A critical prediction of the CDM paradigm is the existence of dark subhalos less
 Alternative cosmological models have been proposed that behave like \lcdm\ on large scales, but have less structure on small scales.
 In the case of warm dark matter \citep[e.g.,][]{bode2001}, this is accomplished with a dark matter particle that is less massive ($m\sim\rm\, keV$) than the cold dark matter particle ($m\gtrsim10\rm\, GeV$), and thus streams out of the lowest mass clumps.
 The fuzzy dark matter model \citep[e.g.,][]{hu2000} posits an ultra-light dark matter particle ($m\sim10^{-22}\rm\, eV$) that exhibits quantum behavior on macroscopic scales, which prevents collapse of halos less massive than $\sim10^7\,\rm M_\odot$.
-Therefore, a ruling on the existence of low-mass dark matter subhalos would place strong constraints on the nature of dark matter \citep[e.g.,][]{bullockmbk2017, buckleypeter2017}.
+Therefore, a ruling on the existence of low-mass \changes{$(\lesssim10^7\,\rm M_\odot)$} dark matter subhalos would place strong constraints on the nature of dark matter \citep[e.g.,][]{bullockmbk2017, buckleypeter2017}\changes{, which can be further refined by measuring the minimum halo mass \citep[e.g.,][]{schmid1999, hofmann2001, loebzaldarriaga2005}}.
 
-Albeit dark, low-mass subhalos should still exert gravitational influence, so a number of searches for dark matter structure on small scales have been launched.
-In a cosmological setting, gravitational lensing is our most sensitive method of detecting gravitational perturbations.
+Albeit dark, low-mass subhalos should still exert gravitational influence, \changes{for example, fluctuations of the gravitational tidal field are sensitive to the presence of subhalos down to $10^{-6}\rm M_\odot$ \citep{penarrubia2018}.}
+% Albeit dark, low-mass subhalos should still exert gravitational influence, so a number of searches for dark matter structure on small scales have been launched.
+In a cosmological \changes{volume, however}, gravitational lensing is our most sensitive method of detecting gravitational perturbations.
 And indeed, some strongly lensed galaxies require the presence of a subhalo in the lens plane to fully explain the distribution of light in the lensed system.
 To date, subhalos in the mass regime $10^8-10^9\,\rm M_\odot$ have been identified in a number of lenses \citep[e.g.,][]{vegetti2012,hezaveh2016}.
 However, these objects are expected to host stars (although at luminosities below the current detection threshold), so the search for lower mass, and truly dark, subhalos continues, primarily by increasing the sample size of analyzed lenses.
 
 In the local universe, dynamically cold stellar streams are promising devices for measuring detailed properties of the matter distribution \citep[e.g.,][]{johnston1999, bh2018}.
 Formed by stars escaping a disrupting globular cluster at slightly offset orbital energies, stellar streams are approximately one-dimensional structures in the 6D phase space.
-An encounter between a stellar stream and a dark matter subhalo would perturb the orderly structure of the stellar stream, produce a gap in the stream density \citep[e.g.,][]{carlberg2012}, and, depending on the impact geometry, possibly also fold a part of the stream \citep[e.g.,][]{yoon2011}.
+An encounter between a stellar stream and a dark matter subhalo would perturb the orderly structure of the stellar stream, produce a gap in the stream density \citep[e.g.,][]{johnston2002, ibata2002, carlberg2012}, and, depending on the impact geometry, possibly also fold a part of the stream \citep[e.g.,][]{yoon2011}.
 More than 40 thin stellar streams have been discovered in the Milky Way halo \citep{gc2016}, and the most prominent ones have already been searched for evidence of density variations.
 The abundance of dark matter subhalos down to $\sim10^6\,\rm M_\odot$ inferred from the power-spectrum of density variations in streams is consistent with the \lcdm\ predictions \citep[e.g.,][]{carlberg2012,cg2013}.
 In addition to dark matter subhalos, a number of physical processes and observational effects can alter stream morphology at this level \citep[e.g.,][]{kupper2008, amorisco2016, ibata2016}.
@@ -103,6 +106,7 @@ In this work, we follow up this initial discovery with the first in-depth analys
 We first review the observed properties of GD-1 (\S\,\ref{sec:data}), and then develop a fiducial model of a perturbed stream that qualitatively matches GD-1 observations (\S\,\ref{sec:model}).
 Next, we explore the range of impact parameters allowed by the spatial distribution of GD-1 (\S\,\ref{sec:perturber_properties}), and make predictions for its kinematics (\S\,\ref{sec:kinematics}).
 Finally, we discuss the limitations of the current modeling framework (\S\,\ref{sec:caveats}), possible origin of the perturber (\S\,\ref{sec:origin}), and suggest strategies to distinguish between different origin scenarios (\S\,\ref{sec:future}).
+
 \section{Observed features of the GD-1 stellar stream}
 \label{sec:data}
 GD-1 is the longest ($>100^\circ$, 10\,kpc) thin ($\sigma\approx12'$, 30\,pc) stellar stream discovered in the Galactic halo \citep{gd2006}.
@@ -114,9 +118,9 @@ GD-1 data from the Sloan Digital Sky Survey \citep[SDSS,][]{york2000} has been a
 \begin{center}
 \includegraphics[width=0.9\textwidth]{stream_encounter.pdf}
 \end{center}
-\caption{(Top) Likely members of the GD-1 stellar stream, cleanly selected using Gaia proper motions and PanSTARRS photometry, reveal two significant gaps located at $\phi_1\approx-20^\circ$ and $\phi_1\approx-40^\circ$, and dubbed G20 and G40, respectively.
-There is a long, thin spur extending for $\approx10^\circ$ from the G40 gap.
-(Bottom) An idealized model of GD-1, whose progenitor disrupted at $\phi_1\approx-20^\circ$ to produce the G20 gap, and which has been perturbed by a compact, massive object to produce the G40 gap.
+\caption{(Top) Likely members of the GD-1 stellar stream, cleanly selected using Gaia proper motions and PanSTARRS photometry, reveal two significant gaps located at $\phi_1\approx-20^\circ$ and $\phi_1\approx-40^\circ$, and dubbed G-20 and G-40, respectively.
+There is a long, thin spur extending for $\approx10^\circ$ from the G-40 gap.
+(Bottom) An idealized model of GD-1, whose progenitor disrupted at $\phi_1\approx-20^\circ$ to produce the G-20 gap, and which has been perturbed by a compact, massive object to produce the G-40 gap.
 The orbital structure of stars closest to the passing perturber is distorted into a loop of stars that after 0.5\,Gyr appears as an underdensity coinciding with the observed gap, and extends out of the stream similar to the observed spur.
 }
 \label{fig:fiducial}
@@ -137,8 +141,8 @@ Finally, we define a stream membership probability, $p_{mem}$, as the joint prob
 The upper panel of Figure~\ref{fig:fiducial} shows stars with $p_{mem}>0.5$, with larger and darker points representing stars with a higher membership probability.
 
 Most likely GD-1 members trace a thin stream, whose width varies between $\sigma\approx10'$ and $30'$.
-As noted by \citet{pwb}, the stellar density along the stream is not uniform, and there are two significant underdensities, or gaps, located at $\phi_1\approx-40^\circ$ and $\phi_1\approx-20^\circ$, which we refer to as G40 and G20, respectively.
-The main focus of this work are structures related to the G40 gap, so if not specified, the gap refers to G40.
+As noted by \citet{pwb}, the stellar density along the stream is not uniform, and there are two significant underdensities, or gaps, located at $\phi_1\approx-40^\circ$ and $\phi_1\approx-20^\circ$, which we refer to as G-40 and G-20, respectively.
+The main focus of this work are structures related to the G-40 gap, so if not specified, the gap refers to G-40.
 The additional, feature components are above the background density in the spur region, $\phi_1\approx-35^\circ$, and the blob region, $\phi_1\approx-15^\circ$, and consistent with zero along the rest of the stream.
 In the following section we present a model of GD-1 that simultaneously explains the gap in the stream and the spur extending from the stream.
 
@@ -153,17 +157,20 @@ As inhomogeneities can also be introduced into a stellar stream by adding a pert
 As a first step in creating a model of the GD-1 stream, we follow \citet{pwb} in finding the orbit of the GD-1 progenitor by fitting the six-dimensional phase-space distribution of GD-1 stars.
 We assume a spherical logarithmic potential with a circular velocity of 225\,km\,s$^{-1}$ for orbit integration.
 This simple gravitational potential is very close to the best-fit model of GD-1 \citep{koposov2010, bowden2015}, and it also allows much faster force evaluations than the standard, multi-component model of the Milky Way.
-We then assume that the GD-1 progenitor was a globular cluster of initial mass $7\times10^4\rm\,M_\odot$.
+\changes{The present-day location of the GD-1 progenitor is not firmly established \citep[e.g.,][]{pwb, webb2019}, so we adopted a scenario in which the progenitor is completely dissolved because it qualitatively reproduces a number of global GD-1 features \citep[see][]{pwb}.}
+
+We assume that the GD-1 progenitor was a globular cluster of initial mass $7\times10^4\rm\,M_\odot$.
 In our model, it started losing stars through evaporation 3\,Gyr ago and completely disrupted 300\,Myr before the present day.
 We follow the progenitor's dissolution by releasing test particles from its Lagrange points (the mean ejection radius is $\sim150\,\rm pc$ initially), and produce a streakline model of the stream following \citet{fardal2015}.
+\changes{In this approach, the tidal radius from which the stars are being ejected is a function of the progenitor's mass and its position in the Galaxy.}
 Although idealized, such models capture detailed properties of the more realistic, N-body, simulations of disrupting globular clusters \citep{kupper2012}.
 The present day distribution of test particles is shown in GD-1 coordinates in the bottom of Figure~\ref{fig:fiducial}.
 Had the progenitor survived to the present, it would be located at $\phi_1=-20^\circ$.
-Instead, this model has a gap at that location, which coincides with the G20 gap observed in GD-1.
+Instead, this model has a gap at that location, which coincides with the G-20 gap observed in GD-1.
 The progenitor's initial mass and time of disruption were chosen to reproduce the stream width and the morphology of the more depleted observed gap.
 
 However, the observed GD-1 stream has two prominent gaps.
-To produce a model stream that also has a gap coinciding with the observed G40 gap, our model also includes a massive and dense object on an orbit that crosses GD-1.
+To produce a model stream that also has a gap coinciding with the observed G-40 gap, our model also includes a massive and dense object on an orbit that crosses GD-1.
 The parameters of the encounter were chosen to reproduce the observed morphology of the gap-and-spur feature in GD-1.
 The perturber is represented by a \citet{hernquist1990} sphere of mass $5\times10^6\rm\,M_\odot$ and scale radius 10\,pc.
 Its closest approach to GD-1 happened 495\,Myr ago with a relative distance of 15\,pc, which is smaller than the stream width.
@@ -178,7 +185,7 @@ At the present, this loop is viewed nearly edge-on and looks like the observed s
 
 The stream model in the bottom of Figure~\ref{fig:fiducial} qualitatively matches many features in the observed GD-1 stream (Figure~\ref{fig:fiducial}, top).
 Not only are both of the most prominent gaps reproduced at the right location and with the right size, but their density contrast is matched as well.
-The G20 gap, modeled as a disrupted progenitor, is almost completely depleted, while the G40 gap, the location of the impact, still retains some stars.
+The G-20 gap, modeled as a disrupted progenitor, is almost completely depleted, while the G-40 gap, the location of the impact, still retains some stars.
 Furthermore, the model features a spur of the correct offset from the main stream and correct length.
 It is not a perfect model, for example, the model stream extends past the observed extent of GD-1.
 Still, this model is a remarkably realistic rendition of the observed GD-1, so we next quantitatively explore the range of impact parameters that produce a good match to the observed stream.
@@ -332,7 +339,7 @@ Should the encounter scenario be confirmed, these new data will make strong pred
 \label{sec:discussion}
 In previous section we presented a model of the GD-1 stream which experienced a recent encounter with a massive, dense object.
 This fly-by imparted significant velocity kicks to the closest stars both along the stream, which produced a gap in the stream, and perpendicular to the stream, which launched a spur of stars outside of the main stream.
-The qualitative and quantitative agreement between the observed and modeled gap and spur suggests that these GD-1 structures are the first dynamical evidence for dark halo substructure.
+The qualitative and quantitative agreement between the observed and modeled gap and spur suggests that these GD-1 structures are the first dynamical evidence for \changes{a} halo substructure.
 Below we discuss improvements for future modeling of GD-1 (Section~\ref{sec:caveats}), review possible origin scenarios of the observed features (Section~\ref{sec:origin}), and outline strategies to distinguish these scenarios with additional observations (Section~\ref{sec:future}).
 
 \subsection{Limitations of the current modeling setup}
@@ -361,6 +368,8 @@ In the absence of a realistic stream model, our inference of the GD-1 perturber 
 Spot-checking of the accepted models suggests we erred on the conservative side and accepted a wide range of models, some of which would likely be ruled out with the full likelihood.
 For example, model B in Figure~\ref{fig:corner} has both sides of its loop appreciably offset from the stream track, instead of just the trailing side coinciding with the spur.
 Because of that, with the current approach we only bound the allowed parameter space, and remain agnostic to the relative likelihood of models within the bounds.
+\changes{This prohibits us from measuring probabilities associated with each model parameter.
+For example, in the following section we qualitatively discuss the inferred constraints on the mass and size of the GD-1 perturber in the context of objects orbiting the Milky Way, but are unable to quantify their relative probabilities.}
 To find preferred regions of the parameter space and recover the posterior density, future inference will need to employ a more realistic model of GD-1 and a proper likelihood.
 
 And finally, our search of the parameter space has not been exhaustive, so different islands may still be allowed (for example, at a lower perturber mass or older encounter).
@@ -375,7 +384,13 @@ In this section discuss what the observed structures suggest about their origin.
 
 In this work we assumed that GD-1 was perturbed because of features in its density profile.
 However, N-body simulations of disrupting globular clusters show that a certain level of structure in the resulting stream is intrinsic to the disruption process \citep[e.g.,][]{kupper2008,kupper2010}.
-None of the present-day globular clusters would produce density variations as prominent as those observed in GD-1 \citep[see][]{pwb}, but if the GD-1 progenitor had a more complex internal structure than the known globular clusters, this might propagate to the morphology of its tidal tails and account for the observed features.
+\changes{These simulations predict that stars escape a globular cluster on orbits that epicycle around the progenitor's orbit.
+Seen in projection, these epicycles produce a regular pattern of over- and under-densities along the stream.
+\citet{kupper2015} showed that some of density variations detected in tidal tails of the Palomar~5 globular cluster can be attributed to epicycles.
+}
+\changes{However,} none of the present-day globular clusters would \changes{intrinsically} produce density variations as prominent as those observed in GD-1 \citep[see][]{pwb}.
+If the GD-1 progenitor had a more complex internal structure than the known globular clusters, this might propagate to the morphology of its tidal tails and account for the observed features.
+
 Non-trivial morphologies in stellar streams can also be produced by chaotic dispersal \citep{pw2016}.
 For example, unexpectedly short lengths of the Ophiuchus and Palomar~5 streams have been attributed to chaos: in a chaotic potential featuring a rotating bar, large swaths of these streams can be dispersed to surface densities below our current detection threshold \citep{pw2016b,pearson2017}.
 GD-1, on a retrograde orbit and with a larger pericenter than either of these streams, is deemed less susceptible to the chaotic influence of the rotating bar \citep{bb2018}.
@@ -407,13 +422,14 @@ GD-1 perturber is on the dense, or high-concentration, end of dark matter subhal
 
 While these non-interaction scenarios are still possible causes of structures seen in GD-1, we find the interaction scenario more plausible.
 The Milky Way is surrounded by $\sim60$ dwarf galaxies \citep{mcconnachie2012} and $\sim160$ globular clusters \citep{harris2010}, most of which, like GD-1, reside in the Galactic halo.
-Thanks to the \gaia\ mission, a significant fraction of these satellites are now fully located in the 6D phase space \citep{simon2018, gdr2_satellites}.
+Thanks to the \gaia\ mission, a significant fraction of these satellites are now fully located in the 6D phase space \citep{simon2018, gdr2_satellites, baumgardt2019}.
 To test whether any of these objects could have perturbed GD-1, we integrated their orbits in a fiducial Milky Way potential \citep{pw2017} and show their relative distance from the GD-1 gap at $\phi_1=-40^\circ$ during the past billion years in Figure~\ref{fig:known_encounters}.
 Lines are shaded according to the object's mass, with the classical dwarfs being the darkest, ultra-faints medium, and globular clusters lighter.
 All of them have kept at least 1\,kpc away from GD-1.
 Relative distances shown in Figure~\ref{fig:known_encounters} were calculated for fiducial present-day positions and velocities of satellites.
 Since the associated measurement uncertainties can be substantial, we also sampled the error distribution in satellite properties and measured in how many realizations any given satellite comes closer to GD-1 than the maximum permitted impact parameter of 57\,pc (see Figure~\ref{fig:corner}).
-Upon resampling the observational uncertainties, all known satellites are excluded as GD-1 perturbers at a $3\,\sigma$ level or higher. 
+Upon resampling the observational uncertainties, all satellites \changes{with known orbits} are excluded as GD-1 perturbers at a $3\,\sigma$ level or higher. 
+\changes{Orbital parameters are known for all but two globular clusters \citep[GLIMPSE C02 and 2MASS-GC01,][]{baumgardt2019}, both of which are faint objects located in the Galactic bulge \citep{kurtev2008, bonatto2008}, and are therefore unlikely GD-1 perturbers.}
 
 As it orbits the Galaxy, GD-1 crosses the disk at timescales comparable to the inferred time of perturbation (the lightest line in Figure~\ref{fig:known_encounters} is the distance from the Galactic plane).
 While strong disk shocking can facilitate disruption of a diffuse globular cluster \citep{dehnen2004}, GD-1 disk crossings are between 13\,kpc and 23\,kpc from the Galactic center, where the disk density is too low to significantly impact the stream, or produce sharp features such as the gap and the spur.
@@ -421,9 +437,13 @@ Still, giant molecular clouds (GMCs) that are orbiting in the disk plane can per
 To test whether GMCs are viable candidates for the GD-1 perturber, in Figure~\ref{fig:mass_size} we compare the inferred mass and size of the GD-1 perturber (gray shaded region) to known objects in the Milky Way, including molecular clouds.
 Dwarf galaxies are shown as light squares \citep{mcconnachie2012}, globular clusters as medium triangles \citep{baumgardt2018}, and outer-disk molecular clouds (beyond 10\,kpc) as dark circles \citep{md2017}.
 This comparison is rather conceptual as different classes of objects have different density profiles: for the GD-1 perturber we show the mass and scale radius assuming a Hernquist profile, for dwarf galaxies and globular clusters we show the total dynamical mass and half-light radius, and the total (high) mass and full size for molecular clouds.
-Keeping these caveats in mind, the most massive globular clusters and the most compact dwarf galaxies have masses and sizes comparable to the preferred values of the GD-1 perturber, but GMCs are in general too diffuse.
+Keeping these caveats in mind, the most massive globular clusters and the most compact dwarf galaxies have masses and sizes comparable to the preferred values of the GD-1 perturber, but GMCs are in general too diffuse \changes{(at a given mass, their sizes are at least an order of magnitude larger than expected of the GD-1 perturber)}.
 To additionally test for extremely dense, yet undiscovered class of GMCs, we also created GD-1 models perturbed by a $10^7\,\rm M_\odot$ point mass moving on a circular disk orbit for the three most recent disk crossing times.
-These configurations result in a spur that is below the stream at $\phi_2<0$, rather than above at $\phi_2>0$ as observed in GD-1, so we conclude that GMCs are unlikely to have perturbed GD-1.
+These configurations result in a spur that is below the stream at $\phi_2<0$, rather than above at $\phi_2>0$ as observed in GD-1.
+% , so we conclude that GMCs are unlikely to have perturbed GD-1.
+\changes{Based on their low central density and their expected orbits, we conclude that GMCs are unlikely to have perturbed GD-1.
+A dense GMC orbiting outside of the Milky Way disk at large Galactocentric radii is still allowed by the data, and in Section~\ref{sec:future} we discuss future tests to ascertain the nature of the GD-1 perturber.
+}
 
 Having ruled out known objects, we find that the most probable GD-1 perturber is a dark object in the Milky Way halo.
 As luminous satellites can have approximately the required masses and sizes, a low luminosity unknown satellite might be the culprit.
@@ -438,8 +458,8 @@ Several lines of inquiry have limited the contribution of massive ($\gtrsim10^3\
 So if GD-1 encountered a primordial black hole, this would have been an extremely rare event, and we would not expect to see similar features in other streams upon a comparable amount of scrutiny.
 
 On the other hand, $\Lambda$CDM cosmological simulations predict scores of dark matter subhalos orbiting Milky Way-like galaxies.
-Even after accounting for the destruction of subhalos due to the stellar disk \citep{donghia2010,gk2017}, their density in the inner 20\,kpc is high enough that a stream on a GD-1-like orbit is expected to have encountered at least one $10^6-10^7\rm\, M_\odot$ subhalo within the last $\sim8$\,Gyr \citep{erkal2016}.
-Of the two prominent gaps in GD-1, our fiducial model ascribes one to the site of the progenitor's disruption (G20), and one to the encounter with a perturber (G40).
+Even after accounting for the destruction of subhalos due to the stellar disk \citep{donghia2010,errani2017,gk2017}, their density in the inner 20\,kpc is high enough that a stream on a GD-1-like orbit is expected to have encountered at least one $10^6-10^7\rm\, M_\odot$ subhalo within the last $\sim8$\,Gyr \citep{erkal2016}.
+Of the two prominent gaps in GD-1, our fiducial model ascribes one to the site of the progenitor's disruption (G-20), and one to the encounter with a perturber (G-40).
 Thus, a dark matter subhalo is a plausible GD-1 perturber in terms of encounter rates expected in the $\Lambda$CDM universe.
 
 The high inferred density of the GD-1 perturber makes it more resilient to disruption in the tidal field of the inner galaxy, but preferred values are on the high end of dark matter halo concentrations.
@@ -448,7 +468,12 @@ The scatter in the mass-concentration relation is small at high masses ($\sim0.1
 On the other hand, subhalos surviving in dense environments are more concentrated than field halos of the same mass \citep[e.g.,][]{avilareese2005}.
 The dark shaded band in Figure~\ref{fig:mass_size} shows the masses ($M_{200,c}$) and sizes (NFW scale radii, $r_s$) expected for dark matter subhalos orbiting in the GD-1 radial range \citep{moline2017}.
 The whole band encompasses the $3\,\sigma$ scatter in the concentration--mass relation, while the dense and sparse dotted lines correspond to the $1\,\sigma$ and $2\,\sigma$ scatter, respectively.
-Properties of \lcdm\ subhalos are consistent with the inferred mass and size of the GD-1 perturber at a $2-3\,\sigma$ level, but current GD-1 analysis also allows the perturber to be orders of magnitude denser than dark matter subhalos.
+Properties of \lcdm\ subhalos are consistent with the inferred mass and size of the GD-1 perturber \changes{only} at a $2-3\,\sigma$ level, \changes{and the} current GD-1 analysis allows the perturber to be orders of magnitude denser than \changes{expected of $\Lambda$CDM} dark matter subhalos.
+
+\changes{Among the objects expected to orbit the Milky Way, globular clusters have the largest overlap with the inferred mass and size of the GD-1 perturber (Figure~\ref{fig:mass_size}).
+Current dynamical data rule out all of the known globular clusters, but this overlap motivates a search for new globular clusters, which we discuss in the next section.
+Should future searches for luminous objects yield no plausible candidate for the GD-1 perturber, and a dark-matter subhalo remains a viable option, the high inferred density might point to dark matter physics beyond CDM \citep[e.g.,][]{kahlhofer2019}.
+}
 
 
 \subsection{Future prospects}
@@ -457,6 +482,31 @@ Constraining the number and properties of low-mass dark matter halos is essentia
 Interpreting the gap-and-spur feature in the GD-1 stream as a signature of a perturbation provides us a really promising candidate for a dark halo substructure.
 With the follow-up work outlined below, we now have a great opportunity to detect and characterize a \emph{dark} dark matter subhalo.
 
+\subsubsection{Luminous objects}
+\changes{
+- orbits for all luminous objects
+}
+
+\changes{
+The prospect of ruling out known luminous objects as GD-1 perturbers based on their orbits strongly depends on the accurate knowledge of the underlying gravitational potential.
+In this work we assumed a smooth and static model for the Milky Way \citep{pw2017} because it reproduces well the global 6D phase-space distribution of GD-1 \citep{pwb}.
+This implies that, to first order, the assumed gravitational potential is close to the effective Milky Way potential over the last 3\,Gyr (the dynamical age of GD-1 in our fiducial model).
+However, the presence of two massive satellites within the Milky Way, Large Magellanic Cloud (LMC) and Sagittarius, means the potential is more complex in detail.
+Dynamical considerations imply that the LMC is very massive \citep[$\sim10^{11}\rm M_\odot$, e.g.,][]{kallivayalil2013, gomez2015, penarrubia2016}, and has already been invoked to explain deviations from the expected stream tracks of the Tucana~III and Orphan streams \citep[respectively]{erkal2018, erkal2019}.
+Sagittarius is likely less massive \citep[$\sim10^9-10^{11}\rm M_\odot$,][]{jiang2000}, but still a significant perturber in the inner Galaxy \citep[e.g.,][]{laporte2019a, laporte2019b}.
+To reaffirm that the GD-1 perturber is not a luminous satellite, their relative distances should be recalculated in a more realistic gravitational potential that includes the LMC and Sagittarius \citep[for example, as a time-dependent expansion of basis functions,][]{ngc2019}.
+}
+
+\changes{
+So far, we have estimated the influence of known objects on GD-1 by directly modeling individual bodies.
+An alternative approach may be to consider a statistical model for the distribution function of GMCs, globular clusters and dwarf galaxies in our Galaxy.
+For example, \citet{banik2019} compared the power-spectra of gaps in the Palomar~5 stream expected from whole populations of GMCs and dark-matter subhalos.
+A similar analysis of GD-1 could, in principle, estimate the likelihood of the GD-1 perturber being a member of these groups.
+However, unlike the gaps in Palomar~5, the gap detected in GD-1 is associated with an off-stream spur.
+A statistical treatment of both features is beyond the scope of this work, but the framework for simultaneous modeling of a gap-and-spur feature that we developed here should provide a good starting point for such population studies in the future.
+}
+
+\subsubsection{Kinematic follow-up}
 The best way to test whether GD-1 features are an outcome of an encounter with a massive perturber is to obtain detailed kinematics in the perturbed region of the stream.
 The encounter scenario predicts velocity offsets between the spur and the stream, and they can be used to falsify this model.
 The expected offsets are small, but measurable with a modest investment of spectroscopic time to get the radial component of the velocity (the required precision is $\sim1\,\rm km\,s^{-1}$), and a somewhat more significant astrometric commitment to measure the transverse motion precisely enough ($\sim0.1\,\rm mas\,yr^{-1}$).
@@ -478,6 +528,7 @@ Either way, an electromagnetic detection would better characterize the nature of
 
 As discussed above, further study of the GD-1 gap-and-spur feature may provide the first opportunity to follow up an individual halo substructure.
 But most excitingly, these features demonstrate that cold stellar streams are extremely fine-tuned detectors, sensitive at a level that was only hoped for beforehand.
+\changes{In GD-1 alone, there are additional gaps that may be further evidence of gravitational perturbations (specifically, the G-20 gap is associated with a diffuse blob of GD-1 stars beyond the main stream).}
 In addition to GD-1, there are over 40 known streams in the Milky Way halo \citep[e.g.,][]{gc2016, shipp2018}.
 In the era of \gaia, we now have both the incentive and the resources to study them all in detail.
 With the full network of streams we could learn not only about individual halo substructures, but about the population as a whole.
