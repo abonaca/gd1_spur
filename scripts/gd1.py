@@ -1060,7 +1060,10 @@ def mock_gap_profile(t_impact=0.5*u.Gyr, N=2000):
     #poly = np.poly1d(p)
     
     # data
-    pkl = pickle.load(open('../data/fiducial_perturb_python3.pkl', 'rb'))
+    if sys.version_info < (3, 0, 0):
+        pkl = pickle.load(open('../data/fiducial.pkl', 'rb'))
+    else:
+        pkl = pickle.load(open('../data/fiducial_perturb_python3.pkl', 'rb'))
     cg_ = pkl['cg']
     g = {'phi1': cg_.phi1.wrap_at(180*u.deg).value, 'phi2': cg_.phi2.value}
     #g = Table.read('../data/members.fits')
@@ -1125,7 +1128,10 @@ def mock_gap_profile(t_impact=0.5*u.Gyr, N=2000):
 def mock_loop_track():
     """Find track through the observed loop stars"""
     
-    pkl = pickle.load(open('../data/fiducial_perturb_python3.pkl', 'rb'))
+    if sys.version_info < (3, 0, 0):
+        pkl = pickle.load(open('../data/fiducial.pkl', 'rb'))
+    else:
+        pkl = pickle.load(open('../data/fiducial_perturb_python3.pkl', 'rb'))
     cg_ = pkl['cg']
     g = {'phi1': cg_.phi1.wrap_at(180*u.deg).value, 'phi2': cg_.phi2.value}
     #g = Table.read('../data/members.fits')
