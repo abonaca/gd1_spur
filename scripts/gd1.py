@@ -1806,10 +1806,6 @@ def lnprob(x, params_units, xend, vend, dt_coarse, dt_fine, Tenc, Tstream, Nstre
     c = coord.Galactocentric(x=x1*u.m, y=x2*u.m, z=x3*u.m, v_x=v1*u.m/u.s, v_y=v2*u.m/u.s, v_z=v3*u.m/u.s, **gc_frame_dict)
     cg = c.transform_to(gc.GD1)
     
-    plt.close()
-    plt.figure()
-    plt.plot(cg.phi1.wrap_at(180*u.deg), cg.phi2, 'k.')
-    
     # spur chi^2
     top1 = np.percentile(dE[:N2], percentile1)
     top2 = np.percentile(dE[N2:], percentile2)
