@@ -1898,11 +1898,11 @@ def plot_chains(label=''):
     
     for i in range(Npar):
         plt.sca(ax[int(i/nrow)][i%nrow])
-        plt.plot(steps, chain[:,i].reshape(nstep,-1), '-')
+        plt.plot(steps, chain[:,i].reshape(nstep,-1), '-', rasterized=True)
         plt.ylabel(params[i])
     
     plt.sca(ax[nrow-1][ncol-1])
-    plt.plot(steps, lnp.reshape(nstep,-1), '-')
+    plt.plot(steps, lnp.reshape(nstep,-1), '-', rasterized=True)
     plt.ylabel('ln P')
     
     for i in range(ncol):
@@ -1990,7 +1990,7 @@ def choose_lnp_threshold(label='', p=10):
     
     plt.tight_layout()
 
-def check_chain(full=False, label='', p=1):
+def check_chain(full=False, label='', p=5):
     """"""
     sampler = np.load('../data/unique_samples{}.npz'.format(label))
     
@@ -2021,6 +2021,7 @@ def check_chain(full=False, label='', p=1):
             abr[:,4] = models[:,5]
             params = ['T [Gyr]', 'B [pc]', 'V [km s$^{-1}$]', '$r_s$ [pc]', 'log M/M$_\odot$']
             lims = [[0.,2], [0.1,75], [10,500], [0.001,40], [5,9]]
+            lims = [[0.,4.5], [0,145], [0,700], [0,99], [4.5,9]]
             logscale = [False, True, True, True, False]
             logscale = [False, False, False, False, False]
         else:
