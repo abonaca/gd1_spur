@@ -244,6 +244,7 @@ Decreasing the velocity of the perturber (which also increases the velocity kick
 However, at very low velocities, the whole loop morphology is changed (top panel in fourth column, Figure~\ref{fig:scalings}), likely because the encounter is no longer impulsive.
 This means that the observed spur morphology cannot be explained by an object of an arbitrarily low mass moving slowly.
 Likewise, decreasing the impact parameter has a unique signature too: the resulting loop is larger, but the gap size remains constant.
+\changes{Different dependence of the loop and gap properties on the perturber's mass and its impact parameter suggests that both parameters can be constrained in the case of GD-1, where we observe both features.}
 
 Different encounter parameters produce a unique impact on the GD-1 morphology, so we next search this space for parameter combinations allowed by the data.
 Ideally, we would like to create a model of the stream and compare it to the data directly.
@@ -279,6 +280,7 @@ We started 200 walkers and advanced them for 5000 steps, keeping the last 2000 s
 In principle, the resulting chain provides posterior samples, but since this is a highly idealized search of the parameter space, we only provide plausible ranges of parameters, instead of showing their two-dimensional distributions.
 Specifically, in each panel of the corner plot (Figure~\ref{fig:corner}, right) we show the two-dimensional convex hull of all models with likelihood above the 5th percentile (gray shaded regions).
 Therefore, Figure~\ref{fig:corner} contains likelihood, rather than posterior, information.
+\changes{Applied to the fiducial model of GD-1 (presented in Figure~\ref{fig:fiducial}), this method recovers the true encounter parameters.}
 
 High-likelihood models of the GD-1 stream have encounter parameters expected from the stream's sensitivity to different parameters (explored in Figure~\ref{fig:scalings}).
 Recent encounters are favored, with most of the models having been perturbed within the last 1\,Gyr and none more than 2\,Gyr ago.
@@ -286,6 +288,12 @@ The perturbing object itself is massive ($5.5\lesssim\log M/\rm M_\odot\lesssim8
 A range of velocities are allowed, as the data dismiss only the slowest moving perturbers ($V\gtrsim50\,\rm km\,s^{-1}$).
 The closest approach was extremely close to the stream, with the impact parameter smaller than $b\lesssim50\rm\,pc$.
 
+\changes{Many of the inferred encounter parameters are correlated.
+For example, more massive perturbers allow for larger impact parameters, larger scale radii and older encounters.
+In addition, current data places very weak constraints on the perturber's velocity.
+This is hardly surprising given the similar effect these parameters have on the appearance of the spur and the gap (Figure~\ref{fig:scalings}).
+In the next section we discuss new observables that can further constrain the GD-1 perturber.
+}
 
 \subsection{Predictions for the kinematic signatures of the encounter in GD-1}
 \label{sec:kinematics}
