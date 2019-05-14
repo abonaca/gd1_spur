@@ -1912,11 +1912,11 @@ def plot_chains(label=''):
     plt.tight_layout()
     plt.savefig('../plots/chain{}.png'.format(label))
 
-def trim_chain(chain, nwalkers, nstart, npar):
+def trim_chain(chain, nwalkers, nstart, npar, nend=-1):
     """Trim number of usable steps in a chain"""
     
     chain = chain.reshape(nwalkers,-1,npar)
-    chain = chain[:,nstart:,:]
+    chain = chain[:,nstart:nend,:]
     chain = chain.reshape(-1, npar)
     
     return chain

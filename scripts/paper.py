@@ -672,3 +672,189 @@ def noorbit_satellites():
     plt.tight_layout()
 
 
+# extra figures
+
+def mock_metrics():
+    """"""
+    pkl = pickle.load(open('../data/fiducial_perturb_python3.pkl', 'rb'))
+    cg_ = pkl['cg']
+    g = {'phi1': cg_.phi1.wrap_at(180*u.deg).value, 'phi2': cg_.phi2.value}
+    
+    track = np.load('../data/mock_spur_track.npz')
+    x = track['x']
+    y = track['y']
+    
+    xi = np.linspace(-50,-28.5,2000)
+    fy = scipy.interpolate.interp1d(x, y, kind='linear')
+    #yi = np.interp(xi, x, y)
+    yi = fy(xi)
+    
+    ind = (g['phi1']<0) & (g['phi1']>-80)
+    p_mock = np.polyfit(g['phi1'][ind], g['phi2'][ind], deg=4)
+    poly = np.poly1d(p_mock)
+    
+    phi2_mask_data = np.abs(g['phi2'] - poly(g['phi1']))<0.5
+    
+    bx = np.linspace(-60,-20,30)
+    bc = 0.5 * (bx[1:] + bx[:-1])
+    Nb = np.size(bc)
+    density = False
+    
+    h_data, be = np.histogram(g['phi1'][phi2_mask_data], bins=bx, density=density)
+    yerr_data = np.sqrt(h_data)
+
+    # data tophat
+    phi1_edges = np.array([-55, -45, -35, -25, -43, -37])
+    base_mask = ((bc>phi1_edges[0]) & (bc<phi1_edges[1])) | ((bc>phi1_edges[2]) & (bc<phi1_edges[3]))
+    hat_mask = (bc>phi1_edges[4]) & (bc<phi1_edges[5])
+    data_base = np.median(h_data[base_mask])
+    data_hat = np.median(h_data[hat_mask])
+
+    position = -40.5
+    width = 8.5
+    ytop_data = tophat(bc, data_base, data_hat, position, width)
+    
+    plt.close()
+    fig, ax = plt.subplots(2,1,figsize=(10,7), sharex=True)
+    
+    plt.sca(ax[0])
+    plt.plot(g['phi1'], g['phi2'], 'k.', ms=3, label='Fiducial model')
+    #plt.plot(x, y, 'ro', zorder=0)
+    plt.plot(xi, yi, 'k-', alpha=0.3, lw=4, label='Loop track')
+    
+    plt.legend(markerscale=4)
+    plt.xlim(-55,-25)
+    plt.ylim(-5,5)
+    plt.ylabel('$\phi_2$ [deg]')
+    #plt.gca().set_aspect('equal')
+    
+    plt.sca(ax[1])
+    plt.plot(bc, h_data, 'ko', label='Fiducial model')
+    plt.errorbar(bc, h_data, yerr=yerr_data, fmt='none', color='k', label='')
+    plt.plot(bc, ytop_data, '-', color='k', lw=4, alpha=0.3, label='Gap profile')
+    
+    plt.legend()
+    plt.xlabel('$\phi_1$ [deg]')
+    plt.ylabel('Number')
+    
+    plt.tight_layout()
+    plt.savefig('../paper/mock_metrics.png')
+
+def mock_unique(label='_mock_v500w200'):
+    """"""
+    sampler = np.load('../data/samples{}.npz'.format(label))
+    chain = trim_chain(sampler['chain'], 200, 0, np.shape(sampler['chain'])[1], nend=5000)
+    models, ind = np.unique(chain, axis=0, return_index=True)
+    ifinite = np.isfinite(sampler['lnp'][ind])
+    
+    np.savez('../data/unique_samples5k{}'.format(label), chain=models[ifinite], lnp=sampler['lnp'][ind][ifinite])
+
+def mock_corner(label='_mock_v500w200', p=5, full=False):
+    """"""
+    sampler = np.load('../data/unique_samples5k{}.npz'.format(label))
+    
+    models = np.unique(sampler['chain'], axis=0)
+    models = sampler['chain']
+    lnp = sampler['lnp']
+    pp = np.percentile(lnp, p)
+    
+    ind = lnp>=pp
+    models = models[ind]
+    lnp = lnp[ind]
+    
+    params = ['T', 'bx', 'by', 'vx', 'vy', 'logM', 'rs']
+    print(np.shape(models), np.shape(models)[0]/np.shape(sampler['chain'])[0])
+    Npar = np.shape(models)[1]
+    
+    if full==False:
+        abr = models[:,:-3]
+        abr[:,1] = np.sqrt(models[:,1]**2 + models[:,2]**2)
+        abr[:,2] = np.sqrt(models[:,3]**2 + models[:,4]**2)
+        abr[:,0] = models[:,0]
+        abr[:,3] = models[:,5]
+        print(np.median(abr[:,1]), np.max(abr[:,1]))
+        params = ['T [Gyr]', 'B [pc]', 'V [km s$^{-1}$]', 'log M/M$_\odot$']
+        
+        if Npar>6:
+            abr[:,3] = models[:,6]
+            abr[:,4] = models[:,5]
+            params = ['T [Gyr]', 'B [pc]', 'V [km s$^{-1}$]', '$r_s$ [pc]', 'log M/M$_\odot$']
+            lims = [[0.,2], [0.1,75], [10,500], [0.001,40], [5,9]]
+            lims = [[0.,1], [0,145], [0,700], [0,99], [4.5,9]]
+            logscale = [False, True, True, True, False]
+            logscale = [False, False, False, False, False]
+        else:
+            lims = [[0.,2], [0.1,100], [10,1000], [5,9]]
+            logscale = [False, True, True, False]
+        models = abr
+    
+    Nvar = np.shape(models)[1]
+    dax = 2
+    
+    Nsample = np.shape(models)[0]
+    Nc = 20
+    np.random.seed(59)
+    ind = np.random.randint(Nsample, size=Nc)
+    hull_ids = np.empty(0, dtype=int)
+    panel_id = np.empty((0,2), dtype=int)
+    vertices = np.empty((0,2))
+
+    plt.close()
+    fig, ax = plt.subplots(Nvar-1, Nvar-1, figsize=(dax*Nvar, dax*Nvar), sharex='col', sharey='row' ,squeeze=False)
+    
+    for i in range(0,Nvar-1):
+        for j in range(i+1,Nvar):
+            plt.sca(ax[j-1][i])
+            
+            points = np.log10(np.array([models[:,i], models[:,j]]).T)
+            hull = scipy.spatial.ConvexHull(points)
+            
+            xy_vert = 10**np.array([points[hull.vertices,0], points[hull.vertices,1]]).T
+            vertices = np.concatenate([vertices, xy_vert])
+            hull_ids = np.concatenate([hull_ids, hull.vertices])
+            
+            #print(len(hull.vertices))
+            current_id = np.tile(np.array([i,j]), len(hull.vertices)).reshape(-1,2)
+            panel_id = np.concatenate([panel_id, current_id])
+            
+            p = mpl.patches.Polygon(xy_vert, closed=True, lw=2, ec='0.8', fc='0.9', zorder=0)
+            plt.gca().add_artist(p)
+            
+    np.savez('../data/hull_points{}'.format(label), all=hull_ids, unique=np.unique(hull_ids), panel=panel_id, vertices=vertices)
+    
+    t_impact = 0.495*u.Gyr
+    M = 5e6*u.Msun
+    rs = 0.1*rs_diemer(M)
+    bnorm = 15*u.pc
+    vnorm = 250*u.km/u.s
+    
+    pfid = [t_impact.to(u.Gyr).value, bnorm.to(u.pc).value, vnorm.to(u.km/u.s).value, (rs.to(u.pc).value), np.log10(M.to(u.Msun).value)]
+    
+    for i in range(Nvar-1):
+        for j in range(i+1, Nvar):
+            plt.sca(ax[j-1][i])
+            plt.plot(pfid[i], pfid[j], '*', ms=20, mec='orangered', mew=1.5, color='orange')
+    
+    for i in range(0,Nvar-1):
+        for j in range(i+1,Nvar-1):
+            plt.sca(ax[i][j])
+            plt.axis('off')
+    
+    for k in range(Nvar-1):
+        plt.sca(ax[-1][k])
+        plt.xlabel(params[k])
+
+        if full==False:
+            if logscale[k]:
+                plt.gca().set_xscale('log')
+            plt.xlim(lims[k])
+        
+        plt.sca(ax[k][0])
+        plt.ylabel(params[k+1])
+        if (full==False):
+            if logscale[k+1]:
+                plt.gca().set_yscale('log')
+            plt.ylim(lims[k+1])
+
+    plt.tight_layout(h_pad=0, w_pad=0)
+    plt.savefig('../paper/corner{}.png'.format(label))
