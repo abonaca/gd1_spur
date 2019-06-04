@@ -836,7 +836,7 @@ def generate_encounter_time(t_impact=0.495*u.Gyr, graph=False):
     Vh = 225*u.km/u.s
     q = 1*u.Unit(1)
     rhalo = 0*u.pc
-    par_pot = np.array([Vh.si.value, q.value, rhalo.si.value])
+    par_pot = np.array([Vh.to(u.m/u.s).value, q.value, rhalo.to(u.m).value])
     
     pkl = pickle.load(open('../data/fiducial_at_encounter.pkl', 'rb'))
     model = pkl['model']
@@ -845,9 +845,10 @@ def generate_encounter_time(t_impact=0.495*u.Gyr, graph=False):
     
     # generate perturbed stream model
     potential_perturb = 2
-    par_perturb = np.array([M.si.value, rs.si.value, 0, 0, 0])
+    par_perturb = np.array([M.to(u.kg).value, rs.to(u.m).value, 0, 0, 0])
+    #print(vsub.si, par_perturb)
     
-    x1, x2, x3, v1, v2, v3 = interact.general_interact(par_perturb, xsub.si.value, vsub.si.value, Tenc.si.value, t_impact.si.value, dt.si.value, par_pot, potential, potential_perturb, model.x.si.value, model.y.si.value, model.z.si.value, model.v_x.si.value, model.v_y.si.value, model.v_z.si.value)
+    x1, x2, x3, v1, v2, v3 = interact.general_interact(par_perturb, xsub.to(u.m).value, vsub.to(u.m/u.s).value, Tenc.to(u.s).value, t_impact.to(u.s).value, dt.to(u.s).value, par_pot, potential, potential_perturb, model.x.to(u.m).value, model.y.to(u.m).value, model.z.to(u.m).value, model.v_x.to(u.m/u.s).value, model.v_y.to(u.m/u.s).value, model.v_z.to(u.m/u.s).value)
     stream = {}
     stream['x'] = (np.array([x1, x2, x3])*u.m).to(u.pc)
     stream['v'] = (np.array([v1, v2, v3])*u.m/u.s).to(u.km/u.s)
@@ -1090,6 +1091,38 @@ def movplot_transition():
         plt.gca().axis('off')
         plt.gca().tick_params(labelbottom=False, labelleft=False)
         plt.savefig('../plots/gal2sky/gal2gd1.{:03d}.png'.format(e+i), dpi=dpi)
+
+
+# blender inputs
+
+def blender_snaps_encounter():
+    """"""
+    
+    times = np.linspace(0,495,10)*u.Myr
+    
+    for e, t in enumerate(times):
+        cg = generate_encounter_time(t_impact=t)
+        cgal = cg.transform_to(coord.Galactocentric)
+        print(e, t, np.size(cg.phi1))
+        np.savez('../data/blender_vis/encounter_{:03d}'.format(e), x=cgal.x.to(u.kpc).value, y=cgal.y.to(u.kpc).value, z=cgal.z.to(u.kpc).value)
+
+def test_blender_snaps():
+    """"""
+    
+    d1 = np.load('../data/blender_vis/encounter_001.npz')
+    
+    plt.close()
+    plt.figure(figsize=(16,9))
+    
+    for i in range(10):
+        d0 = np.load('../data/blender_vis/encounter_{:03d}.npz'.format(i))
+        plt.plot(d0['y'], d0['z'], '.')
+    
+    plt.xlim(-24,24)
+    plt.ylim(-11,16)
+    
+    plt.gca().set_aspect('equal')
+    plt.tight_layout()
 
 
 # smooth rotation
